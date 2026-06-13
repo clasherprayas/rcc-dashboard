@@ -18,7 +18,9 @@ ONEDRIVE_DATA_COPY = Path(os.path.expanduser("~")) / "OneDrive" / "RCC" / "RCC_D
 DEFAULT_DATA_FILE = LOCAL_DATA_COPY.name
 DEFAULT_SHEET_NAME = "MAIN"
 # Set RCC_CLOUD=1 in environment to skip network sync (for Render/cloud deployments)
+# Set ONEDRIVE_SHARE_URL to the OneDrive share link for cloud data download
 CLOUD_MODE = os.environ.get("RCC_CLOUD", "0") == "1"
+ONEDRIVE_SHARE_URL = os.environ.get("ONEDRIVE_SHARE_URL", "")
 
 CREDENTIALS = {
     "ADMIN": {"password": "Admin@123", "role": "admin"},
@@ -315,11 +317,9 @@ def format_percent(value):
 # ─────────────────────────────────────────────
 
 def sync_source_excel():
-    # In cloud mode, skip network sync entirely
+    # In cloud mode, download from OneDrive
     if CLOUD_MODE:
-        if LOCAL_DATA_COPY.exists():
-            return LOCAL_DATA_COPY, "☁️ Cloud mode. Using local data file."
-        return None, "❌ Cloud mode but no local data file found."
+        return _sync_from_onedrive()
     if not SOURCE_DATA_FILE.exists():
         if LOCAL_DATA_COPY.exists():
             return LOCAL_DATA_COPY, "⚠️ Source not reachable. Using last local copy."
@@ -342,6 +342,36 @@ def sync_source_excel():
         if LOCAL_DATA_COPY.exists():
             return LOCAL_DATA_COPY, f"⚠️ Network error. Using last local copy."
         return None, f"❌ Cannot read source. ({e})"
+
+
+def _onedrive_direct_url(share_url):
+    """Convert OneDrive share link to direct download URL."""
+    # Append download=1 to force file download
+    separator = "&" if "?" in share_url else "?"
+    return f"{share_url}{separator}download=1"
+
+
+def _sync_from_onedrive():
+    """Download RCC_DATA.xlsx from OneDrive share link (cloud mode)."""
+    import requests
+    if not ONEDRIVE_SHARE_URL:
+        if LOCAL_DATA_COPY.exists():
+            return LOCAL_DATA_COPY, "⚠️ No OneDrive URL configured. Using cached file."
+        return None, "❌ No OneDrive URL configured and no cached file."
+    try:
+        download_url = _onedrive_direct_url(ONEDRIVE_SHARE_URL)
+        resp = requests.get(download_url, timeout=30, allow_redirects=True)
+        if resp.status_code == 200 and len(resp.content) > 1000:
+            LOCAL_DATA_COPY.write_bytes(resp.content)
+            return LOCAL_DATA_COPY, "☁️ Fresh data downloaded from OneDrive."
+        else:
+            if LOCAL_DATA_COPY.exists():
+                return LOCAL_DATA_COPY, f"⚠️ OneDrive download failed (HTTP {resp.status_code}). Using cached file."
+            return None, f"❌ OneDrive download failed (HTTP {resp.status_code})."
+    except Exception as e:
+        if LOCAL_DATA_COPY.exists():
+            return LOCAL_DATA_COPY, f"⚠️ OneDrive error. Using cached file."
+        return None, f"❌ OneDrive download failed: {e}"
 
 
 def _sync_to_onedrive():

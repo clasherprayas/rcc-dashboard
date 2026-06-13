@@ -3,3 +3,4 @@ pandas==2.2.3
 openpyxl==3.1.5
 streamlit-autorefresh==1.0.1
 st-copy-to-clipboard==0.1.6
+requests>=2.28.0
