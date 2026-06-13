@@ -1425,18 +1425,8 @@ def main():
 
             exec_th = '<th class="flow-col-exec" style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Executive</th>' if is_admin else ""
 
-            st.markdown(f"""<style>@media (max-width: 768px) {{ .flow-col-exec {{ display:none!important; }} }}</style>
-            <div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460">
-              <table style="width:100%;border-collapse:collapse">
-                <thead><tr style="background:#0a1628;border-bottom:2px solid #1e3460">
-                  <th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Customer Name</th>
-                  <th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">POS</th>
-                  <th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">DRA Case %</th>
-                  {exec_th}
-                </tr></thead>
-                <tbody>{rows_flow}</tbody>
-              </table>
-            </div>""", unsafe_allow_html=True)
+            html_out = f'<style>@media (max-width: 768px) {{ .flow-col-exec {{ display:none!important; }} }}</style><div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0a1628;border-bottom:2px solid #1e3460"><th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Customer Name</th><th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">POS</th><th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">DRA Case %</th>{exec_th}</tr></thead><tbody>{rows_flow}</tbody></table></div>'
+            st.markdown(html_out, unsafe_allow_html=True)
 
     # ── PAGE: EXECUTIVE TRACKER ──
     elif active == "exec":
