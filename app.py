@@ -893,6 +893,59 @@ def copy_to_clipboard(text):
         return False
 
 
+def flowlist_public_view(df_full):
+    """Public flow list view - no login required, shows executive's cases"""
+    st.markdown("""
+    <div style="padding:16px 0 8px 0">
+      <div class="rcc-logo" style="font-size:1.5rem">Resolution <span style="color:var(--accent)">Command</span> Center</div>
+      <div style="color:var(--muted);font-size:.85rem;margin-top:2px">📋 Flow List View</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    teams = sorted(df_full["TEAM"].dropna().unique().tolist())
+    sel = st.selectbox("👤 Select Executive", ["-- Select --"] + teams, key="flow_pub_exec")
+
+    if sel == "-- Select --":
+        st.info("Select your name above to view your flow cases.")
+        st.stop()
+
+    flow_df = df_full[(df_full["TEAM"] == sel) & (df_full["POS STATUS"] == "FLOW")].copy()
+    flow_df["DRA CASE%"] = flow_df["DRA CASE%"] * 100
+
+    # Bucket filter
+    all_bkts = sorted(flow_df["BUCKET"].dropna().unique().tolist())
+    if all_bkts:
+        bkt_labels = [f"BKT-{int(b)}" for b in all_bkts]
+        default_idx = bkt_labels.index("BKT-1") if "BKT-1" in bkt_labels else 0
+        sel_bkt = st.radio("Bucket", bkt_labels, index=default_idx, horizontal=True, key="flow_pub_bkt")
+        bkt_num = int(sel_bkt.replace("BKT-", ""))
+        flow_df = flow_df[flow_df["BUCKET"] == bkt_num]
+
+    st.markdown(f"**{sel}** — Flow Cases: **{len(flow_df)}**")
+
+    if flow_df.empty:
+        st.success("✅ No flow cases in this bucket!")
+    else:
+        flow_df = flow_df.sort_values("DRA CASE%", ascending=False).reset_index(drop=True)
+        rows_html = ""
+        for _, row in flow_df.iterrows():
+            name = str(row["CUSTOMER NAME"])
+            pos = format_indian(row["POS"])
+            dra = f'{row["DRA CASE%"]:.1f}%'
+            rows_html += f'<tr style="border-bottom:1px solid #1a2540"><td style="padding:8px 10px;font-size:.82rem;color:#f1f5f9">{name}</td><td style="padding:8px 10px;font-size:.82rem;color:#4ade80;font-family:var(--font-mono);text-align:right">{pos}</td><td style="padding:8px 10px;font-size:.82rem;color:#f59e0b;font-family:var(--font-mono);text-align:right">{dra}</td></tr>'
+        st.markdown(f"""
+        <div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:#0a1628;border-bottom:2px solid #1e3460">
+              <th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Customer Name</th>
+              <th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">POS</th>
+              <th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">DRA Case %</th>
+            </tr></thead>
+            <tbody>{rows_html}</tbody>
+          </table>
+        </div>""", unsafe_allow_html=True)
+
+
 def main():
     # Check URL params for public trails view
     params = st.query_params
@@ -908,6 +961,22 @@ def main():
             file_mtime = sel_file.stat().st_mtime
             df_full = load_data(str(sel_file), sel_sheet, _mtime=file_mtime)
             trails_public_view(df_full)
+        else:
+            st.error("Data file not found.")
+        return
+
+    if params.get("view") == "flowlist":
+        # Public flow list view - no login
+        synced_file, _ = sync_source_excel()
+        files = excel_files()
+        if files:
+            idx = next((i for i, f in enumerate(files) if f.name == DEFAULT_DATA_FILE), 0)
+            sel_file  = files[idx]
+            sheets    = workbook_sheets(str(sel_file))
+            sel_sheet = DEFAULT_SHEET_NAME if DEFAULT_SHEET_NAME in sheets else sheets[0]
+            file_mtime = sel_file.stat().st_mtime
+            df_full = load_data(str(sel_file), sel_sheet, _mtime=file_mtime)
+            flowlist_public_view(df_full)
         else:
             st.error("Data file not found.")
         return
