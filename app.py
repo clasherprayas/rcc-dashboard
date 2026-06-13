@@ -14,6 +14,7 @@ SOURCE_DATA_FILE = Path(
     r"\\Hdfc1\d\HDFC\ALLOCATION FILE\TW FILES\JUNE 26\TW ALLOCATION JUNE 26.xlsx"
 )
 LOCAL_DATA_COPY = APP_DIR / "RCC_DATA.xlsx"
+ONEDRIVE_DATA_COPY = Path(os.path.expanduser("~")) / "OneDrive" / "RCC" / "RCC_DATA.xlsx"
 DEFAULT_DATA_FILE = LOCAL_DATA_COPY.name
 DEFAULT_SHEET_NAME = "MAIN"
 # Set RCC_CLOUD=1 in environment to skip network sync (for Render/cloud deployments)
@@ -330,6 +331,7 @@ def sync_source_excel():
         )
         if should_copy:
             shutil.copy2(SOURCE_DATA_FILE, LOCAL_DATA_COPY)
+            _sync_to_onedrive()
             return LOCAL_DATA_COPY, "✅ Fresh data loaded from network."
         return LOCAL_DATA_COPY, "✅ Data is up to date."
     except PermissionError:
@@ -340,6 +342,15 @@ def sync_source_excel():
         if LOCAL_DATA_COPY.exists():
             return LOCAL_DATA_COPY, f"⚠️ Network error. Using last local copy."
         return None, f"❌ Cannot read source. ({e})"
+
+
+def _sync_to_onedrive():
+    """Copy RCC_DATA.xlsx to OneDrive folder for cloud sync."""
+    try:
+        if LOCAL_DATA_COPY.exists() and ONEDRIVE_DATA_COPY.parent.exists():
+            shutil.copy2(LOCAL_DATA_COPY, ONEDRIVE_DATA_COPY)
+    except Exception:
+        pass  # OneDrive sync is best-effort, don't break app
 
 @st.cache_data(show_spinner=False)
 def workbook_sheets(data_file):
