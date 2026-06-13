@@ -951,7 +951,6 @@ def main():
         ("📊 DASHBOARD",        "dashboard"),
         ("📌 PENDING TRAILS",   "trails"),
         ("🎯 ACTION CENTER",    "action"),
-        ("🚨 DRA & AGENCY",     "dra"),
         ("👤 EXECUTIVE TRACKER","exec"),
         ("🔍 LOAN SEARCH",      "search"),
     ]
@@ -1307,24 +1306,60 @@ def main():
                 rows_html += f'<tr style="border-bottom:1px solid #1a2540"><td style="padding:9px 12px;font-family:monospace;font-size:.82rem;font-weight:700;color:#f1f5f9">{loan}</td><td style="padding:9px 12px;font-size:.82rem;color:#f1f5f9">{name}</td><td style="padding:9px 12px;font-size:.78rem;vertical-align:middle"><span style="background:#1e3460;color:#7dd3fc;border-radius:4px;padding:3px 10px;font-size:.75rem;font-weight:700;letter-spacing:.02em">{area}</span></td>{exec_td}</tr>'
             st.markdown(f'<div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460;-webkit-overflow-scrolling:touch"><table style="width:100%;border-collapse:collapse;min-width:500px"><thead><tr style="background:#0a1628;border-bottom:2px solid #1e3460"><th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase;white-space:nowrap">Loan No</th><th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase;white-space:nowrap">Customer Name</th><th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase;white-space:nowrap">Area</th>{exec_th}</tr></thead><tbody>{rows_html}</tbody></table></div>', unsafe_allow_html=True)
 
-    # ── PAGE: DRA & AGENCY ──
-    elif active == "dra":
-        section("🚨 DRA & Agency")
-        tracker_df = df.copy()
-        tracker_df["DRA CASE%"]    = tracker_df["DRA CASE%"]    * 100
-        tracker_df["AGENCY CASE%"] = tracker_df["AGENCY CASE%"] * 100
+        # ── FLOW LIST SECTION ──
+        section("📋 FLOW LIST")
+        flow_df = df[df["POS STATUS"] == "FLOW"].copy()
+        flow_df["DRA CASE%"] = flow_df["DRA CASE%"] * 100
 
-        all_buckets = sorted(df["BUCKET"].dropna().unique().tolist())
-        bkt_options = ["All"] + [f"BKT-{int(b)}" for b in all_buckets]
-        bkt_filter  = st.radio("Bucket filter", bkt_options, horizontal=True)
+        # Bucket filter - default BKT-1
+        all_bkts = sorted(flow_df["BUCKET"].dropna().unique().tolist())
+        bkt_labels = [f"BKT-{int(b)}" for b in all_bkts]
+        default_idx = bkt_labels.index("BKT-1") if "BKT-1" in bkt_labels else 0
+        sel_bkt = st.radio("Bucket", bkt_labels, index=default_idx, horizontal=True, key="flow_bkt")
+        bkt_num = int(sel_bkt.replace("BKT-", ""))
+        flow_df = flow_df[flow_df["BUCKET"] == bkt_num]
 
-        if bkt_filter != "All":
-            bkt_num = int(bkt_filter.replace("BKT-",""))
-            tracker_df = tracker_df[tracker_df["BUCKET"] == bkt_num]
+        st.caption(f"Showing: {len(flow_df):,} flow cases")
 
-        st.caption(f"Showing: {len(tracker_df):,} cases")
-        tcols = ["LOAN NO","CUSTOMER NAME","TEAM","BUCKET","POS","DRA CASE%","AGENCY CASE%","POS STATUS"]
-        display_table(tracker_df[tcols].sort_values("DRA CASE%", ascending=False), height=480)
+        is_admin = user["role"] == "admin"
+        flow_df = flow_df.sort_values("DRA CASE%", ascending=False).reset_index(drop=True)
+
+        # Build table HTML - responsive (desktop vs mobile via CSS classes)
+        rows_flow = ""
+        for _, row in flow_df.iterrows():
+            name = str(row["CUSTOMER NAME"])
+            pos = format_indian(row["POS"])
+            dra = f'{row["DRA CASE%"]:.1f}%'
+            team = str(row.get("TEAM", ""))
+            exec_td_desk = f'<td class="flow-col-exec" style="padding:8px 10px;font-size:.78rem;color:#7dd3fc">{team}</td>' if is_admin else ""
+            exec_td_mob = f'<td class="flow-col-exec-mob" style="padding:8px 10px;font-size:.78rem;color:#7dd3fc">{team}</td>' if is_admin else ""
+            rows_flow += f"""<tr style="border-bottom:1px solid #1a2540">
+              <td style="padding:8px 10px;font-size:.82rem;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">{name}</td>
+              <td class="flow-col-pos" style="padding:8px 10px;font-size:.82rem;color:#4ade80;font-family:var(--font-mono);text-align:right">{pos}</td>
+              <td style="padding:8px 10px;font-size:.82rem;color:#f59e0b;font-family:var(--font-mono);text-align:right">{dra}</td>
+              {exec_td_desk}
+            </tr>"""
+
+        exec_th_desk = '<th class="flow-col-exec" style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Executive</th>' if is_admin else ""
+
+        st.markdown(f"""
+        <style>
+        @media (max-width: 768px) {{
+            .flow-col-pos {{ display:none!important; }}
+        }}
+        </style>
+        <div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460;-webkit-overflow-scrolling:touch">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="background:#0a1628;border-bottom:2px solid #1e3460">
+              <th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Customer Name</th>
+              <th class="flow-col-pos" style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">POS</th>
+              <th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">DRA Case %</th>
+              {exec_th_desk}
+            </tr></thead>
+            <tbody>{rows_flow}</tbody>
+          </table>
+        </div>
+        """, unsafe_allow_html=True)
 
     # ── PAGE: EXECUTIVE TRACKER ──
     elif active == "exec":
