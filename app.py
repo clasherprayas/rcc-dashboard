@@ -1419,7 +1419,19 @@ def main():
             for _, row in flow_df.iterrows():
                 name = str(row["CUSTOMER NAME"])
                 pos_val = row["POS"]
-                pos = f"{pos_val:,.0f}" if pos_val >= 1 else "0"
+                # Indian comma format: 1,23,456
+                pv = int(pos_val) if pos_val >= 1 else 0
+                s = str(pv)
+                if len(s) <= 3:
+                    pos = s
+                else:
+                    pos = s[-3:]
+                    s = s[:-3]
+                    while s:
+                        pos = s[-2:] + "," + pos
+                        s = s[:-2]
+                    pos = pos.lstrip(",")
+                
                 dra = f'{row["DRA CASE%"]:.1f}%'
                 team = str(row.get("TEAM", ""))
                 exec_td = f'<td class="flow-col-exec" style="padding:8px 10px;font-size:.78rem;color:#7dd3fc;text-align:center">{team}</td>' if is_admin else ""
