@@ -7,6 +7,8 @@ No dependency on app.py or Streamlit.
 
 import shutil
 import time
+import os
+import threading
 from datetime import datetime
 from pathlib import Path
 
@@ -17,14 +19,19 @@ ONEDRIVE_COPY = Path(r"C:\Users\BAJAJ1\OneDrive\RCC\RCC_DATA.xlsx")
 LOG_FILE = Path(r"C:\Users\BAJAJ1\Desktop\RCC\sync_log.txt")
 
 POLL_INTERVAL = 30  # seconds
+NETWORK_TIMEOUT = 10  # seconds max for network file check
 
 
 def log(level, msg):
-    """Append timestamped log entry."""
+    """Append timestamped log entry + print to console."""
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    entry = f"[{ts}] {level} | {msg}\n"
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(entry)
+    entry = f"[{ts}] {level} | {msg}"
+    print(entry, flush=True)
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(entry + "\n")
+    except Exception:
+        pass
 
 
 def get_mtime(path):
@@ -44,25 +51,48 @@ def fmt_time(mtime):
     return datetime.fromtimestamp(mtime).strftime("%d.%m.%Y %H:%M:%S")
 
 
+def check_source_exists_with_timeout(timeout=NETWORK_TIMEOUT):
+    """Check if source file exists with a timeout (network can hang)."""
+    result = [None]
+
+    def check():
+        try:
+            result[0] = SOURCE_FILE.exists()
+        except OSError:
+            result[0] = False
+
+    t = threading.Thread(target=check, daemon=True)
+    t.start()
+    t.join(timeout=timeout)
+
+    if t.is_alive():
+        # Thread still running = network hung
+        return None  # timeout
+    return result[0]
+
+
 def sync():
     """Check source vs destination timestamps and sync if needed."""
-    # Check source reachable
-    try:
-        if not SOURCE_FILE.exists():
-            log("WARN", "Source not reachable")
-            return
-    except OSError as e:
-        log("ERROR", f"Source check failed: {e}")
+    log("INFO", "Cycle start")
+
+    # Check source reachable with timeout
+    source_exists = check_source_exists_with_timeout()
+
+    if source_exists is None:
+        log("WARN", f"Source check TIMEOUT ({NETWORK_TIMEOUT}s). Network hung.")
+        return
+    if not source_exists:
+        log("WARN", "Source not reachable")
         return
 
-    source_mtime = get_mtime(SOURCE_FILE)
-    onedrive_mtime = get_mtime(ONEDRIVE_COPY)
+    try:
+        source_mtime = get_mtime(SOURCE_FILE)
+        onedrive_mtime = get_mtime(ONEDRIVE_COPY)
 
-    log("INFO", f"Checking | Src: {fmt_time(source_mtime)} | OD: {fmt_time(onedrive_mtime)}")
+        log("INFO", f"Comparing | Src: {fmt_time(source_mtime)} | OD: {fmt_time(onedrive_mtime)} | Newer: {source_mtime > onedrive_mtime}")
 
-    # Compare: sync only if source is newer than OneDrive copy
-    if source_mtime > onedrive_mtime:
-        try:
+        # Compare: sync only if source is newer than OneDrive copy
+        if source_mtime > onedrive_mtime:
             # Copy to local
             shutil.copy2(SOURCE_FILE, LOCAL_COPY)
             # Copy to OneDrive
@@ -71,25 +101,26 @@ def sync():
             else:
                 log("ERROR", f"OneDrive folder missing: {ONEDRIVE_COPY.parent}")
                 return
-
-            log("SUCCESS", f"Synced | Source mtime: {fmt_time(source_mtime)}")
-        except PermissionError:
-            log("ERROR", "File locked (Excel open?). Will retry next cycle.")
-        except OSError as e:
-            log("ERROR", f"Copy failed: {e}")
-    else:
-        log("INFO", "No changes detected")
+            log("SUCCESS", f"Synced | Source: {fmt_time(source_mtime)}")
+        else:
+            log("INFO", "No changes detected")
+    except PermissionError:
+        log("ERROR", "File locked (Excel open?). Retry next cycle.")
+    except OSError as e:
+        log("ERROR", f"Copy failed: {e}")
 
 
 def main():
     """Main loop: poll every 30 seconds."""
-    import os
     log("INFO", f"Sync worker started | PID: {os.getpid()}")
+    cycle = 0
     while True:
+        cycle += 1
         try:
             sync()
         except Exception as e:
-            log("ERROR", f"Unexpected: {e}")
+            log("ERROR", f"Unexpected in cycle {cycle}: {e}")
+        log("INFO", f"Sleeping {POLL_INTERVAL}s (cycle {cycle} done)")
         time.sleep(POLL_INTERVAL)
 
 
