@@ -52,11 +52,13 @@ def sync():
             log("WARN", "Source not reachable")
             return
     except OSError as e:
-        log("WARN", f"Source check failed: {e}")
+        log("ERROR", f"Source check failed: {e}")
         return
 
     source_mtime = get_mtime(SOURCE_FILE)
     onedrive_mtime = get_mtime(ONEDRIVE_COPY)
+
+    log("INFO", f"Checking | Src: {fmt_time(source_mtime)} | OD: {fmt_time(onedrive_mtime)}")
 
     # Compare: sync only if source is newer than OneDrive copy
     if source_mtime > onedrive_mtime:
@@ -70,17 +72,19 @@ def sync():
                 log("ERROR", f"OneDrive folder missing: {ONEDRIVE_COPY.parent}")
                 return
 
-            log("SUCCESS", f"Source mtime: {fmt_time(source_mtime)} | Synced to Local + OneDrive")
+            log("SUCCESS", f"Synced | Source mtime: {fmt_time(source_mtime)}")
         except PermissionError:
             log("ERROR", "File locked (Excel open?). Will retry next cycle.")
         except OSError as e:
             log("ERROR", f"Copy failed: {e}")
-    # else: no changes, skip silently (no log spam)
+    else:
+        log("INFO", "No changes detected")
 
 
 def main():
     """Main loop: poll every 30 seconds."""
-    log("INFO", "Sync worker started")
+    import os
+    log("INFO", f"Sync worker started | PID: {os.getpid()}")
     while True:
         try:
             sync()
