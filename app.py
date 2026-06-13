@@ -950,6 +950,7 @@ def main():
     NAV_ITEMS = [
         ("📊 DASHBOARD",        "dashboard"),
         ("📌 PENDING TRAILS",   "trails"),
+        ("📋 FLOW LIST",        "flowlist"),
         ("🎯 ACTION CENTER",    "action"),
         ("👤 EXECUTIVE TRACKER","exec"),
         ("🔍 LOAN SEARCH",      "search"),
@@ -1306,7 +1307,8 @@ def main():
                 rows_html += f'<tr style="border-bottom:1px solid #1a2540"><td style="padding:9px 12px;font-family:monospace;font-size:.82rem;font-weight:700;color:#f1f5f9">{loan}</td><td style="padding:9px 12px;font-size:.82rem;color:#f1f5f9">{name}</td><td style="padding:9px 12px;font-size:.78rem;vertical-align:middle"><span style="background:#1e3460;color:#7dd3fc;border-radius:4px;padding:3px 10px;font-size:.75rem;font-weight:700;letter-spacing:.02em">{area}</span></td>{exec_td}</tr>'
             st.markdown(f'<div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460;-webkit-overflow-scrolling:touch"><table style="width:100%;border-collapse:collapse;min-width:500px"><thead><tr style="background:#0a1628;border-bottom:2px solid #1e3460"><th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase;white-space:nowrap">Loan No</th><th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase;white-space:nowrap">Customer Name</th><th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase;white-space:nowrap">Area</th>{exec_th}</tr></thead><tbody>{rows_html}</tbody></table></div>', unsafe_allow_html=True)
 
-        # ── FLOW LIST SECTION ──
+    # ── PAGE: FLOW LIST ──
+    elif active == "flowlist":
         section("📋 FLOW LIST")
         flow_df = df[df["POS STATUS"] == "FLOW"].copy()
         flow_df["DRA CASE%"] = flow_df["DRA CASE%"] * 100
@@ -1332,7 +1334,6 @@ def main():
             dra = f'{row["DRA CASE%"]:.1f}%'
             team = str(row.get("TEAM", ""))
             exec_td_desk = f'<td class="flow-col-exec" style="padding:8px 10px;font-size:.78rem;color:#7dd3fc">{team}</td>' if is_admin else ""
-            exec_td_mob = f'<td class="flow-col-exec-mob" style="padding:8px 10px;font-size:.78rem;color:#7dd3fc">{team}</td>' if is_admin else ""
             rows_flow += f"""<tr style="border-bottom:1px solid #1a2540">
               <td style="padding:8px 10px;font-size:.82rem;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">{name}</td>
               <td class="flow-col-pos" style="padding:8px 10px;font-size:.82rem;color:#4ade80;font-family:var(--font-mono);text-align:right">{pos}</td>
