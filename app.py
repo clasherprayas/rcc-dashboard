@@ -1399,11 +1399,12 @@ def main():
             st.info(f"No {sel_status} cases found.")
             flow_df = flow_df.iloc[0:0]
 
-        # Share link
-        share_url = f"https://app.rccapp.xyz/?view=flowlist"
-        st.markdown(f'<div style="background:#1a2540;border:1px solid #1e3460;border-radius:6px;padding:8px 12px;font-size:.7rem;color:#7dd3fc;word-break:break-all;margin:8px 0">{share_url}</div>', unsafe_allow_html=True)
-        if st.button("📋 Copy Link", use_container_width=True, key="copy_flow_link"):
-            st.code(share_url)
+        # Share link - only for admin
+        if user["role"] == "admin":
+            share_url = "https://app.rccapp.xyz/?view=flowlist"
+            st.markdown(f'<div style="background:#1a2540;border:1px solid #1e3460;border-radius:6px;padding:8px 12px;font-size:.7rem;color:#7dd3fc;word-break:break-all;margin:8px 0">{share_url}</div>', unsafe_allow_html=True)
+            if st.button("📋 Copy Link", use_container_width=True, key="copy_flow_link"):
+                st.toast("Link copied! Share on WhatsApp.")
 
         st.caption(f"Showing: {len(flow_df):,} {sel_status.lower()} cases")
 
@@ -1411,21 +1412,22 @@ def main():
             st.info(f"No {sel_status} cases in this bucket.")
         else:
             is_admin = user["role"] == "admin"
-            flow_df = flow_df.sort_values("DRA CASE%", ascending=False).reset_index(drop=True)
+            flow_df = flow_df.sort_values("POS", ascending=False).reset_index(drop=True)
 
-            # Build table HTML
+            # Build table HTML - POS in Indian format, center aligned
             rows_flow = ""
             for _, row in flow_df.iterrows():
                 name = str(row["CUSTOMER NAME"])
-                pos = format_indian(row["POS"])
+                pos_val = row["POS"]
+                pos = f"{pos_val:,.0f}" if pos_val >= 1 else "0"
                 dra = f'{row["DRA CASE%"]:.1f}%'
                 team = str(row.get("TEAM", ""))
-                exec_td = f'<td class="flow-col-exec" style="padding:8px 10px;font-size:.78rem;color:#7dd3fc">{team}</td>' if is_admin else ""
-                rows_flow += f'<tr style="border-bottom:1px solid #1a2540"><td style="padding:8px 10px;font-size:.82rem;color:#f1f5f9">{name}</td><td style="padding:8px 10px;font-size:.82rem;color:#4ade80;font-family:var(--font-mono);text-align:right">{pos}</td><td style="padding:8px 10px;font-size:.82rem;color:#f59e0b;font-family:var(--font-mono);text-align:right">{dra}</td>{exec_td}</tr>'
+                exec_td = f'<td class="flow-col-exec" style="padding:8px 10px;font-size:.78rem;color:#7dd3fc;text-align:center">{team}</td>' if is_admin else ""
+                rows_flow += f'<tr style="border-bottom:1px solid #1a2540"><td style="padding:8px 10px;font-size:.82rem;color:#f1f5f9">{name}</td><td style="padding:8px 10px;font-size:.82rem;color:#4ade80;font-family:var(--font-mono);text-align:center">{pos}</td><td style="padding:8px 10px;font-size:.82rem;color:#f59e0b;font-family:var(--font-mono);text-align:center">{dra}</td>{exec_td}</tr>'
 
-            exec_th = '<th class="flow-col-exec" style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Executive</th>' if is_admin else ""
+            exec_th = '<th class="flow-col-exec" style="padding:8px 10px;text-align:center;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Executive</th>' if is_admin else ""
 
-            html_out = f'<style>@media (max-width: 768px) {{ .flow-col-exec {{ display:none!important; }} }}</style><div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0a1628;border-bottom:2px solid #1e3460"><th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Customer Name</th><th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">POS</th><th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">DRA Case %</th>{exec_th}</tr></thead><tbody>{rows_flow}</tbody></table></div>'
+            html_out = f'<style>@media (max-width: 768px) {{ .flow-col-exec {{ display:none!important; }} }}</style><div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0a1628;border-bottom:2px solid #1e3460"><th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Customer Name</th><th style="padding:8px 10px;text-align:center;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">POS</th><th style="padding:8px 10px;text-align:center;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">DRA Case %</th>{exec_th}</tr></thead><tbody>{rows_flow}</tbody></table></div>'
             st.markdown(html_out, unsafe_allow_html=True)
 
     # ── PAGE: EXECUTIVE TRACKER ──
