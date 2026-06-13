@@ -1397,6 +1397,13 @@ def main():
         flow_df = df[df["POS STATUS"] == sel_status].copy()
         flow_df["DRA CASE%"] = flow_df["DRA CASE%"] * 100
 
+        # Executive filter - Admin only
+        if user["role"] == "admin":
+            flow_teams = ["All"] + sorted(flow_df["TEAM"].dropna().unique().tolist())
+            sel_flow_exec = st.selectbox("👤 Executive", flow_teams, key="flow_exec_filter")
+            if sel_flow_exec != "All":
+                flow_df = flow_df[flow_df["TEAM"] == sel_flow_exec]
+
         # Bucket filter - default BKT-1
         all_bkts = sorted(flow_df["BUCKET"].dropna().unique().tolist())
         if all_bkts:
