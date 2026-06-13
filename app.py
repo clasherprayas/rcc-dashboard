@@ -930,9 +930,19 @@ def flowlist_public_view(df_full):
         rows_html = ""
         for _, row in flow_df.iterrows():
             name = str(row["CUSTOMER NAME"])
-            pos = format_indian(row["POS"])
+            pv = int(row["POS"]) if row["POS"] >= 1 else 0
+            s = str(pv)
+            if len(s) <= 3:
+                pos = s
+            else:
+                pos = s[-3:]
+                s = s[:-3]
+                while s:
+                    pos = s[-2:] + "," + pos
+                    s = s[:-2]
+                pos = pos.lstrip(",")
             dra = f'{row["DRA CASE%"]:.1f}%'
-            rows_html += f'<tr style="border-bottom:1px solid #1a2540"><td style="padding:8px 10px;font-size:.82rem;color:#f1f5f9">{name}</td><td style="padding:8px 10px;font-size:.82rem;color:#4ade80;font-family:var(--font-mono);text-align:right">{pos}</td><td style="padding:8px 10px;font-size:.82rem;color:#f59e0b;font-family:var(--font-mono);text-align:right">{dra}</td></tr>'
+            rows_html += f'<tr style="border-bottom:1px solid #1a2540"><td style="padding:8px 10px;font-size:.82rem;color:#f1f5f9">{name}</td><td style="padding:8px 10px;font-size:.82rem;color:#4ade80;font-family:var(--font-mono);text-align:center">{pos}</td><td style="padding:8px 10px;font-size:.82rem;color:#f59e0b;font-family:var(--font-mono);text-align:center">{dra}</td></tr>'
         st.markdown(f"""
         <div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460">
           <table style="width:100%;border-collapse:collapse">
