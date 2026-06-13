@@ -1352,16 +1352,16 @@ def main():
                 dra = f'{row["DRA CASE%"]:.1f}%'
                 team = str(row.get("TEAM", ""))
                 exec_td = f'<td class="flow-col-exec" style="padding:8px 10px;font-size:.78rem;color:#7dd3fc">{team}</td>' if is_admin else ""
-                rows_flow += f'<tr style="border-bottom:1px solid #1a2540"><td style="padding:8px 10px;font-size:.82rem;color:#f1f5f9">{name}</td><td class="flow-col-pos" style="padding:8px 10px;font-size:.82rem;color:#4ade80;font-family:var(--font-mono);text-align:right">{pos}</td><td style="padding:8px 10px;font-size:.82rem;color:#f59e0b;font-family:var(--font-mono);text-align:right">{dra}</td>{exec_td}</tr>'
+                rows_flow += f'<tr style="border-bottom:1px solid #1a2540"><td style="padding:8px 10px;font-size:.82rem;color:#f1f5f9">{name}</td><td style="padding:8px 10px;font-size:.82rem;color:#4ade80;font-family:var(--font-mono);text-align:right">{pos}</td><td style="padding:8px 10px;font-size:.82rem;color:#f59e0b;font-family:var(--font-mono);text-align:right">{dra}</td>{exec_td}</tr>'
 
             exec_th = '<th class="flow-col-exec" style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Executive</th>' if is_admin else ""
 
-            st.markdown(f"""<style>@media (max-width: 768px) {{ .flow-col-pos {{ display:none!important; }} }}</style>
+            st.markdown(f"""<style>@media (max-width: 768px) {{ .flow-col-exec {{ display:none!important; }} }}</style>
             <div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460">
               <table style="width:100%;border-collapse:collapse">
                 <thead><tr style="background:#0a1628;border-bottom:2px solid #1e3460">
                   <th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Customer Name</th>
-                  <th class="flow-col-pos" style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">POS</th>
+                  <th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">POS</th>
                   <th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">DRA Case %</th>
                   {exec_th}
                 </tr></thead>
