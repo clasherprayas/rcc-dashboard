@@ -931,13 +931,59 @@ def main():
     # ── PAGE: DASHBOARD ──
     if active == "dashboard":
         role_badge = "Admin" if user["role"] == "admin" else "Executive"
+
+        # Sync health indicator
+        from datetime import datetime, timezone
+        data_mtime = LOCAL_DATA_COPY.stat().st_mtime if LOCAL_DATA_COPY.exists() else 0
+        last_sync_dt = datetime.fromtimestamp(data_mtime) if data_mtime else None
+        now = datetime.now()
+        if last_sync_dt:
+            sync_ago = (now - last_sync_dt).total_seconds()
+            sync_ago_min = int(sync_ago // 60)
+            sync_time_str = last_sync_dt.strftime("%d %b %Y, %H:%M")
+            if sync_ago_min < 15:
+                sync_color = "#10b981"
+                sync_icon = "🟢"
+                sync_label = f"Synced {sync_ago_min}m ago"
+            elif sync_ago_min < 60:
+                sync_color = "#f59e0b"
+                sync_icon = "🟡"
+                sync_label = f"Synced {sync_ago_min}m ago"
+            else:
+                sync_color = "#ef4444"
+                sync_icon = "🔴"
+                hours = sync_ago_min // 60
+                sync_label = f"Stale: {hours}h {sync_ago_min % 60}m ago"
+        else:
+            sync_color = "#ef4444"
+            sync_icon = "🔴"
+            sync_label = "No data file"
+            sync_time_str = "N/A"
+
+        # Show red warning banner if stale > 15 min
+        if last_sync_dt and sync_ago > 900:
+            st.markdown(f"""
+            <div style="background:#7f1d1d;border:1px solid #ef4444;border-radius:8px;padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
+              <span style="font-size:1.2rem">⚠️</span>
+              <div>
+                <div style="color:#fca5a5;font-size:.8rem;font-weight:700">Data may be outdated</div>
+                <div style="color:#fecaca;font-size:.7rem">Last sync: {sync_time_str} ({sync_ago_min} minutes ago). Check if sync worker is running.</div>
+              </div>
+            </div>""", unsafe_allow_html=True)
+
         st.markdown(f"""
         <div class="rcc-header">
           <div>
             <div class="rcc-logo">Resolution <span>Command</span> Center</div>
             <div class="rcc-tagline">Resolution Management Dashboard · {len(df):,} active accounts</div>
           </div>
-          <div class="rcc-badge">{role_badge} · {user["username"].title()}</div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="text-align:right">
+              <div style="font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase">Last Sync</div>
+              <div style="font-size:.7rem;color:{sync_color};font-weight:700">{sync_icon} {sync_label}</div>
+            </div>
+            <div class="rcc-badge">{role_badge} · {user["username"].title()}</div>
+          </div>
         </div>""", unsafe_allow_html=True)
         hero_dashboard_cards(
             bkt1_stats, bkt2_stats, receipt_ach,
