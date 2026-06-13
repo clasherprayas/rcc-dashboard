@@ -595,7 +595,54 @@ def hero_dashboard_cards(b1,b2,receipt,paid,unpaid,total,collection):
           </div>
         </div>""", unsafe_allow_html=True)
 
-    # Render as tabs (works great on mobile - one card at a time)
+    # Desktop: side-by-side grid (hidden on mobile via CSS)
+    b1_donut = donut_svg(b1_res, "#10b981", "#4ade80", "Total POS", format_indian(b1['Total POS']), "#4ade80", "g_b1")
+    b2_donut = donut_svg(b2_res, "#3b82f6", "#7dd3fc", "Total POS", format_indian(b2['Total POS']), "#7dd3fc", "g_b2")
+    rc_donut = donut_svg(receipt, "#8b5cf6", "#ec4899", "Achievement", f"{receipt:.1f}%", "#f472b6", "g_rc")
+    st.markdown(f"""
+    <div class="hero-desktop">
+    <div class="hero-wrap">
+      <div class="hero-card">
+        <div class="hero-badge">🏦 BUCKET 1 · RESOLUTION</div>
+        <div style="display:flex;align-items:center;gap:20px;margin:12px 0 8px 0">
+          <div style="position:relative;width:75px;height:75px;flex-shrink:0">{b1_donut}<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:.5rem;color:var(--muted);font-weight:700;text-transform:uppercase">Total POS</div><div style="font-size:.8rem;color:var(--green);font-weight:800">{format_indian(b1['Total POS'])}</div></div></div>
+          <div><div style="color:var(--muted);font-size:.65rem;font-weight:700;text-transform:uppercase">Resolution %</div><div style="font-size:2.2rem;font-weight:800;color:var(--green);line-height:1">{b1_res:.2f}%</div></div>
+        </div>
+        <div style="color:var(--muted);font-size:.6rem;font-weight:700;text-transform:uppercase;margin:12px 0 6px 0">COUNTS</div>
+        <div class="hero-grid"><div class="hero-box"><div class="hero-box-label">Flow</div><div class="hero-box-val">{b1['Flow']:,}</div></div><div class="hero-box"><div class="hero-box-label">Stable</div><div class="hero-box-val">{b1['Stable']:,}</div></div><div class="hero-box"><div class="hero-box-label">RB</div><div class="hero-box-val">{b1['RB']:,}</div></div></div>
+        <div style="color:var(--muted);font-size:.6rem;font-weight:700;text-transform:uppercase;margin:12px 0 6px 0">POS AMOUNT (INR)</div>
+        <div class="hero-grid"><div class="hero-box"><div class="hero-box-label">Flow</div><div class="hero-box-val">{format_indian(b1['Flow POS'])}</div></div><div class="hero-box"><div class="hero-box-label">Stable</div><div class="hero-box-val">{format_indian(b1['Stable POS'])}</div></div><div class="hero-box"><div class="hero-box-label">RB</div><div class="hero-box-val">{format_indian(b1['RB POS'])}</div></div></div>
+        <div class="hero-total"><span class="hero-total-label">TOTAL POS</span><span class="hero-total-val">{format_indian(b1['Total POS'])}</span></div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-badge">🏦 BUCKET 2 · RESOLUTION</div>
+        <div style="display:flex;align-items:center;gap:20px;margin:12px 0 8px 0">
+          <div style="position:relative;width:75px;height:75px;flex-shrink:0">{b2_donut}<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:.5rem;color:var(--muted);font-weight:700;text-transform:uppercase">Total POS</div><div style="font-size:.8rem;color:var(--accent);font-weight:800">{format_indian(b2['Total POS'])}</div></div></div>
+          <div><div style="color:var(--muted);font-size:.65rem;font-weight:700;text-transform:uppercase">Resolution %</div><div style="font-size:2.2rem;font-weight:800;color:var(--accent);line-height:1">{b2_res:.2f}%</div></div>
+        </div>
+        <div style="color:var(--muted);font-size:.6rem;font-weight:700;text-transform:uppercase;margin:12px 0 6px 0">COUNTS</div>
+        <div class="hero-grid"><div class="hero-box"><div class="hero-box-label">Flow</div><div class="hero-box-val">{b2['Flow']:,}</div></div><div class="hero-box"><div class="hero-box-label">Stable</div><div class="hero-box-val">{b2['Stable']:,}</div></div><div class="hero-box"><div class="hero-box-label">RB</div><div class="hero-box-val">{b2['RB']:,}</div></div></div>
+        <div style="color:var(--muted);font-size:.6rem;font-weight:700;text-transform:uppercase;margin:12px 0 6px 0">POS AMOUNT (INR)</div>
+        <div class="hero-grid"><div class="hero-box"><div class="hero-box-label">Flow</div><div class="hero-box-val">{format_indian(b2['Flow POS'])}</div></div><div class="hero-box"><div class="hero-box-label">Stable</div><div class="hero-box-val">{format_indian(b2['Stable POS'])}</div></div><div class="hero-box"><div class="hero-box-label">RB</div><div class="hero-box-val">{format_indian(b2['RB POS'])}</div></div></div>
+        <div class="hero-total"><span class="hero-total-label">TOTAL POS</span><span class="hero-total-val">{format_indian(b2['Total POS'])}</span></div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-badge">🏆 RECEIPT CUT</div>
+        <div style="display:flex;align-items:center;gap:20px;margin:12px 0 8px 0">
+          <div style="position:relative;width:75px;height:75px;flex-shrink:0">{rc_donut}<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:.5rem;color:var(--muted);font-weight:700;text-transform:uppercase">Achiv.</div><div style="font-size:.8rem;color:var(--purple);font-weight:800">{receipt:.1f}%</div></div></div>
+          <div><div style="color:var(--muted);font-size:.65rem;font-weight:700;text-transform:uppercase">Receipt Cut %</div><div style="font-size:2.2rem;font-weight:800;color:var(--purple);line-height:1">{receipt:.2f}%</div></div>
+        </div>
+        <div class="hero-prog-track"><div class="hero-prog-fill" style="width:{safe_r:.1f}%; background:var(--purple)"></div></div>
+        <div class="hero-pct-label">{receipt:.2f}%</div>
+        <div class="receipt-stats"><div class="receipt-stat-box"><div class="receipt-stat-label">Paid</div><div class="receipt-stat-val paid">{paid:,}</div></div><div class="receipt-stat-box"><div class="receipt-stat-label">Unpaid</div><div class="receipt-stat-val unpaid">{unpaid:,}</div></div><div class="receipt-stat-box"><div class="receipt-stat-label">Total</div><div class="receipt-stat-val total">{total:,}</div></div></div>
+        <div class="hero-total" style="margin-top:12px"><span class="hero-total-label">💰 Total Collection</span><span class="hero-total-val" style="color:var(--purple)">{format_indian(collection)}</span></div>
+      </div>
+    </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Mobile: tabs (hidden on desktop via CSS)
+    st.markdown('<div class="hero-mobile">', unsafe_allow_html=True)
     tab1, tab2, tab3 = st.tabs(["🏦 Bucket 1", "🏦 Bucket 2", "🏆 Receipt"])
     with tab1:
         render_b1_card("_tab")
@@ -603,6 +650,7 @@ def hero_dashboard_cards(b1,b2,receipt,paid,unpaid,total,collection):
         render_b2_card("_tab")
     with tab3:
         render_receipt_card("_tab")
+    st.markdown('</div>', unsafe_allow_html=True)
 def section(title):
     st.markdown(f'<div class="section-head">{title}</div>', unsafe_allow_html=True)
 
