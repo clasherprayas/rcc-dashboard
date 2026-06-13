@@ -182,6 +182,9 @@ div[data-testid="stForm"] .stButton button:hover, div[data-testid="stForm"] div[
 /* Hero Cards */
 .hero-desktop { display:block; animation:fadeInUp .5s ease-out; }
 .hero-wrap { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; margin:16px 0 24px; }
+
+/* Hide mobile tabs on desktop */
+.hero-desktop + div [data-testid="stTabs"] { display:none; }
 .hero-card { background:linear-gradient(145deg,var(--surface),rgba(26,37,64,.6)); border:1px solid var(--border); border-radius:12px; padding:18px; position:relative; transition:var(--transition); box-shadow:var(--shadow-sm); overflow:hidden; }
 .hero-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--green),var(--accent)); opacity:.6; }
 .hero-card:hover { border-color:rgba(59,130,246,.4); box-shadow:0 8px 32px rgba(59,130,246,.08); transform:translateY(-2px); }
@@ -222,8 +225,8 @@ div[data-testid="stForm"] .stButton button:hover, div[data-testid="stForm"] div[
 #htab3:checked ~ .hero-tab-panels .hero-tab-panel:nth-child(3) { display:block; }
 
 @media (max-width: 768px) {
-    .hero-desktop { display:block!important; }
-    .hero-wrap { grid-template-columns:1fr!important; gap:10px; }
+    .hero-desktop { display:none!important; }
+    .hero-desktop + div [data-testid="stTabs"] { display:block!important; }
     .rcc-header { flex-direction:column; align-items:flex-start; gap:12px; padding:14px 16px; }
     .bucket-board { grid-template-columns:1fr 1fr; }
     .hero-card { padding:12px; }
@@ -642,6 +645,15 @@ def hero_dashboard_cards(b1,b2,receipt,paid,unpaid,total,collection):
     """, unsafe_allow_html=True)
 
     # Cards already stacked on mobile via CSS (hero-wrap grid-template-columns: 1fr on mobile)
+
+    # Mobile tabs (CSS hides on desktop, shows on mobile)
+    tab1, tab2, tab3 = st.tabs(["🏦 Bucket 1", "🏦 Bucket 2", "🏆 Receipt"])
+    with tab1:
+        render_b1_card("_tab")
+    with tab2:
+        render_b2_card("_tab")
+    with tab3:
+        render_receipt_card("_tab")
 def section(title):
     st.markdown(f'<div class="section-head">{title}</div>', unsafe_allow_html=True)
 
