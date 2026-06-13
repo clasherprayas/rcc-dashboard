@@ -1310,57 +1310,64 @@ def main():
     # ── PAGE: FLOW LIST ──
     elif active == "flowlist":
         section("📋 FLOW LIST")
-        flow_df = df[df["POS STATUS"] == "FLOW"].copy()
+
+        # Status filter dropdown - FLOW, STABLE, RB
+        status_options = ["FLOW", "STABLE", "RB"]
+        sel_status = st.selectbox("POS Status", status_options, index=0, key="flow_status_filter")
+
+        flow_df = df[df["POS STATUS"] == sel_status].copy()
         flow_df["DRA CASE%"] = flow_df["DRA CASE%"] * 100
 
         # Bucket filter - default BKT-1
         all_bkts = sorted(flow_df["BUCKET"].dropna().unique().tolist())
-        bkt_labels = [f"BKT-{int(b)}" for b in all_bkts]
-        default_idx = bkt_labels.index("BKT-1") if "BKT-1" in bkt_labels else 0
-        sel_bkt = st.radio("Bucket", bkt_labels, index=default_idx, horizontal=True, key="flow_bkt")
-        bkt_num = int(sel_bkt.replace("BKT-", ""))
-        flow_df = flow_df[flow_df["BUCKET"] == bkt_num]
+        if all_bkts:
+            bkt_labels = [f"BKT-{int(b)}" for b in all_bkts]
+            default_idx = bkt_labels.index("BKT-1") if "BKT-1" in bkt_labels else 0
+            sel_bkt = st.radio("Bucket", bkt_labels, index=default_idx, horizontal=True, key="flow_bkt")
+            bkt_num = int(sel_bkt.replace("BKT-", ""))
+            flow_df = flow_df[flow_df["BUCKET"] == bkt_num]
+        else:
+            st.info(f"No {sel_status} cases found.")
+            flow_df = flow_df.iloc[0:0]
 
-        st.caption(f"Showing: {len(flow_df):,} flow cases")
+        # Share link
+        share_url = f"https://app.rccapp.xyz/?view=flowlist"
+        st.markdown(f'<div style="background:#1a2540;border:1px solid #1e3460;border-radius:6px;padding:8px 12px;font-size:.7rem;color:#7dd3fc;word-break:break-all;margin:8px 0">{share_url}</div>', unsafe_allow_html=True)
+        if st.button("📋 Copy Link", use_container_width=True, key="copy_flow_link"):
+            st.code(share_url)
 
-        is_admin = user["role"] == "admin"
-        flow_df = flow_df.sort_values("DRA CASE%", ascending=False).reset_index(drop=True)
+        st.caption(f"Showing: {len(flow_df):,} {sel_status.lower()} cases")
 
-        # Build table HTML - responsive (desktop vs mobile via CSS classes)
-        rows_flow = ""
-        for _, row in flow_df.iterrows():
-            name = str(row["CUSTOMER NAME"])
-            pos = format_indian(row["POS"])
-            dra = f'{row["DRA CASE%"]:.1f}%'
-            team = str(row.get("TEAM", ""))
-            exec_td_desk = f'<td class="flow-col-exec" style="padding:8px 10px;font-size:.78rem;color:#7dd3fc">{team}</td>' if is_admin else ""
-            rows_flow += f"""<tr style="border-bottom:1px solid #1a2540">
-              <td style="padding:8px 10px;font-size:.82rem;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">{name}</td>
-              <td class="flow-col-pos" style="padding:8px 10px;font-size:.82rem;color:#4ade80;font-family:var(--font-mono);text-align:right">{pos}</td>
-              <td style="padding:8px 10px;font-size:.82rem;color:#f59e0b;font-family:var(--font-mono);text-align:right">{dra}</td>
-              {exec_td_desk}
-            </tr>"""
+        if flow_df.empty:
+            st.info(f"No {sel_status} cases in this bucket.")
+        else:
+            is_admin = user["role"] == "admin"
+            flow_df = flow_df.sort_values("DRA CASE%", ascending=False).reset_index(drop=True)
 
-        exec_th_desk = '<th class="flow-col-exec" style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Executive</th>' if is_admin else ""
+            # Build table HTML
+            rows_flow = ""
+            for _, row in flow_df.iterrows():
+                name = str(row["CUSTOMER NAME"])
+                pos = format_indian(row["POS"])
+                dra = f'{row["DRA CASE%"]:.1f}%'
+                team = str(row.get("TEAM", ""))
+                exec_td = f'<td class="flow-col-exec" style="padding:8px 10px;font-size:.78rem;color:#7dd3fc">{team}</td>' if is_admin else ""
+                rows_flow += f'<tr style="border-bottom:1px solid #1a2540"><td style="padding:8px 10px;font-size:.82rem;color:#f1f5f9">{name}</td><td class="flow-col-pos" style="padding:8px 10px;font-size:.82rem;color:#4ade80;font-family:var(--font-mono);text-align:right">{pos}</td><td style="padding:8px 10px;font-size:.82rem;color:#f59e0b;font-family:var(--font-mono);text-align:right">{dra}</td>{exec_td}</tr>'
 
-        st.markdown(f"""
-        <style>
-        @media (max-width: 768px) {{
-            .flow-col-pos {{ display:none!important; }}
-        }}
-        </style>
-        <div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460;-webkit-overflow-scrolling:touch">
-          <table style="width:100%;border-collapse:collapse">
-            <thead><tr style="background:#0a1628;border-bottom:2px solid #1e3460">
-              <th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Customer Name</th>
-              <th class="flow-col-pos" style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">POS</th>
-              <th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">DRA Case %</th>
-              {exec_th_desk}
-            </tr></thead>
-            <tbody>{rows_flow}</tbody>
-          </table>
-        </div>
-        """, unsafe_allow_html=True)
+            exec_th = '<th class="flow-col-exec" style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Executive</th>' if is_admin else ""
+
+            st.markdown(f"""<style>@media (max-width: 768px) {{ .flow-col-pos {{ display:none!important; }} }}</style>
+            <div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460">
+              <table style="width:100%;border-collapse:collapse">
+                <thead><tr style="background:#0a1628;border-bottom:2px solid #1e3460">
+                  <th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Customer Name</th>
+                  <th class="flow-col-pos" style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">POS</th>
+                  <th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">DRA Case %</th>
+                  {exec_th}
+                </tr></thead>
+                <tbody>{rows_flow}</tbody>
+              </table>
+            </div>""", unsafe_allow_html=True)
 
     # ── PAGE: EXECUTIVE TRACKER ──
     elif active == "exec":
