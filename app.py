@@ -7,6 +7,8 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
 
+import os
+
 APP_DIR = Path(__file__).resolve().parent
 SOURCE_DATA_FILE = Path(
     r"\\Hdfc1\d\HDFC\ALLOCATION FILE\TW FILES\JUNE 26\TW ALLOCATION JUNE 26.xlsx"
@@ -14,6 +16,8 @@ SOURCE_DATA_FILE = Path(
 LOCAL_DATA_COPY = APP_DIR / "RCC_DATA.xlsx"
 DEFAULT_DATA_FILE = LOCAL_DATA_COPY.name
 DEFAULT_SHEET_NAME = "MAIN"
+# Set RCC_CLOUD=1 in environment to skip network sync (for Render/cloud deployments)
+CLOUD_MODE = os.environ.get("RCC_CLOUD", "0") == "1"
 
 CREDENTIALS = {
     "ADMIN": {"password": "Admin@123", "role": "admin"},
@@ -310,6 +314,11 @@ def format_percent(value):
 # ─────────────────────────────────────────────
 
 def sync_source_excel():
+    # In cloud mode, skip network sync entirely
+    if CLOUD_MODE:
+        if LOCAL_DATA_COPY.exists():
+            return LOCAL_DATA_COPY, "☁️ Cloud mode. Using local data file."
+        return None, "❌ Cloud mode but no local data file found."
     if not SOURCE_DATA_FILE.exists():
         if LOCAL_DATA_COPY.exists():
             return LOCAL_DATA_COPY, "⚠️ Source not reachable. Using last local copy."
@@ -1221,7 +1230,12 @@ def main():
                 df["CUSTOMER NAME"].astype(str).str.lower().str.contains(needle, na=False)
             ]
             st.caption(f"Found: {len(matches):,} results")
-            display_table(matches, height=480)
+            if matches.empty:
+                st.info("No results found. Try a different search term.")
+            else:
+                search_cols = ["LOAN NO", "CUSTOMER NAME", "TEAM", "BUCKET", "POS STATUS", "POS", "AREA", "MOBILE", "RECEIPT CUT", "Paid Amount"]
+                display_cols = [c for c in search_cols if c in matches.columns]
+                display_table(matches[display_cols], height=480)
 
 
 if __name__ == "__main__":
