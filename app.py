@@ -222,8 +222,8 @@ div[data-testid="stForm"] .stButton button:hover, div[data-testid="stForm"] div[
 #htab3:checked ~ .hero-tab-panels .hero-tab-panel:nth-child(3) { display:block; }
 
 @media (max-width: 768px) {
-    .hero-desktop { display:none!important; }
-    .hero-mobile { display:block!important; }
+    .hero-desktop { display:block!important; }
+    .hero-wrap { grid-template-columns:1fr!important; gap:10px; }
     .rcc-header { flex-direction:column; align-items:flex-start; gap:12px; padding:14px 16px; }
     .bucket-board { grid-template-columns:1fr 1fr; }
     .hero-card { padding:12px; }
@@ -641,16 +641,7 @@ def hero_dashboard_cards(b1,b2,receipt,paid,unpaid,total,collection):
     </div>
     """, unsafe_allow_html=True)
 
-    # Mobile: tabs (hidden on desktop via CSS)
-    st.markdown('<div class="hero-mobile">', unsafe_allow_html=True)
-    tab1, tab2, tab3 = st.tabs(["🏦 Bucket 1", "🏦 Bucket 2", "🏆 Receipt"])
-    with tab1:
-        render_b1_card("_tab")
-    with tab2:
-        render_b2_card("_tab")
-    with tab3:
-        render_receipt_card("_tab")
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Cards already stacked on mobile via CSS (hero-wrap grid-template-columns: 1fr on mobile)
 def section(title):
     st.markdown(f'<div class="section-head">{title}</div>', unsafe_allow_html=True)
 
