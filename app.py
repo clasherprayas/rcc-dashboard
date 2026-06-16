@@ -787,6 +787,102 @@ def executive_ranking_df(df):
     return result
 
 
+def calc_payout_slab(resolution_pct, rb_pct, bucket):
+    """
+    Returns (slab%, rb_achieved) for a given bucket.
+    Slab determined ONLY by resolution %.
+    RB % only applies penalty (-2%) if target missed.
+
+    BKT-1 slabs:
+      < 85%          → 8%  (RB target: 15%)
+      85% - 87.99%   → 10% (RB target: 15%)
+      88% - 89.99%   → 12% (RB target: 20%)
+      >= 90%         → 15% (RB target: 25%)
+
+    BKT-2 slabs:
+      < 60%          → 8%  (RB target: 15%)
+      60% - 64.99%   → 10% (RB target: 15%)
+      65% - 69.99%   → 12% (RB target: 20%)
+      >= 70%         → 15% (RB target: 25%)
+    """
+    PAYOUT_CONFIG = {
+        1: [
+            # (min_res, max_res, slab%, rb_target%)
+            (90,  999, 15, 25),
+            (88,  89.99, 12, 20),
+            (85,  87.99, 10, 15),
+            (0,   84.99,  8, 15),
+        ],
+        2: [
+            (70,  999, 15, 25),
+            (65,  69.99, 12, 20),
+            (60,  64.99, 10, 15),
+            (0,   59.99,  8, 15),
+        ],
+    }
+
+    slabs = PAYOUT_CONFIG.get(bucket, PAYOUT_CONFIG[2])
+    payout = 8
+    rb_target = 15
+
+    for min_res, max_res, rate, rb_req in slabs:
+        if min_res <= resolution_pct <= max_res:
+            payout = rate
+            rb_target = rb_req
+            break
+
+    rb_achieved = rb_pct >= rb_target
+    if not rb_achieved:
+        payout = max(0, payout - 2)
+
+    return payout, rb_achieved
+
+
+def executive_payout_df(df):
+    """Per-executive payout: BKT-1 + BKT-2 separate slabs."""
+    rows = []
+    for team, grp in df.groupby("TEAM", dropna=False):
+        if not pd.notna(team):
+            continue
+        row = {"Executive": team}
+        total_payout = 0.0
+
+        for bkt in [1, 2]:
+            bgrp = grp[grp["BUCKET"] == bkt]
+            total_cases = len(bgrp)
+            if total_cases == 0:
+                row[f"BKT-{bkt} Res%"] = "—"
+                row[f"BKT-{bkt} RB%"]  = "—"
+                row[f"BKT-{bkt} Slab"] = "—"
+                row[f"BKT-{bkt} Payout"] = 0
+                continue
+
+            stable = int((bgrp["POS STATUS"] == "STABLE").sum())
+            rb     = int((bgrp["POS STATUS"] == "RB").sum())
+            res_pct = round((stable + rb) / total_cases * 100, 2)
+            rb_pct  = round(rb / total_cases * 100, 2)
+
+            collection = float(bgrp["Paid Amount"].sum())
+            slab, rb_ok = calc_payout_slab(res_pct, rb_pct, bkt)
+            payout_amt  = collection * slab / 100
+
+            row[f"BKT-{bkt} Res%"]    = f"{res_pct:.1f}%"
+            row[f"BKT-{bkt} RB%"]     = f"{rb_pct:.1f}%"
+            row[f"BKT-{bkt} Slab"]    = f"{slab}%" + ("" if rb_ok else " (-2% RB)")
+            row[f"BKT-{bkt} Collection"] = collection
+            row[f"BKT-{bkt} Payout"]  = payout_amt
+            total_payout += payout_amt
+
+        row["Total Payout"] = total_payout
+        rows.append(row)
+
+    result = pd.DataFrame(rows)
+    if not result.empty:
+        result = result.sort_values("Total Payout", ascending=False).reset_index(drop=True)
+        result.insert(0, "Rank", range(1, len(result)+1))
+    return result
+
+
 def executive_tracker_df(df):
     rows = []
     for team, grp in df.groupby("TEAM", dropna=False):
@@ -1060,210 +1156,322 @@ def main():
 
     # ── PAGE: DASHBOARD ──
     if active == "dashboard":
-        role_badge = "Admin" if user["role"] == "admin" else "Executive"
+        from datetime import datetime
 
-        # Sync health indicator
-        from datetime import datetime, timezone
+        # ── Sync health ──
         data_mtime = LOCAL_DATA_COPY.stat().st_mtime if LOCAL_DATA_COPY.exists() else 0
         last_sync_dt = datetime.fromtimestamp(data_mtime) if data_mtime else None
         now = datetime.now()
         if last_sync_dt:
             sync_ago = (now - last_sync_dt).total_seconds()
             sync_ago_min = int(sync_ago // 60)
-            sync_time_str = last_sync_dt.strftime("%d %b %Y, %H:%M")
-            if sync_ago_min < 15:
-                sync_color = "#10b981"
-                sync_icon = "🟢"
-                sync_label = f"Synced {sync_ago_min}m ago"
+            sync_time_short = last_sync_dt.strftime("%I:%M %p")
+            if sync_ago_min < 2:
+                sync_color = "#10b981"; sync_label = "Just now"
+            elif sync_ago_min < 15:
+                sync_color = "#10b981"; sync_label = f"{sync_ago_min}m ago"
             elif sync_ago_min < 60:
-                sync_color = "#f59e0b"
-                sync_icon = "🟡"
-                sync_label = f"Synced {sync_ago_min}m ago"
+                sync_color = "#f59e0b"; sync_label = f"{sync_ago_min}m ago"
             else:
-                sync_color = "#ef4444"
-                sync_icon = "🔴"
-                hours = sync_ago_min // 60
-                sync_label = f"Stale: {hours}h {sync_ago_min % 60}m ago"
+                sync_color = "#ef4444"; sync_label = f"{sync_ago_min//60}h ago"
+            if sync_ago > 900:
+                st.markdown(f'''<div style="background:#7f1d1d;border:1px solid #ef4444;border-radius:8px;padding:10px 16px;margin-bottom:10px;font-size:.8rem;color:#fca5a5">⚠️ Data stale — last sync {sync_ago_min}m ago. Check sync worker.</div>''', unsafe_allow_html=True)
         else:
-            sync_color = "#ef4444"
-            sync_icon = "🔴"
-            sync_label = "No data file"
-            sync_time_str = "N/A"
+            sync_color = "#ef4444"; sync_label = "No data"; sync_time_short = "N/A"
 
-        # Show red warning banner if stale > 15 min
-        if last_sync_dt and sync_ago > 900:
-            st.markdown(f"""
-            <div style="background:#7f1d1d;border:1px solid #ef4444;border-radius:8px;padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
-              <span style="font-size:1.2rem">⚠️</span>
-              <div>
-                <div style="color:#fca5a5;font-size:.8rem;font-weight:700">Data may be outdated</div>
-                <div style="color:#fecaca;font-size:.7rem">Last sync: {sync_time_str} ({sync_ago_min} minutes ago). Check if sync worker is running.</div>
-              </div>
-            </div>""", unsafe_allow_html=True)
+        today_date = now.strftime("%d %b %Y")
+        role_badge = "Admin" if user["role"] == "admin" else "Executive"
 
+        # ── Per-executive payout (current user or admin sees all) ──
+        exec_df = df if user["role"] != "admin" else df_full
+        exec_payout = executive_payout_df(exec_df)
+
+        # ── Team-level BKT stats ──
+        def bkt_stats_for(data, bkt):
+            g = data[data["BUCKET"] == bkt]
+            total = len(g)
+            if total == 0:
+                return {"total": 0, "flow": 0, "stable": 0, "rb": 0,
+                        "res_pct": 0.0, "rb_pct": 0.0, "collection": 0.0,
+                        "slab": 8, "payout": 0.0, "rb_ok": True}
+            flow   = int((g["POS STATUS"] == "FLOW").sum())
+            stable = int((g["POS STATUS"] == "STABLE").sum())
+            rb     = int((g["POS STATUS"] == "RB").sum())
+            res_pct = round((stable + rb) / total * 100, 2)
+            rb_pct  = round(rb / total * 100, 2)
+            collection = float(g["Paid Amount"].sum())
+            slab, rb_ok = calc_payout_slab(res_pct, rb_pct, bkt)
+            payout = collection * slab / 100
+            return {"total": total, "flow": flow, "stable": stable, "rb": rb,
+                    "res_pct": res_pct, "rb_pct": rb_pct, "collection": collection,
+                    "slab": slab, "payout": payout, "rb_ok": rb_ok}
+
+        b1 = bkt_stats_for(exec_df, 1)
+        b2 = bkt_stats_for(exec_df, 2)
+
+        total_collection = b1["collection"] + b2["collection"]
+        total_payout     = b1["payout"] + b2["payout"]
+        paid_cases       = int((exec_df["RECEIPT CUT"] == "PAID").sum())
+        unpaid_cases     = len(exec_df) - paid_cases
+        rc_pct           = round(paid_cases / len(exec_df) * 100, 2) if len(exec_df) else 0
+        rc_target        = 65.0
+        rc_gap           = round(rc_target - rc_pct, 2)
+
+        # Next slab info for BKT-1
+        def next_slab_info(res_pct, bkt):
+            NEXT = {1: [(85,10,"85%"),(88,12,"88%"),(90,15,"90%")],
+                    2: [(60,10,"60%"),(65,12,"65%"),(70,15,"70%")]}
+            for thresh, rate, label in NEXT.get(bkt, []):
+                if res_pct < thresh:
+                    return rate, label
+            return None, None
+
+        b1_next_rate, b1_next_thresh = next_slab_info(b1["res_pct"], 1)
+        b2_next_rate, b2_next_thresh = next_slab_info(b2["res_pct"], 2)
+
+        # Extra possible if next slab achieved
+        b1_extra = round(b1["collection"] * (b1_next_rate - b1["slab"]) / 100, 0) if b1_next_rate else 0
+        b2_extra = round(b2["collection"] * (b2_next_rate - b2["slab"]) / 100, 0) if b2_next_rate else 0
+        total_extra = b1_extra + b2_extra
+
+        # ── HEADER ──
         st.markdown(f"""
-        <div class="rcc-header">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 14px 0;flex-wrap:wrap;gap:8px">
           <div>
-            <div class="rcc-logo">Resolution <span>Command</span> Center</div>
-            <div class="rcc-tagline">Resolution Management Dashboard · {len(df):,} active accounts</div>
+            <div style="font-size:1.2rem;font-weight:700;color:#f1f5f9">Dashboard</div>
+            <div style="font-size:.75rem;color:#7a8ba8">Overview of collection, resolution & payout</div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px">
-            <div style="text-align:right">
-              <div style="font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase">Last Sync</div>
-              <div style="font-size:.7rem;color:{sync_color};font-weight:700">{sync_icon} {sync_label}</div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="width:8px;height:8px;border-radius:50%;background:{sync_color};display:inline-block"></span>
+              <span style="font-size:.72rem;color:{sync_color};font-weight:600">Last sync: {sync_label}</span>
             </div>
-            <div class="rcc-badge">{role_badge} · {user["username"].title()}</div>
+            <div style="background:#1a2540;border:1px solid #1e3460;border-radius:6px;padding:4px 10px;font-size:.72rem;color:#7dd3fc">📅 {today_date}</div>
+            <div style="background:#1a2540;border:1px solid #1e3460;border-radius:6px;padding:4px 10px;font-size:.72rem;color:#f1f5f9">{role_badge} · {user["username"].title()}</div>
           </div>
-        </div>""", unsafe_allow_html=True)
-        hero_dashboard_cards(
-            bkt1_stats, bkt2_stats, receipt_ach,
-            paid_count, unpaid_count, total_cases,
-            df["Paid Amount"].sum()
-        )
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-        section("📊 Bucket Details (POS Amount)")
-        bsum = bucket_summary_df(df)
-        display_table_with_res_color(bsum, height=300)
+        </div>
+        """, unsafe_allow_html=True)
 
-        if user["role"] == "admin":
-            section("Executive Ranking")
-            erank = executive_ranking_df(df_full)
-            display_table(erank, height=360)
-
-            # ── Receipt Cut & POS by Bucket (Executive-wise) ──
-            section("📊 Receipt Cut Analysis")
-
-            from datetime import date
-            sel_date = st.date_input("📅 Payment Date", value=date.today(), key="rc_date_filter")
-            sel_date_str = sel_date.strftime("%d.%m.%y")  # Match Excel format dd.mm.yy
-            display_date = sel_date.strftime("%d.%m.%Y")
-
-            # Filter only PAID receipts with selected payment date
-            paid_df = df_full[
-                (df_full["RECEIPT CUT"] == "PAID") &
-                (df_full["Payment Date"].astype(str).str.strip() == sel_date_str)
-            ].copy()
-            total_cases = len(df_full)
-            paid_count = len(paid_df)
-
-            # Movement %
-            receipt_cut_mov = (paid_count / total_cases * 100) if total_cases else 0
-            bkt1_total = df_full[df_full["BUCKET"] == 1]["POS"].sum()
-            bkt1_resolved = df_full[(df_full["BUCKET"] == 1) & (df_full["POS STATUS"].isin(["STABLE","RB"]))]["POS"].sum()
-            bkt1_mov = (bkt1_resolved / bkt1_total * 100) if bkt1_total else 0
-            bkt2_total = df_full[df_full["BUCKET"] == 2]["POS"].sum()
-            bkt2_resolved = df_full[(df_full["BUCKET"] == 2) & (df_full["POS STATUS"].isin(["STABLE","RB"]))]["POS"].sum()
-            bkt2_mov = (bkt2_resolved / bkt2_total * 100) if bkt2_total else 0
-
-            # Build tables - ONLY executives who have PAID receipts
-            if not paid_df.empty:
-                rc_pivot = paid_df.pivot_table(index="TEAM", columns="BUCKET", values="LOAN NO", aggfunc="count", fill_value=0)
-                bkt_cols = sorted(rc_pivot.columns.tolist())
-                rc_pivot = rc_pivot[bkt_cols]
-                rc_pivot["TOTAL"] = rc_pivot.sum(axis=1)
-                rc_pivot = rc_pivot.reset_index().rename(columns={"TEAM": "TEAM"})
-                rc_pivot = rc_pivot.sort_values("TEAM").reset_index(drop=True)
-                t_row = {"TEAM": "TOTAL"}
-                for col in rc_pivot.columns:
-                    if col != "TEAM":
-                        t_row[col] = int(rc_pivot[col].sum())
-                rc_pivot = pd.concat([rc_pivot, pd.DataFrame([t_row])], ignore_index=True)
-
-                pos_pivot = paid_df.pivot_table(index="TEAM", columns="BUCKET", values="POS", aggfunc="sum", fill_value=0)
-                pos_bkt_cols = sorted(pos_pivot.columns.tolist())
-                pos_pivot = pos_pivot[pos_bkt_cols]
-                pos_pivot = pos_pivot.reset_index().rename(columns={"TEAM": "EXECUTIVE"})
-                pos_pivot = pos_pivot.sort_values("EXECUTIVE").reset_index(drop=True)
-                gt_row = {"EXECUTIVE": "Grand Total"}
-                for col in pos_pivot.columns:
-                    if col != "EXECUTIVE":
-                        gt_row[col] = pos_pivot[col].sum()
-                pos_pivot = pd.concat([pos_pivot, pd.DataFrame([gt_row])], ignore_index=True)
-
-                # Receipt Cut table rows - compact
-                rc_headers = "".join([f'<th style="padding:5px 8px;text-align:center;font-size:.65rem;font-weight:700;color:#64748b;border-bottom:2px solid #2d3b52">BKT {int(c)}</th>' for c in bkt_cols])
-                rc_rows = ""
-                for _, row in rc_pivot.iterrows():
-                    en = row["TEAM"]
-                    is_t = en == "TOTAL"
-                    bg = "background:#0f1b2e;" if is_t else ""
-                    fw = "font-weight:800;" if is_t else ""
-                    cells = f'<td style="padding:5px 8px;font-size:.72rem;color:#e8edf5;{fw}{bg}white-space:nowrap">{en}</td>'
-                    for c in bkt_cols:
-                        v = int(row[c]) if row[c] > 0 else ""
-                        cells += f'<td style="padding:5px 8px;text-align:center;font-size:.75rem;color:#e8edf5;{fw}{bg}font-family:var(--font-mono)">{v}</td>'
-                    tv = int(row["TOTAL"])
-                    cells += f'<td style="padding:5px 8px;text-align:center;font-size:.75rem;color:#4ade80;{fw}{bg}font-family:var(--font-mono)">{tv}</td>'
-                    rc_rows += f'<tr style="border-bottom:1px solid #1e2d45">{cells}</tr>'
-
-                # POS table rows - compact
-                pos_headers = "".join([f'<th style="padding:5px 8px;text-align:right;font-size:.65rem;font-weight:700;color:#64748b;border-bottom:2px solid #2d3b52">BKT {int(c)}</th>' for c in pos_bkt_cols])
-                pos_rows = ""
-                for _, row in pos_pivot.iterrows():
-                    en = row["EXECUTIVE"]
-                    is_t = en == "Grand Total"
-                    bg = "background:#0f1b2e;" if is_t else ""
-                    fw = "font-weight:800;" if is_t else ""
-                    cells = f'<td style="padding:5px 8px;font-size:.72rem;color:#e8edf5;{fw}{bg}white-space:nowrap">{en}</td>'
-                    for c in pos_bkt_cols:
-                        v = row[c]
-                        disp = f"{v:,.0f}" if v > 0 else ""
-                        cells += f'<td style="padding:5px 8px;text-align:right;font-size:.72rem;color:#7dd3fc;{fw}{bg}font-family:var(--font-mono)">{disp}</td>'
-                    pos_rows += f'<tr style="border-bottom:1px solid #1e2d45">{cells}</tr>'
-
-                # Compact screenshot card
+        # ── PAYOUT SLAB CARD ──
+        slab_cols = st.columns([1.5, 1, 1, 1, 1, 1.2])
+        with slab_cols[0]:
+            st.markdown(f"""
+            <div style="background:#1a2540;border:1px solid #1e3460;border-radius:10px;padding:14px 16px;height:100%">
+              <div style="font-size:.65rem;color:#7a8ba8;text-transform:uppercase;font-weight:700;margin-bottom:6px">Total Collection</div>
+              <div style="font-size:1.6rem;font-weight:800;color:#f1f5f9">{format_indian(total_collection)}</div>
+              <div style="font-size:.7rem;color:#7a8ba8;margin-top:2px">Current Payout: <span style="color:#4ade80;font-weight:700">{format_indian(total_payout)}</span></div>
+            </div>
+            """, unsafe_allow_html=True)
+        for i, (label, pct, earn, color) in enumerate([
+            ("Current Slab", f"{b1['slab']}% / {b2['slab']}%", format_indian(total_payout), "#E24B4A"),
+            ("10% Slab", "10%", format_indian(b1["collection"]*0.10 + b2["collection"]*0.10), "#BA7517"),
+            ("12% Slab", "12%", format_indian(b1["collection"]*0.12 + b2["collection"]*0.12), "#1D9E75"),
+            ("15% Slab", "15%", format_indian(b1["collection"]*0.15 + b2["collection"]*0.15), "#7F77DD"),
+        ], 1):
+            with slab_cols[i]:
                 st.markdown(f"""
-                <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin:8px 0">
-                  <!-- Header line -->
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-                    <div style="font-size:.7rem;color:var(--muted)">📅 <span style="color:#7dd3fc;font-weight:700">{display_date}</span> · Receipt Cut: <b style="color:#4ade80">PAID</b></div>
-                    <div style="font-size:.55rem;color:var(--muted);font-weight:700;text-transform:uppercase;border:1px solid var(--border);padding:2px 8px;border-radius:4px">RCC</div>
-                  </div>
-
-                  <!-- Movement row -->
-                  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">
-                    <div style="background:#064e3b;border-radius:6px;padding:8px;text-align:center">
-                      <div style="color:#86efac;font-size:.5rem;font-weight:700;text-transform:uppercase">RC Movement</div>
-                      <div style="color:#4ade80;font-size:1.2rem;font-weight:800;font-family:var(--font-mono)">{receipt_cut_mov:.2f}%</div>
-                    </div>
-                    <div style="background:#1e3a5f;border-radius:6px;padding:8px;text-align:center">
-                      <div style="color:#93c5fd;font-size:.5rem;font-weight:700;text-transform:uppercase">BKT-1 Res</div>
-                      <div style="color:#60a5fa;font-size:1.2rem;font-weight:800;font-family:var(--font-mono)">{bkt1_mov:.2f}%</div>
-                    </div>
-                    <div style="background:#3b1764;border-radius:6px;padding:8px;text-align:center">
-                      <div style="color:#c4b5fd;font-size:.5rem;font-weight:700;text-transform:uppercase">BKT-2 Res</div>
-                      <div style="color:#a78bfa;font-size:1.2rem;font-weight:800;font-family:var(--font-mono)">{bkt2_mov:.2f}%</div>
-                    </div>
-                  </div>
-
-                  <!-- Receipt Cut Count -->
-                  <div style="color:#64748b;font-size:.6rem;font-weight:700;text-transform:uppercase;margin-bottom:4px">Count of Receipt Cut</div>
-                  <div style="overflow-x:auto;border-radius:6px;border:1px solid #1e2d45;margin-bottom:12px">
-                    <table style="width:100%;border-collapse:collapse">
-                      <thead><tr style="background:#0a1628">
-                        <th style="padding:5px 8px;text-align:left;font-size:.6rem;font-weight:700;color:#64748b;border-bottom:2px solid #2d3b52">TEAM</th>
-                        {rc_headers}
-                        <th style="padding:5px 8px;text-align:center;font-size:.65rem;font-weight:700;color:#4ade80;border-bottom:2px solid #2d3b52">TOTAL</th>
-                      </tr></thead>
-                      <tbody>{rc_rows}</tbody>
-                    </table>
-                  </div>
-
-                  <!-- Sum of POS -->
-                  <div style="color:#64748b;font-size:.6rem;font-weight:700;text-transform:uppercase;margin-bottom:4px">Sum of POS</div>
-                  <div style="overflow-x:auto;border-radius:6px;border:1px solid #1e2d45">
-                    <table style="width:100%;border-collapse:collapse">
-                      <thead><tr style="background:#0a1628">
-                        <th style="padding:5px 8px;text-align:left;font-size:.6rem;font-weight:700;color:#64748b;border-bottom:2px solid #2d3b52">EXECUTIVE</th>
-                        {pos_headers}
-                      </tr></thead>
-                      <tbody>{pos_rows}</tbody>
-                    </table>
-                  </div>
+                <div style="background:#1a2540;border:1px solid #1e3460;border-radius:10px;padding:12px 14px;height:100%">
+                  <div style="font-size:.6rem;color:#7a8ba8;text-transform:uppercase;font-weight:700;margin-bottom:4px">{label}</div>
+                  <div style="font-size:1.4rem;font-weight:800;color:{color}">{pct}</div>
+                  <div style="font-size:.68rem;color:#7a8ba8;margin-top:2px">{earn}</div>
                 </div>
                 """, unsafe_allow_html=True)
-            else:
-                st.info("No PAID receipts found.")
+        with slab_cols[5]:
+            st.markdown(f"""
+            <div style="background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:10px;padding:12px 14px;height:100%">
+              <div style="font-size:.6rem;color:rgba(255,255,255,0.6);text-transform:uppercase;font-weight:700;margin-bottom:4px">Extra Possible</div>
+              <div style="font-size:1.3rem;font-weight:800;color:#4ade80">+{format_indian(total_extra)}</div>
+              <div style="font-size:.65rem;color:rgba(255,255,255,0.5);margin-top:2px">To next slab</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("<div style='font-size:.68rem;color:#7a8ba8;margin:6px 0 14px 4px'>ℹ️ Payout calculated on current collection amount</div>", unsafe_allow_html=True)
+
+        # ── BKT-1 / BKT-2 / RECEIPT CUT CARDS ──
+        c1, c2, c3 = st.columns(3)
+
+        def bkt_card(stats, bkt_num, next_rate, next_thresh, color, col):
+            rb_label = "✅ RB OK" if stats["rb_ok"] else f"⚠️ RB miss (-2%)"
+            rb_color = "#4ade80" if stats["rb_ok"] else "#f59e0b"
+            res_color = "#4ade80" if stats["res_pct"] >= (90 if bkt_num==1 else 70) else "#BA7517" if stats["res_pct"] >= (85 if bkt_num==1 else 60) else "#E24B4A"
+            rb_c = "#4ade80" if stats["rb_ok"] else "#E24B4A"
+            next_hint = f"Need {next_thresh} for {next_rate}% slab" if next_rate else "🏆 Max slab!"
+            with col:
+                st.markdown(f"""
+                <div style="background:#1a2540;border:1px solid #1e3460;border-radius:12px;padding:16px;margin-bottom:8px">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                    <span style="font-size:1.1rem">🏦</span>
+                    <span style="font-size:.9rem;font-weight:800;color:#f1f5f9">BKT-{bkt_num}</span>
+                    <span style="margin-left:auto;background:#0d1e38;border-radius:4px;padding:2px 8px;font-size:.65rem;font-weight:700;color:{color}">{stats['slab']}% SLAB</span>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+                    <div>
+                      <div style="font-size:.62rem;color:#7a8ba8;text-transform:uppercase;margin-bottom:2px">Resolution</div>
+                      <div style="font-size:1.3rem;font-weight:800;color:{res_color}">{stats['res_pct']:.1f}%</div>
+                    </div>
+                    <div>
+                      <div style="font-size:.62rem;color:#7a8ba8;text-transform:uppercase;margin-bottom:2px">RB %</div>
+                      <div style="font-size:1.3rem;font-weight:800;color:{rb_c}">{stats['rb_pct']:.1f}%</div>
+                    </div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px">
+                    <div style="background:#0d1e38;border-radius:6px;padding:8px;text-align:center">
+                      <div style="font-size:.58rem;color:#7a8ba8;text-transform:uppercase">Flow</div>
+                      <div style="font-size:1rem;font-weight:700;color:#7dd3fc">{stats['flow']:,}</div>
+                    </div>
+                    <div style="background:#0d1e38;border-radius:6px;padding:8px;text-align:center">
+                      <div style="font-size:.58rem;color:#7a8ba8;text-transform:uppercase">Stable</div>
+                      <div style="font-size:1rem;font-weight:700;color:#4ade80">{stats['stable']:,}</div>
+                    </div>
+                    <div style="background:#0d1e38;border-radius:6px;padding:8px;text-align:center">
+                      <div style="font-size:.58rem;color:#7a8ba8;text-transform:uppercase">RB</div>
+                      <div style="font-size:1rem;font-weight:700;color:#f472b6">{stats['rb']:,}</div>
+                    </div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+                    <div style="background:#0d1e38;border-radius:6px;padding:8px">
+                      <div style="font-size:.58rem;color:#7a8ba8;text-transform:uppercase">Collection</div>
+                      <div style="font-size:.85rem;font-weight:700;color:#f1f5f9">{format_indian(stats['collection'])}</div>
+                    </div>
+                    <div style="background:#0d1e38;border-radius:6px;padding:8px">
+                      <div style="font-size:.58rem;color:#7a8ba8;text-transform:uppercase">Payout</div>
+                      <div style="font-size:.85rem;font-weight:700;color:#4ade80">{format_indian(stats['payout'])}</div>
+                    </div>
+                  </div>
+                  <div style="font-size:.65rem;color:#f59e0b;font-weight:600">{next_hint}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+        bkt_card(b1, 1, b1_next_rate, b1_next_thresh, "#7dd3fc", c1)
+        bkt_card(b2, 2, b2_next_rate, b2_next_thresh, "#BA7517", c2)
+
+        with c3:
+            rc_bar = min(rc_pct / rc_target * 100, 100) if rc_target else 0
+            st.markdown(f"""
+            <div style="background:#1a2540;border:1px solid #1e3460;border-radius:12px;padding:16px;margin-bottom:8px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                <span style="font-size:1.1rem">📋</span>
+                <span style="font-size:.9rem;font-weight:800;color:#f1f5f9">Receipt Cut</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+                <div>
+                  <div style="font-size:.62rem;color:#7a8ba8;text-transform:uppercase;margin-bottom:2px">Current</div>
+                  <div style="font-size:1.3rem;font-weight:800;color:#E24B4A">{rc_pct:.1f}%</div>
+                </div>
+                <div>
+                  <div style="font-size:.62rem;color:#7a8ba8;text-transform:uppercase;margin-bottom:2px">Target</div>
+                  <div style="font-size:1.3rem;font-weight:800;color:#4ade80">{rc_target:.0f}%</div>
+                </div>
+                <div>
+                  <div style="font-size:.62rem;color:#7a8ba8;text-transform:uppercase;margin-bottom:2px">Gap</div>
+                  <div style="font-size:1.3rem;font-weight:800;color:#BA7517">{max(rc_gap,0):.1f}%</div>
+                </div>
+              </div>
+              <div style="height:5px;background:#0d1e38;border-radius:999px;margin-bottom:12px">
+                <div style="width:{rc_bar:.1f}%;height:100%;background:#7F77DD;border-radius:999px"></div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+                <div style="background:#0d1e38;border-radius:6px;padding:8px;display:flex;align-items:center;gap:8px">
+                  <span style="font-size:1.1rem">✅</span>
+                  <div>
+                    <div style="font-size:.58rem;color:#7a8ba8">Paid</div>
+                    <div style="font-size:1rem;font-weight:700;color:#4ade80">{paid_cases:,}</div>
+                  </div>
+                </div>
+                <div style="background:#0d1e38;border-radius:6px;padding:8px;display:flex;align-items:center;gap:8px">
+                  <span style="font-size:1.1rem">❌</span>
+                  <div>
+                    <div style="font-size:.58rem;color:#7a8ba8">Unpaid</div>
+                    <div style="font-size:1rem;font-weight:700;color:#E24B4A">{unpaid_cases:,}</div>
+                  </div>
+                </div>
+              </div>
+              <div style="background:#0d1e38;border-radius:6px;padding:8px">
+                <div style="font-size:.58rem;color:#7a8ba8;text-transform:uppercase">Potential Impact</div>
+                <div style="font-size:.9rem;font-weight:700;color:#4ade80">+{format_indian(total_extra)} <span style="font-size:.7rem;color:#7a8ba8">more earnings</span></div>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # ── BOTTOM SUMMARY BAR ──
+        total_accounts = len(exec_df)
+        flow_count  = int((exec_df["POS STATUS"] == "FLOW").sum())
+        stable_count= int((exec_df["POS STATUS"] == "STABLE").sum())
+        rb_count    = int((exec_df["POS STATUS"] == "RB").sum())
+
+        s1, s2, s3, s4 = st.columns(4)
+        for col, icon, label, val, color in [
+            (s1, "👥", "Flow Accounts", f"{flow_count:,}", "#7dd3fc"),
+            (s2, "🛡️", "Stable Accounts", f"{stable_count:,}", "#4ade80"),
+            (s3, "⚠️", "RB Accounts", f"{rb_count:,}", "#BA7517"),
+            (s4, "🧾", "Receipt Cut", f"{paid_cases:,}", "#7F77DD"),
+        ]:
+            with col:
+                st.markdown(f"""
+                <div style="background:#1a2540;border:1px solid #1e3460;border-radius:10px;padding:12px;text-align:center;margin-bottom:10px">
+                  <div style="font-size:1.3rem">{icon}</div>
+                  <div style="font-size:1.3rem;font-weight:800;color:{color};margin:4px 0">{val}</div>
+                  <div style="font-size:.65rem;color:#7a8ba8">{label}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+        p1, p2, p3 = st.columns(3)
+        paid_pct = round(paid_cases/total_accounts*100,1) if total_accounts else 0
+        unpaid_pct = round(unpaid_cases/total_accounts*100,1) if total_accounts else 0
+        overall_res = round((stable_count + rb_count) / total_accounts * 100, 1) if total_accounts else 0
+        overall_target = 90.0
+        overall_bar = min(overall_res / overall_target * 100, 100)
+
+        with p1:
+            st.markdown(f"""
+            <div style="background:#1a2540;border:1px solid #1e3460;border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px">
+              <span style="font-size:1.8rem">✅</span>
+              <div>
+                <div style="font-size:.65rem;color:#7a8ba8">Paid Accounts</div>
+                <div style="font-size:1.4rem;font-weight:800;color:#4ade80">{paid_cases:,}</div>
+                <div style="font-size:.65rem;color:#7a8ba8">{paid_pct}% of total</div>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+        with p2:
+            st.markdown(f"""
+            <div style="background:#1a2540;border:1px solid #1e3460;border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px">
+              <span style="font-size:1.8rem">❌</span>
+              <div>
+                <div style="font-size:.65rem;color:#7a8ba8">Unpaid Accounts</div>
+                <div style="font-size:1.4rem;font-weight:800;color:#E24B4A">{unpaid_cases:,}</div>
+                <div style="font-size:.65rem;color:#7a8ba8">{unpaid_pct}% of total</div>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+        with p3:
+            st.markdown(f"""
+            <div style="background:#1a2540;border:1px solid #1e3460;border-radius:10px;padding:14px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                <span style="font-size:1.3rem">🏆</span>
+                <div style="font-size:.65rem;color:#7a8ba8">Overall Achievement</div>
+              </div>
+              <div style="font-size:1.4rem;font-weight:800;color:#BA7517">{overall_res}%</div>
+              <div style="font-size:.65rem;color:#7a8ba8;margin-bottom:6px">Target: {overall_target:.0f}%</div>
+              <div style="height:4px;background:#0d1e38;border-radius:999px">
+                <div style="width:{overall_bar:.1f}%;height:100%;background:#BA7517;border-radius:999px"></div>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Admin only — executive payout table
+        if user["role"] == "admin":
+            st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+            section("💰 Executive Payout Table")
+            if not exec_payout.empty:
+                disp = exec_payout.copy()
+                for bkt in [1, 2]:
+                    if f"BKT-{bkt} Collection" in disp.columns:
+                        disp[f"BKT-{bkt} Collection"] = disp[f"BKT-{bkt} Collection"].apply(lambda x: format_indian(x) if isinstance(x, (int,float)) else x)
+                    if f"BKT-{bkt} Payout" in disp.columns:
+                        disp[f"BKT-{bkt} Payout"] = disp[f"BKT-{bkt} Payout"].apply(lambda x: format_indian(x) if isinstance(x, (int,float)) else x)
+                disp["Total Payout"] = exec_payout["Total Payout"].apply(format_indian)
+                display_table(disp, height=400)
 
     # ── PAGE: ACTION CENTER ──
     elif active == "action":
