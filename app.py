@@ -62,7 +62,7 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
 
-/* ── PREMIUM DARK THEME ── */
+/* ── PREMIUM DARK THEME (default) ── */
 :root {
     --bg:       #0b1120;
     --surface:  #131c2e;
@@ -81,10 +81,405 @@ st.markdown("""
     --shadow-md: 0 4px 12px rgba(0,0,0,.3);
     --shadow-lg: 0 12px 40px rgba(0,0,0,.4);
     --transition: all .2s cubic-bezier(.4,0,.2,1);
+    --card-bg: rgba(26,37,64,.9);
+    --card-border: rgba(45,59,82,.5);
+    --inner-bg: rgba(11,17,32,.6);
+    --inner-bg2: #0d1e38;
+    --track-bg: #0a1425;
+    --glass: rgba(26,37,64,.8);
+    --glass-border: rgba(59,130,246,.15);
 }
+""", unsafe_allow_html=True)
+
+# ── Theme state ──
+if "theme" not in st.session_state:
+    st.session_state.theme = "dark"
+
+THEME = st.session_state.theme
+
+# Theme-aware color palette for inline styles
+# ─────────────────────────────────────────────────────────────────────
+# IMPORTANT: Jab bhi naya inline HTML likho (st.markdown with style="..."),
+# HAMESHA T[...] dictionary use karo — hardcoded colors mat likho!
+#
+# ✅ SAHI:  f'<div style="color:{T["ink"]};background:{T["surface"]}">'
+# ❌ GALAT: f'<div style="color:#f1f5f9;background:#1a2540">'
+#
+# Available keys:
+#   T["bg"]         → page background
+#   T["surface"]    → card/container background
+#   T["surface2"]   → alternate/inner background
+#   T["border"]     → borders
+#   T["ink"]        → primary text (headings, values)
+#   T["muted"]      → secondary/label text
+#   T["accent"]     → blue accent
+#   T["green"]      → green (theme-adjusted)
+#   T["amber"]      → amber/warning
+#   T["red"]        → red/error
+#   T["purple"]     → purple
+#   T["card_bg"]    → card wrapper background
+#   T["card_border"]→ card border
+#   T["inner_bg"]   → inner section bg (inside cards)
+#   T["inner_bg2"]  → alternate inner bg
+#   T["track_bg"]   → progress bar track
+#   T["glass"]      → glassmorphism bg
+#   T["glass_border"]→ glass border
+#   T["green_val"]  → green value text (numbers)
+#   T["red_val"]    → red value text
+#   T["blue_val"]   → blue value text
+#   T["purple_val"] → purple value text
+#   T["amber_val"]  → amber value text
+#   T["card_shadow"]→ card box-shadow
+#   T["flow_color"] → flow status color
+#   T["stable_color"]→ stable status color
+#   T["rb_color"]   → RB status color
+# ─────────────────────────────────────────────────────────────────────
+if THEME == "light":
+    T = {
+        "bg": "#f8fafc", "surface": "#ffffff", "surface2": "#f1f5f9",
+        "border": "#e2e8f0", "ink": "#0f172a", "muted": "#475569",
+        "accent": "#2563eb", "green": "#059669", "amber": "#d97706",
+        "red": "#dc2626", "purple": "#7c3aed",
+        "card_bg": "#ffffff", "card_border": "#e2e8f0",
+        "inner_bg": "#f8fafc", "inner_bg2": "#f1f5f9",
+        "track_bg": "#e2e8f0", "glass": "rgba(255,255,255,.9)",
+        "glass_border": "rgba(37,99,235,.1)",
+        "text_primary": "#0f172a", "text_secondary": "#475569",
+        "green_val": "#059669", "red_val": "#dc2626", "blue_val": "#2563eb",
+        "purple_val": "#7c3aed", "amber_val": "#d97706",
+        "card_shadow": "0 4px 12px rgba(0,0,0,.05), 0 2px 4px rgba(0,0,0,.04)",
+        "flow_color": "#0369a1", "stable_color": "#059669", "rb_color": "#be185d",
+    }
+else:
+    T = {
+        "bg": "#0b1120", "surface": "#131c2e", "surface2": "#1a2540",
+        "border": "#2d3b52", "ink": "#e8edf5", "muted": "#7a8ba8",
+        "accent": "#3b82f6", "green": "#10b981", "amber": "#f59e0b",
+        "red": "#ef4444", "purple": "#8b5cf6",
+        "card_bg": "rgba(26,37,64,.9)", "card_border": "rgba(45,59,82,.5)",
+        "inner_bg": "rgba(11,17,32,.6)", "inner_bg2": "#0d1e38",
+        "track_bg": "#0a1425", "glass": "rgba(26,37,64,.8)",
+        "glass_border": "rgba(59,130,246,.15)",
+        "text_primary": "#f1f5f9", "text_secondary": "#7a8ba8",
+        "green_val": "#4ade80", "red_val": "#ef4444", "blue_val": "#7dd3fc",
+        "purple_val": "#c4b5fd", "amber_val": "#fbbf24",
+        "card_shadow": "0 8px 32px rgba(0,0,0,.2)",
+        "flow_color": "#7dd3fc", "stable_color": "#4ade80", "rb_color": "#f472b6",
+    }
+
+# Inject theme-specific CSS overrides
+if THEME == "light":
+    st.markdown("""<style>
+    :root {
+        --bg:       #f8fafc;
+        --surface:  #ffffff;
+        --surface2: #f1f5f9;
+        --border:   #e2e8f0;
+        --ink:      #0f172a;
+        --muted:    #475569;
+        --accent:   #2563eb;
+        --green:    #059669;
+        --amber:    #d97706;
+        --red:      #dc2626;
+        --purple:   #7c3aed;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.06);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,.05), 0 2px 4px -2px rgba(0,0,0,.05);
+        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.06), 0 4px 6px -4px rgba(0,0,0,.04);
+        --card-bg: #ffffff;
+        --card-border: #e2e8f0;
+        --inner-bg: #f8fafc;
+        --inner-bg2: #f1f5f9;
+        --track-bg: #e2e8f0;
+        --glass: rgba(255,255,255,.8);
+        --glass-border: rgba(37,99,235,.08);
+    }
+
+    /* ─── PREMIUM LIGHT BASE ─── */
+    .stApp, [data-testid="stAppViewContainer"] {
+        background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%)!important;
+        color:var(--ink)!important;
+    }
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)!important;
+        border-right:1px solid #e2e8f0!important;
+        box-shadow: 2px 0 8px rgba(0,0,0,.03)!important;
+    }
+
+    /* ─── INPUTS ─── */
+    div[data-testid="stTextInput"] input, div[data-testid="stSelectbox"] > div {
+        background:#ffffff!important;
+        border:1.5px solid #e2e8f0!important;
+        color:var(--ink)!important;
+        box-shadow: 0 1px 2px rgba(0,0,0,.04)!important;
+    }
+    div[data-testid="stTextInput"] input:focus {
+        border-color:var(--accent)!important;
+        box-shadow: 0 0 0 3px rgba(37,99,235,.1)!important;
+    }
+
+    /* ─── BUTTONS ─── */
+    .stButton button {
+        background:#ffffff!important;
+        border:1.5px solid #e2e8f0!important;
+        color:var(--ink)!important;
+        box-shadow: 0 1px 3px rgba(0,0,0,.04)!important;
+        transition: all .2s!important;
+    }
+    .stButton button:hover {
+        border-color:var(--accent)!important;
+        background:#f8fafc!important;
+        box-shadow: 0 4px 12px rgba(37,99,235,.1)!important;
+        transform: translateY(-1px)!important;
+    }
+
+    /* ─── SIDEBAR NAV ─── */
+    [data-testid="stSidebar"] .stButton button[kind="primary"],
+    [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] button[kind="primary"] {
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)!important;
+        color:#ffffff!important;
+        border:none!important;
+        box-shadow: 0 4px 14px rgba(37,99,235,.3), 0 2px 4px rgba(37,99,235,.15)!important;
+        font-weight:700!important;
+    }
+    [data-testid="stSidebar"] .stButton button[kind="secondary"],
+    [data-testid="stSidebar"] div[data-testid="stVerticalBlock"] button[kind="secondary"] {
+        background:#ffffff!important;
+        color:#475569!important;
+        border:1.5px solid #e2e8f0!important;
+        box-shadow: 0 1px 2px rgba(0,0,0,.04)!important;
+    }
+    [data-testid="stSidebar"] .stButton button[kind="secondary"]:hover {
+        background: linear-gradient(135deg, #eff6ff, #f0f9ff)!important;
+        border-color:#93c5fd!important;
+        color:var(--accent)!important;
+        box-shadow: 0 2px 8px rgba(37,99,235,.08)!important;
+    }
+
+    /* ─── TABS ─── */
+    [data-testid="stTabs"] [role="tablist"] { border-bottom:2px solid #e2e8f0; }
+    [data-testid="stTabs"] [role="tab"] { color:#64748b!important; font-weight:700!important; font-size:.82rem!important; padding:12px 20px!important; border-radius:8px 8px 0 0!important; }
+    [data-testid="stTabs"] [role="tab"]:hover { color:#0f172a!important; background:#f1f5f9!important; }
+    [data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+        color:#2563eb!important;
+        background:#eff6ff!important;
+        border:1px solid #2563eb!important;
+        border-bottom:none!important;
+        font-weight:800!important;
+        box-shadow:0 -2px 8px rgba(37,99,235,.1)!important;
+    }
+    div[data-testid="stCaptionContainer"] { color:#64748b!important; }
+
+    /* ─── TABLES ─── */
+    .rcc-table-wrap {
+        border:1px solid #e2e8f0!important;
+        background:#ffffff!important;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,.04), 0 2px 4px -2px rgba(0,0,0,.04)!important;
+        border-radius:12px!important;
+    }
+    .rcc-table thead th {
+        background: linear-gradient(180deg, #f8fafc, #f1f5f9)!important;
+        color:#475569!important;
+        border-bottom:2px solid #e2e8f0!important;
+    }
+    .rcc-table tbody td {
+        background:#ffffff!important;
+        color:#0f172a!important;
+        border-bottom:1px solid #f1f5f9!important;
+    }
+    .rcc-table tbody tr:nth-child(even) td { background:#f8fafc!important; }
+    .rcc-table tbody tr:hover td { background:#eff6ff!important; }
+    .rcc-table tbody tr:last-child td {
+        background: linear-gradient(180deg, #f1f5f9, #e8f0fe)!important;
+        color:#0f172a!important;
+        font-weight:800!important;
+        border-top:2px solid var(--accent)!important;
+    }
+
+    /* ─── LOGIN ─── */
+    div[data-testid="stForm"] {
+        background:#ffffff!important;
+        border:1px solid #e2e8f0!important;
+        box-shadow: 0 20px 60px rgba(0,0,0,.08), 0 8px 20px rgba(0,0,0,.04)!important;
+    }
+    /* Sidebar collapse arrow - both open and closed states */
+    [data-testid="collapsedControl"] button {
+        background:#2563eb!important;
+        box-shadow:0 4px 14px rgba(37,99,235,.3)!important;
+        border:2px solid #60a5fa!important;
+    }
+    [data-testid="collapsedControl"] svg,
+    [data-testid="collapsedControl"] button svg,
+    [data-testid="collapsedControl"] span { color:#ffffff!important; stroke:#ffffff!important; fill:#ffffff!important; }
+    [data-testid="stSidebarCollapseButton"] button,
+    [data-testid="stSidebar"] button[kind="header"],
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button {
+        background:#2563eb!important;
+        border:none!important;
+        border-radius:8px!important;
+        min-width:32px!important;
+        min-height:32px!important;
+        box-shadow:0 4px 12px rgba(37,99,235,.3)!important;
+    }
+    [data-testid="stSidebarCollapseButton"] svg,
+    [data-testid="stSidebarCollapseButton"] span,
+    [data-testid="stSidebarCollapseButton"] button *,
+    [data-testid="stSidebar"] button[kind="header"] svg,
+    [data-testid="stSidebar"] button[kind="header"] span,
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] svg,
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] span { color:#ffffff!important; fill:#ffffff!important; stroke:#ffffff!important; visibility:visible!important; }
+
+    /* ─── METRIC / HERO CARDS ─── */
+    .metric-card {
+        background:#ffffff!important;
+        border:1px solid #e2e8f0!important;
+        box-shadow: 0 2px 4px rgba(0,0,0,.04)!important;
+    }
+    .metric-card:hover { box-shadow: 0 8px 20px rgba(37,99,235,.08)!important; border-color:#93c5fd!important; }
+    .metric-label { background:#f8fafc!important; color:#475569!important; border-bottom:1px solid #e2e8f0!important; }
+    .metric-value { color:#0f172a!important; }
+    .metric-note { color:#64748b!important; }
+    .progress-track { background:#e2e8f0!important; }
+    .hero-card {
+        background:#ffffff!important;
+        border:1px solid #e2e8f0!important;
+        box-shadow: 0 4px 12px rgba(0,0,0,.04)!important;
+    }
+    .hero-card:hover { box-shadow: 0 12px 28px rgba(37,99,235,.08)!important; border-color:#bfdbfe!important; }
+    .hero-box { background:#f8fafc!important; border:1px solid #e2e8f0!important; }
+    .hero-box:hover { border-color:#93c5fd!important; background:#eff6ff!important; }
+    .hero-total { background: linear-gradient(135deg, #f8fafc, #eff6ff)!important; color:#0f172a!important; border:1px solid #e2e8f0!important; }
+    .receipt-stat-box { background:#f8fafc!important; border:1px solid #e2e8f0!important; }
+    .receipt-stat-box:hover { border-color:#93c5fd!important; }
+    .hero-prog-track { background:#e2e8f0!important; }
+    .bkt-card { background:#ffffff!important; border:1px solid #e2e8f0!important; box-shadow: 0 2px 8px rgba(0,0,0,.04)!important; }
+    .bkt-card:hover { border-color:#6ee7b7!important; box-shadow: 0 8px 24px rgba(5,150,105,.06)!important; }
+    .bkt-mini-item { background:#f8fafc!important; border:1px solid #e2e8f0!important; }
+    .mini-stat { background:#f8fafc!important; border:1px solid #e2e8f0!important; }
+
+    /* ─── SECTION HEADING ─── */
+    .section-head { color:#0f172a!important; border-bottom:2px solid #e2e8f0!important; }
+
+    /* ─── EXPANDER ─── */
+    [data-testid="stExpander"] {
+        background:#ffffff!important;
+        border:1px solid #e2e8f0!important;
+        border-radius:10px!important;
+        box-shadow: 0 2px 4px rgba(0,0,0,.03)!important;
+    }
+    [data-testid="stExpander"] summary { color:#0f172a!important; }
+    [data-testid="stExpander"]:hover { border-color:#93c5fd!important; }
+
+    /* ─── TEXT VISIBILITY ─── */
+    .stMarkdown, .stMarkdown p, .stMarkdown span, .stMarkdown div { color:#0f172a!important; }
+    label, [data-testid="stWidgetLabel"] label, [data-testid="stWidgetLabel"] p { color:#0f172a!important; }
+    [data-testid="stRadio"] label span, [data-testid="stSelectbox"] label { color:#0f172a!important; }
+    h1, h2, h3, h4, h5, h6 { color:#0f172a!important; }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar-thumb { background:#cbd5e1!important; }
+    ::-webkit-scrollbar-thumb:hover { background:#94a3b8!important; }
+    ::-webkit-scrollbar-track { background:#f1f5f9!important; }
+
+    /* ─── RADIO BUTTONS ─── */
+    [data-testid="stRadio"] > div { gap:8px; }
+    [data-testid="stRadio"] label {
+        background:#ffffff!important;
+        border:1.5px solid #e2e8f0!important;
+        border-radius:8px!important;
+        padding:8px 16px!important;
+        color:#0f172a!important;
+        transition: all .2s!important;
+    }
+    [data-testid="stRadio"] label:hover {
+        border-color:#93c5fd!important;
+        background:#eff6ff!important;
+    }
+    [data-testid="stRadio"] label[data-checked="true"],
+    [data-testid="stRadio"] label:has(input:checked) {
+        background: linear-gradient(135deg,#eff6ff,#dbeafe)!important;
+        border-color:#2563eb!important;
+        color:#1d4ed8!important;
+        box-shadow: 0 2px 8px rgba(37,99,235,.12)!important;
+    }
+    [data-testid="stRadio"] input[type="radio"] { accent-color:#2563eb!important; }
+    [data-testid="stRadio"] label p,
+    [data-testid="stRadio"] label span,
+    [data-testid="stRadio"] label div { color:#0f172a!important; }
+
+    /* ─── SELECTBOX dark override fix ─── */
+    div[data-testid="stSelectbox"] > div,
+    div[data-testid="stSelectbox"] > div > div {
+        background:#ffffff!important;
+        border:1.5px solid #e2e8f0!important;
+        color:#0f172a!important;
+    }
+    div[data-testid="stSelectbox"] span { color:#0f172a!important; }
+    [data-testid="stSelectbox"] svg { fill:#475569!important; }
+
+    /* Dropdown/popover menu */
+    [data-baseweb="popover"],
+    [data-baseweb="menu"],
+    ul[role="listbox"],
+    div[data-baseweb="popover"] > div,
+    div[data-baseweb="menu"] {
+        background:#ffffff!important;
+        border:1px solid #e2e8f0!important;
+        box-shadow: 0 10px 40px rgba(0,0,0,.1)!important;
+    }
+    ul[role="listbox"] li,
+    [data-baseweb="menu"] li,
+    [role="option"] {
+        background:#ffffff!important;
+        color:#0f172a!important;
+    }
+    ul[role="listbox"] li:hover,
+    [data-baseweb="menu"] li:hover,
+    [role="option"]:hover,
+    li[aria-selected="true"] {
+        background:#eff6ff!important;
+        color:#1d4ed8!important;
+    }
+
+    /* ─── ALERTS ─── */
+    .stAlert { border-radius:10px!important; }
+
+    /* ─── SIDEBAR OPEN ARROW (collapsed state) ─── */
+    [data-testid="collapsedControl"] { z-index:99999!important; }
+    .stApp [data-testid="collapsedControl"] button,
+    [data-testid="collapsedControl"] > button {
+        background:#2563eb!important;
+        border:none!important;
+        border-radius:10px!important;
+        width:44px!important;
+        height:44px!important;
+        box-shadow:0 4px 14px rgba(37,99,235,.4)!important;
+        opacity:1!important;
+        visibility:visible!important;
+    }
+    .stApp [data-testid="collapsedControl"] button *,
+    [data-testid="collapsedControl"] svg,
+    [data-testid="collapsedControl"] path,
+    [data-testid="collapsedControl"] span {
+        color:#ffffff!important;
+        fill:#ffffff!important;
+        stroke:#ffffff!important;
+        visibility:visible!important;
+        opacity:1!important;
+    }
+
+    /* ─── CHIPS ─── */
+    .chip-high { background:rgba(5,150,105,.1)!important; color:#059669!important; border:1px solid rgba(5,150,105,.25)!important; }
+    .chip-mid { background:rgba(217,119,6,.1)!important; color:#d97706!important; border:1px solid rgba(217,119,6,.25)!important; }
+    .chip-low { background:rgba(220,38,38,.1)!important; color:#dc2626!important; border:1px solid rgba(220,38,38,.25)!important; }
+    </style>""", unsafe_allow_html=True)
+
+st.markdown("""<style>
 
 @keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
 @keyframes fillBar { from { width:0; } }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.7; } }
+@keyframes shimmer { 0% { background-position:-200% 0; } 100% { background-position:200% 0; } }
+@keyframes glow { 0%,100% { box-shadow:0 0 8px rgba(59,130,246,.2); } 50% { box-shadow:0 0 20px rgba(59,130,246,.4); } }
 
 /* Base */
 .stApp, [data-testid="stAppViewContainer"] { background:var(--bg)!important; color:var(--ink)!important; font-family:var(--font-main)!important; }
@@ -106,7 +501,7 @@ st.markdown("""
 
 /* Header */
 .rcc-header { background:linear-gradient(135deg,var(--surface),var(--surface2)); border:1px solid var(--border); border-radius:12px; padding:18px 24px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; animation:fadeInUp .4s ease-out; box-shadow:var(--shadow-md); }
-.rcc-logo { font-size:1.5rem; font-weight:800; color:#fff; letter-spacing:-.5px; }
+.rcc-logo { font-size:1.5rem; font-weight:800; color:var(--ink); letter-spacing:-.5px; }
 .rcc-logo span { color:var(--accent); }
 .rcc-tagline { color:var(--muted); font-size:.78rem; margin-top:3px; }
 .rcc-badge { background:rgba(59,130,246,.12); color:var(--accent); border:1px solid rgba(59,130,246,.3); font-size:.68rem; font-weight:700; padding:4px 12px; border-radius:20px; text-transform:uppercase; }
@@ -119,7 +514,7 @@ st.markdown("""
 .metric-note { color:var(--muted); font-size:.7rem; padding:0 12px 12px; }
 
 /* Progress bar */
-.progress-track { height:6px; background:#0a1425; border-radius:99px; overflow:hidden; margin:4px 12px 12px; }
+.progress-track { height:6px; background:var(--track-bg); border-radius:99px; overflow:hidden; margin:4px 12px 12px; }
 .progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),var(--green)); border-radius:99px; animation:fillBar .8s ease-out; }
 
 /* Mini stats */
@@ -147,8 +542,8 @@ st.markdown("""
 .rcc-table-wrap { border:1px solid var(--border); border-radius:10px; overflow:auto; background:var(--surface); box-shadow:var(--shadow-md); animation:fadeInUp .5s ease-out; }
 .rcc-table { width:100%; border-collapse:collapse; color:var(--ink); font-size:.78rem; }
 .rcc-table thead th { position:sticky; top:0; z-index:10; background:var(--surface2); color:var(--muted); font-weight:700; text-align:left; border-bottom:2px solid var(--border); padding:8px 12px; white-space:nowrap; font-size:.68rem; text-transform:uppercase; letter-spacing:.03em; }
-.rcc-table tbody td { background:var(--surface); color:var(--ink); border-bottom:1px solid rgba(45,59,82,.5); padding:6px 12px; white-space:nowrap; transition:background .15s; }
-.rcc-table tbody tr:nth-child(even) td { background:rgba(11,17,32,.5); }
+.rcc-table tbody td { background:var(--surface); color:var(--ink); border-bottom:1px solid var(--border); padding:6px 12px; white-space:nowrap; transition:background .15s; }
+.rcc-table tbody tr:nth-child(even) td { background:var(--surface2); }
 .rcc-table tbody tr:hover td { background:rgba(59,130,246,.06); }
 .rcc-table tbody tr:last-child td { background:var(--surface2)!important; color:var(--ink)!important; font-weight:800!important; border-top:2px solid var(--accent); padding:8px 12px; }
 .text-right { text-align:right; }
@@ -161,9 +556,10 @@ st.markdown("""
 .col-mono { font-family:var(--font-mono)!important; }
 
 /* Tabs */
-[data-testid="stTabs"] [role="tab"] { color:var(--muted)!important; font-weight:600; font-size:.78rem; padding:10px 18px; transition:var(--transition); border-radius:6px 6px 0 0; }
+[data-testid="stTabs"] [role="tablist"] { gap:4px; border-bottom:2px solid var(--border); padding-bottom:0; }
+[data-testid="stTabs"] [role="tab"] { color:var(--muted)!important; font-weight:700; font-size:.82rem; padding:12px 20px; transition:var(--transition); border-radius:8px 8px 0 0; border:1px solid transparent; border-bottom:none; }
 [data-testid="stTabs"] [role="tab"]:hover { color:var(--ink)!important; background:var(--surface2); }
-[data-testid="stTabs"] [role="tab"][aria-selected="true"] { color:var(--accent)!important; border-bottom:2px solid var(--accent)!important; background:rgba(59,130,246,.05); }
+[data-testid="stTabs"] [role="tab"][aria-selected="true"] { color:var(--accent)!important; background:rgba(59,130,246,.08)!important; border:1px solid var(--accent)!important; border-bottom:none!important; font-weight:800; box-shadow:0 -2px 8px rgba(59,130,246,.15); }
 
 /* Inputs & Buttons */
 div[data-testid="stTextInput"] input, div[data-testid="stSelectbox"] > div { background:var(--surface2)!important; border:1px solid var(--border)!important; color:var(--ink)!important; border-radius:6px; transition:var(--transition); }
@@ -171,9 +567,31 @@ div[data-testid="stTextInput"] input:focus { border-color:var(--accent)!importan
 .stButton button { background:var(--surface2)!important; border:1px solid var(--border)!important; color:var(--ink)!important; border-radius:6px; font-weight:600; transition:var(--transition)!important; }
 .stButton button:hover { border-color:var(--accent)!important; background:rgba(59,130,246,.1)!important; transform:translateY(-1px); box-shadow:0 4px 12px rgba(59,130,246,.15)!important; }
 
+/* Sidebar nav - active (primary) button */
+[data-testid="stSidebar"] .stButton button[kind="primary"],
+[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] button[kind="primary"] {
+    background:linear-gradient(135deg,#2563eb,#3b82f6)!important;
+    color:#ffffff!important;
+    border:none!important;
+    box-shadow:0 4px 16px rgba(59,130,246,.35)!important;
+    font-weight:700!important;
+    transform:none!important;
+}
+[data-testid="stSidebar"] .stButton button[kind="secondary"],
+[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] button[kind="secondary"] {
+    background:var(--surface2)!important;
+    color:var(--muted)!important;
+    border:1px solid var(--border)!important;
+}
+[data-testid="stSidebar"] .stButton button[kind="secondary"]:hover {
+    background:rgba(59,130,246,.08)!important;
+    border-color:var(--accent)!important;
+    color:var(--ink)!important;
+}
+
 /* Login form */
 div[data-testid="stForm"] { width:min(400px,100%); background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:36px; margin:10vh auto 0; box-shadow:var(--shadow-lg); animation:fadeInUp .5s ease-out; }
-.login-logo { font-size:1.6rem; font-weight:900; color:#fff; margin-bottom:4px; }
+.login-logo { font-size:1.6rem; font-weight:900; color:var(--ink); margin-bottom:4px; }
 .login-logo span { color:var(--accent); }
 .login-sub { color:var(--muted); font-size:.82rem; margin-bottom:24px; }
 div[data-testid="stForm"] .stButton button, div[data-testid="stForm"] div[data-testid="stFormSubmitButton"] button { background:var(--accent)!important; color:#fff!important; border:none!important; border-radius:6px; font-weight:700; min-height:44px; }
@@ -185,23 +603,23 @@ div[data-testid="stForm"] .stButton button:hover, div[data-testid="stForm"] div[
 
 /* Hide mobile tabs on desktop */
 .hero-desktop + div [data-testid="stTabs"] { display:none; }
-.hero-card { background:linear-gradient(145deg,var(--surface),rgba(26,37,64,.6)); border:1px solid var(--border); border-radius:12px; padding:18px; position:relative; transition:var(--transition); box-shadow:var(--shadow-sm); overflow:hidden; }
+.hero-card { background:linear-gradient(145deg,var(--surface),var(--surface2)); border:1px solid var(--border); border-radius:12px; padding:18px; position:relative; transition:var(--transition); box-shadow:var(--shadow-sm); overflow:hidden; }
 .hero-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--green),var(--accent)); opacity:.6; }
 .hero-card:hover { border-color:rgba(59,130,246,.4); box-shadow:0 8px 32px rgba(59,130,246,.08); transform:translateY(-2px); }
 .hero-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(59,130,246,.08); border:1px solid rgba(59,130,246,.2); border-radius:20px; padding:4px 12px; font-size:.62rem; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:16px; }
 .hero-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
-.hero-box { background:rgba(11,17,32,.6); border:1px solid var(--border); border-radius:6px; padding:10px 6px; text-align:center; transition:var(--transition); }
+.hero-box { background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:10px 6px; text-align:center; transition:var(--transition); }
 .hero-box:hover { border-color:var(--accent); }
 .hero-box-label { color:var(--muted); font-size:.58rem; font-weight:700; text-transform:uppercase; margin-bottom:4px; letter-spacing:.03em; }
 .hero-box-val { color:var(--ink); font-size:1rem; font-weight:700; font-family:var(--font-mono); }
-.hero-total { margin-top:16px; padding:10px 14px; border-radius:6px; background:rgba(11,17,32,.6); border:1px solid var(--border); color:#fff; font-weight:700; display:flex; justify-content:space-between; align-items:center; }
+.hero-total { margin-top:16px; padding:10px 14px; border-radius:6px; background:var(--surface2); border:1px solid var(--border); color:var(--ink); font-weight:700; display:flex; justify-content:space-between; align-items:center; }
 .hero-total-label { color:var(--muted); font-size:.62rem; text-transform:uppercase; letter-spacing:.03em; }
 .hero-total-val { font-size:1.2rem; font-weight:800; font-family:var(--font-mono); }
-.hero-prog-track { height:8px; background:rgba(11,17,32,.8); border-radius:99px; overflow:hidden; margin:12px 0; }
+.hero-prog-track { height:8px; background:var(--track-bg); border-radius:99px; overflow:hidden; margin:12px 0; }
 .hero-prog-fill { height:100%; border-radius:99px; background:linear-gradient(90deg,var(--purple),#ec4899); animation:fillBar .8s ease-out; }
 .hero-pct-label { display:flex; justify-content:flex-end; color:var(--muted); font-size:.62rem; margin-top:4px; font-family:var(--font-mono); }
 .receipt-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
-.receipt-stat-box { background:rgba(11,17,32,.6); border:1px solid var(--border); border-radius:6px; padding:10px; text-align:center; transition:var(--transition); }
+.receipt-stat-box { background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:10px; text-align:center; transition:var(--transition); }
 .receipt-stat-box:hover { border-color:var(--accent); }
 .receipt-stat-label { color:var(--muted); font-size:.58rem; font-weight:700; text-transform:uppercase; margin-bottom:4px; }
 .receipt-stat-val { font-size:1.2rem; font-weight:800; font-family:var(--font-mono); }
@@ -243,6 +661,8 @@ div[data-testid="stForm"] .stButton button:hover, div[data-testid="stForm"] div[
     .hero-total-label { font-size:.55rem; }
     .hero-total-val { font-size:.9rem; }
     [data-testid="stSidebar"] { width:180px!important; }
+    /* Payout slab grid mobile */
+    .payout-grid { grid-template-columns:1fr 1fr!important; gap:8px!important; }
 }
 @media (max-width: 480px) {
     .bucket-board { grid-template-columns:1fr; }
@@ -257,6 +677,8 @@ div[data-testid="stForm"] .stButton button:hover, div[data-testid="stForm"] div[
     .hero-total-val { font-size:.75rem; }
     .receipt-stat-label { font-size:.5rem; }
     .receipt-stat-val { font-size:.9rem; }
+    /* Payout slab grid mobile small */
+    .payout-grid { grid-template-columns:1fr!important; gap:8px!important; }
 }
 
 /* Sidebar arrows */
@@ -303,12 +725,12 @@ def excel_files():
     return sorted(APP_DIR.glob("*.xlsx"))
 
 def format_indian(value):
-    if pd.isna(value): return "0"
+    if pd.isna(value): return "₹0"
     v = float(value)
-    if abs(v) >= 1_00_00_000: return f"{v/1_00_00_000:.2f} Cr"
-    if abs(v) >= 1_00_000:    return f"{v/1_00_000:.2f} L"
-    if abs(v) >= 1_000:       return f"{v/1_000:.1f} K"
-    return f"{v:,.0f}"
+    if abs(v) >= 1_00_00_000: return f"₹{v/1_00_00_000:.2f} Cr"
+    if abs(v) >= 1_00_000:    return f"₹{v/1_00_000:.2f} L"
+    if abs(v) >= 1_000:       return f"₹{v/1_000:.1f} K"
+    return f"₹{v:,.0f}"
 
 def format_percent(value):
     if value is None or (isinstance(value, float) and math.isnan(value)): return "0.00%"
@@ -491,7 +913,7 @@ def hero_dashboard_cards(b1,b2,receipt,paid,unpaid,total,collection):
         gap  = circ - fill
         return (
             f'<svg width="75" height="75" viewBox="0 0 100 100" style="transform:rotate(-90deg);display:block">'
-            f'<circle cx="50" cy="50" r="{r}" fill="none" stroke="#0a1425" stroke-width="12"/>'
+            f'<circle cx="50" cy="50" r="{r}" fill="none" stroke="{"#0a1425" if THEME=="dark" else "#e2e8f0"}" stroke-width="12"/>'
             f'<circle cx="50" cy="50" r="{r}" fill="none" stroke="url(#{uid})" stroke-width="12" '
             f'stroke-dasharray="{fill:.1f} {gap:.1f}" stroke-linecap="round"/>'
             f'<defs><linearGradient id="{uid}" x1="0%" y1="0%" x2="100%" y2="0%">'
@@ -791,7 +1213,7 @@ def calc_payout_slab(resolution_pct, rb_pct, bucket):
     """
     Returns (slab%, rb_achieved) for a given bucket.
     Slab determined ONLY by resolution %.
-    RB % only applies penalty (-2%) if target missed.
+    RB % only applies penalty (-2%) if target missed — but minimum slab is always 8%.
 
     BKT-1 slabs:
       < 85%          → 8%  (RB target: 15%)
@@ -804,7 +1226,13 @@ def calc_payout_slab(resolution_pct, rb_pct, bucket):
       60% - 64.99%   → 10% (RB target: 15%)
       65% - 69.99%   → 12% (RB target: 20%)
       >= 70%         → 15% (RB target: 25%)
+
+    BKT 3-6: Always flat 8%, no RB penalty.
     """
+    # Bucket 3-6: flat 8%, no penalty
+    if bucket not in (1, 2):
+        return 8, True
+
     PAYOUT_CONFIG = {
         1: [
             # (min_res, max_res, slab%, rb_target%)
@@ -833,7 +1261,7 @@ def calc_payout_slab(resolution_pct, rb_pct, bucket):
 
     rb_achieved = rb_pct >= rb_target
     if not rb_achieved:
-        payout = max(0, payout - 2)
+        payout = max(8, payout - 2)  # Minimum 8%, never go below
 
     return payout, rb_achieved
 
@@ -872,6 +1300,14 @@ def executive_payout_df(df):
             row[f"BKT-{bkt} Collection"] = collection
             row[f"BKT-{bkt} Payout"]  = payout_amt
             total_payout += payout_amt
+
+        # Bucket 3-6: flat 8% slab
+        other_grp = grp[~grp["BUCKET"].isin([1, 2])]
+        other_collection = float(other_grp["Paid Amount"].sum())
+        other_payout = other_collection * 8 / 100
+        row["BKT 3-6 Collection"] = other_collection
+        row["BKT 3-6 Payout"] = other_payout
+        total_payout += other_payout
 
         row["Total Payout"] = total_payout
         rows.append(row)
@@ -956,13 +1392,13 @@ def trails_public_view(df_full):
     total = len(pending)
 
     st.markdown(f"""
-    <div style="background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:10px;padding:14px 20px;display:flex;align-items:center;gap:16px;margin-bottom:12px">
+    <div style="background:linear-gradient(135deg,{'#1e3a5f' if THEME=='dark' else '#dbeafe'},{'#2563eb' if THEME=='dark' else '#3b82f6'});border-radius:10px;padding:14px 20px;display:flex;align-items:center;gap:16px;margin-bottom:12px">
       <span style="font-size:1.5rem">📋</span>
       <div>
-        <div style="color:rgba(255,255,255,0.7);font-size:.65rem;font-weight:700;text-transform:uppercase">Pending Trails</div>
-        <div style="color:#fff;font-size:1.9rem;font-weight:800;line-height:1.1">{total}</div>
+        <div style="color:{'rgba(255,255,255,0.7)' if THEME=='dark' else 'rgba(30,64,175,.7)'};font-size:.65rem;font-weight:700;text-transform:uppercase">Pending Trails</div>
+        <div style="color:{'#fff' if THEME=='dark' else '#1e3a8a'};font-size:1.9rem;font-weight:800;line-height:1.1">{total}</div>
       </div>
-      <div style="margin-left:auto;color:rgba(255,255,255,0.8);font-size:.9rem;font-weight:600">{sel}</div>
+      <div style="margin-left:auto;color:{'rgba(255,255,255,0.8)' if THEME=='dark' else 'rgba(30,64,175,.8)'};font-size:.9rem;font-weight:600">{sel}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -975,9 +1411,9 @@ def trails_public_view(df_full):
             loan = str(row["LOAN NO"])
             name = str(row["CUSTOMER NAME"])
             area = str(row.get("AREA", "—"))
-            rows_html += f'<tr style="border-bottom:1px solid #1a2540"><td style="padding:9px 12px;font-family:monospace;font-size:.82rem;font-weight:700;color:#f1f5f9">{loan}</td><td style="padding:9px 12px;font-size:.82rem;color:#f1f5f9">{name}</td><td style="padding:9px 12px;font-size:.78rem;vertical-align:middle"><span style="background:#1e3460;color:#7dd3fc;border-radius:4px;padding:3px 10px;font-size:.75rem;font-weight:700">{area}</span></td></tr>'
+            rows_html += f'<tr style="border-bottom:1px solid {T["border"]}"><td style="padding:9px 12px;font-family:monospace;font-size:.82rem;font-weight:700;color:{T["ink"]}">{loan}</td><td style="padding:9px 12px;font-size:.82rem;color:{T["ink"]}">{name}</td><td style="padding:9px 12px;font-size:.78rem;vertical-align:middle"><span style="background:{T["surface2"]};color:{T["blue_val"]};border-radius:4px;padding:3px 10px;font-size:.75rem;font-weight:700">{area}</span></td></tr>'
 
-        st.markdown(f'<div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0a1628;border-bottom:2px solid #1e3460"><th style="padding:10px 12px;text-align:left;font-size:.7rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Loan No</th><th style="padding:10px 12px;text-align:left;font-size:.7rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Customer Name</th><th style="padding:10px 12px;text-align:left;font-size:.7rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Area</th></tr></thead><tbody>{rows_html}</tbody></table></div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="overflow-x:auto;border-radius:10px;border:1px solid {T["border"]}"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:{T["inner_bg2"]};border-bottom:2px solid {T["border"]}"><th style="padding:10px 12px;text-align:left;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase">Loan No</th><th style="padding:10px 12px;text-align:left;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase">Customer Name</th><th style="padding:10px 12px;text-align:left;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase">Area</th></tr></thead><tbody>{rows_html}</tbody></table></div>', unsafe_allow_html=True)
 
 
 def copy_to_clipboard(text):
@@ -1038,14 +1474,14 @@ def flowlist_public_view(df_full):
                     s = s[:-2]
                 pos = pos.lstrip(",")
             dra = f'{row["DRA CASE%"]:.1f}%'
-            rows_html += f'<tr style="border-bottom:1px solid #1a2540"><td style="padding:8px 10px;font-size:.82rem;color:#f1f5f9">{name}</td><td style="padding:8px 10px;font-size:.82rem;color:#4ade80;font-family:var(--font-mono);text-align:center">{pos}</td><td style="padding:8px 10px;font-size:.82rem;color:#f59e0b;font-family:var(--font-mono);text-align:center">{dra}</td></tr>'
+            rows_html += f'<tr style="border-bottom:1px solid {T["border"]}"><td style="padding:8px 10px;font-size:.82rem;color:{T["ink"]}">{name}</td><td style="padding:8px 10px;font-size:.82rem;color:{T["green_val"]};font-family:var(--font-mono);text-align:center">{pos}</td><td style="padding:8px 10px;font-size:.82rem;color:{T["amber_val"]};font-family:var(--font-mono);text-align:center">{dra}</td></tr>'
         st.markdown(f"""
-        <div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460">
+        <div style="overflow-x:auto;border-radius:10px;border:1px solid {T['border']}">
           <table style="width:100%;border-collapse:collapse">
-            <thead><tr style="background:#0a1628;border-bottom:2px solid #1e3460">
-              <th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Customer Name</th>
-              <th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">POS</th>
-              <th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">DRA Case %</th>
+            <thead><tr style="background:{T['inner_bg2']};border-bottom:2px solid {T['border']}">
+              <th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:{T['muted']};text-transform:uppercase">Customer Name</th>
+              <th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:{T['muted']};text-transform:uppercase">POS</th>
+              <th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:{T['muted']};text-transform:uppercase">DRA Case %</th>
             </tr></thead>
             <tbody>{rows_html}</tbody>
           </table>
@@ -1147,6 +1583,12 @@ def main():
             st.cache_data.clear()
             sync_source_excel()
             st.rerun()
+        # Theme toggle
+        theme_icon = "☀️" if THEME == "dark" else "🌙"
+        theme_label = f"{theme_icon} Light Mode" if THEME == "dark" else f"{theme_icon} Dark Mode"
+        if st.button(theme_label, use_container_width=True, key="theme_toggle"):
+            st.session_state.theme = "light" if THEME == "dark" else "dark"
+            st.rerun()
         if st.button("🚪 Logout", use_container_width=True):
             st.session_state.user = None
             st.rerun()
@@ -1175,7 +1617,10 @@ def main():
             else:
                 sync_color = "#ef4444"; sync_label = f"{sync_ago_min//60}h ago"
             if sync_ago > 900:
-                st.markdown(f'''<div style="background:#7f1d1d;border:1px solid #ef4444;border-radius:8px;padding:10px 16px;margin-bottom:10px;font-size:.8rem;color:#fca5a5">⚠️ Data stale — last sync {sync_ago_min}m ago. Check sync worker.</div>''', unsafe_allow_html=True)
+                warn_bg = "#7f1d1d" if THEME == "dark" else "#fef2f2"
+                warn_border = "#ef4444" if THEME == "dark" else "#fca5a5"
+                warn_text = "#fca5a5" if THEME == "dark" else "#991b1b"
+                st.markdown(f'''<div style="background:{warn_bg};border:1px solid {warn_border};border-radius:8px;padding:10px 16px;margin-bottom:10px;font-size:.8rem;color:{warn_text}">⚠️ Data stale — last sync {sync_ago_min}m ago. Check sync worker.</div>''', unsafe_allow_html=True)
         else:
             sync_color = "#ef4444"; sync_label = "No data"; sync_time_short = "N/A"
 
@@ -1184,6 +1629,14 @@ def main():
 
         # ── Per-executive payout (current user or admin sees all) ──
         exec_df = df if user["role"] != "admin" else df_full
+
+        # Admin: Executive filter on dashboard
+        if user["role"] == "admin":
+            all_executives = ["All"] + sorted(df_full["TEAM"].dropna().unique().tolist())
+            sel_dashboard_exec = st.selectbox("👤 Executive Filter", all_executives, key="dash_exec_filter")
+            if sel_dashboard_exec != "All":
+                exec_df = df_full[df_full["TEAM"] == sel_dashboard_exec].copy()
+
         exec_payout = executive_payout_df(exec_df)
 
         # ── Team-level BKT stats ──
@@ -1209,8 +1662,12 @@ def main():
         b1 = bkt_stats_for(exec_df, 1)
         b2 = bkt_stats_for(exec_df, 2)
 
-        total_collection = b1["collection"] + b2["collection"]
-        total_payout     = b1["payout"] + b2["payout"]
+        # Bucket 3-6: flat 8% slab, no cards — just add to total collection/payout
+        other_bkts_collection = float(exec_df[~exec_df["BUCKET"].isin([1, 2])]["Paid Amount"].sum())
+        other_bkts_payout = other_bkts_collection * 8 / 100
+
+        total_collection = b1["collection"] + b2["collection"] + other_bkts_collection
+        total_payout     = b1["payout"] + b2["payout"] + other_bkts_payout
         paid_cases       = int((exec_df["RECEIPT CUT"] == "PAID").sum())
         unpaid_cases     = len(exec_df) - paid_cases
         rc_pct           = round(paid_cases / len(exec_df) * 100, 2) if len(exec_df) else 0
@@ -1234,230 +1691,180 @@ def main():
         b2_extra = round(b2["collection"] * (b2_next_rate - b2["slab"]) / 100, 0) if b2_next_rate else 0
         total_extra = b1_extra + b2_extra
 
+        # Slab projections include BKT 3-6 at flat 8%
+        all_collection = total_collection  # already includes bkt 3-6
+
         # ── HEADER ──
         st.markdown(f"""
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0 14px 0;flex-wrap:wrap;gap:8px">
+        <div style="background:{T['glass']};backdrop-filter:blur(12px);border:1px solid {T['glass_border']};border-radius:16px;padding:16px 24px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;box-shadow:{T['card_shadow']}">
           <div>
-            <div style="font-size:1.2rem;font-weight:700;color:#f1f5f9">Dashboard</div>
-            <div style="font-size:.75rem;color:#7a8ba8">Overview of collection, resolution & payout</div>
+            <div style="font-size:1.3rem;font-weight:800;color:{T['ink']}">Hello {user["username"].title()}! 👋</div>
+            <div style="font-size:.75rem;color:{T['muted']};margin-top:2px">Here's your collection & payout overview</div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-            <div style="display:flex;align-items:center;gap:6px">
-              <span style="width:8px;height:8px;border-radius:50%;background:{sync_color};display:inline-block"></span>
-              <span style="font-size:.72rem;color:{sync_color};font-weight:600">Last sync: {sync_label}</span>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:5px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:20px;padding:4px 10px">
+              <span style="width:7px;height:7px;border-radius:50%;background:{sync_color};display:inline-block"></span>
+              <span style="font-size:.65rem;color:{sync_color};font-weight:600">{sync_label}</span>
             </div>
-            <div style="background:#1a2540;border:1px solid #1e3460;border-radius:6px;padding:4px 10px;font-size:.72rem;color:#7dd3fc">📅 {today_date}</div>
-            <div style="background:#1a2540;border:1px solid #1e3460;border-radius:6px;padding:4px 10px;font-size:.72rem;color:#f1f5f9">{role_badge} · {user["username"].title()}</div>
+            <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:20px;padding:4px 10px;font-size:.65rem;color:{T['blue_val']};font-weight:600">📅 {today_date}</div>
           </div>
         </div>
         """, unsafe_allow_html=True)
 
         # ── PAYOUT SLAB CARD ──
-        slab_cols = st.columns([1.5, 1, 1, 1, 1, 1.2])
-        with slab_cols[0]:
-            st.markdown(f"""
-            <div style="background:#1a2540;border:1px solid #1e3460;border-radius:10px;padding:14px 16px;height:100%">
-              <div style="font-size:.65rem;color:#7a8ba8;text-transform:uppercase;font-weight:700;margin-bottom:6px">Total Collection</div>
-              <div style="font-size:1.6rem;font-weight:800;color:#f1f5f9">{format_indian(total_collection)}</div>
-              <div style="font-size:.7rem;color:#7a8ba8;margin-top:2px">Current Payout: <span style="color:#4ade80;font-weight:700">{format_indian(total_payout)}</span></div>
-            </div>
-            """, unsafe_allow_html=True)
-        for i, (label, pct, earn, color) in enumerate([
-            ("Current Slab", f"{b1['slab']}% / {b2['slab']}%", format_indian(total_payout), "#E24B4A"),
-            ("10% Slab", "10%", format_indian(b1["collection"]*0.10 + b2["collection"]*0.10), "#BA7517"),
-            ("12% Slab", "12%", format_indian(b1["collection"]*0.12 + b2["collection"]*0.12), "#1D9E75"),
-            ("15% Slab", "15%", format_indian(b1["collection"]*0.15 + b2["collection"]*0.15), "#7F77DD"),
-        ], 1):
-            with slab_cols[i]:
-                st.markdown(f"""
-                <div style="background:#1a2540;border:1px solid #1e3460;border-radius:10px;padding:12px 14px;height:100%">
-                  <div style="font-size:.6rem;color:#7a8ba8;text-transform:uppercase;font-weight:700;margin-bottom:4px">{label}</div>
-                  <div style="font-size:1.4rem;font-weight:800;color:{color}">{pct}</div>
-                  <div style="font-size:.68rem;color:#7a8ba8;margin-top:2px">{earn}</div>
-                </div>
-                """, unsafe_allow_html=True)
-        with slab_cols[5]:
-            st.markdown(f"""
-            <div style="background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:10px;padding:12px 14px;height:100%">
-              <div style="font-size:.6rem;color:rgba(255,255,255,0.6);text-transform:uppercase;font-weight:700;margin-bottom:4px">Extra Possible</div>
-              <div style="font-size:1.3rem;font-weight:800;color:#4ade80">+{format_indian(total_extra)}</div>
-              <div style="font-size:.65rem;color:rgba(255,255,255,0.5);margin-top:2px">To next slab</div>
-            </div>
-            """, unsafe_allow_html=True)
+        slab_10_amt = total_collection * 0.10
+        slab_12_amt = total_collection * 0.12
+        slab_15_amt = total_collection * 0.15
 
-        st.markdown("<div style='font-size:.68rem;color:#7a8ba8;margin:6px 0 14px 4px'>ℹ️ Payout calculated on current collection amount</div>", unsafe_allow_html=True)
+        def fmt_full_inr(v):
+            """Format as full ₹ number with Indian commas: ₹1,23,456"""
+            if v < 0: return f"-{fmt_full_inr(-v)}"
+            v = int(round(v))
+            s = str(v)
+            if len(s) <= 3: return f"₹{s}"
+            result = s[-3:]
+            s = s[:-3]
+            while s:
+                result = s[-2:] + "," + result
+                s = s[:-2]
+            return f"₹{result.lstrip(',')}"
+
+        current_payout_full = fmt_full_inr(total_payout)
+        slab_10_full = fmt_full_inr(slab_10_amt)
+        slab_12_full = fmt_full_inr(slab_12_amt)
+        slab_15_full = fmt_full_inr(slab_15_amt)
+        extra_full = fmt_full_inr(total_extra)
+
+        st.markdown(f"""
+        <div style="background:{'linear-gradient(135deg,#1a1040,#2d1b69)' if THEME=='dark' else 'linear-gradient(135deg,#eef2ff,#e0e7ff)'};border:1px solid {'rgba(139,92,246,.3)' if THEME=='dark' else 'rgba(99,102,241,.15)'};border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:{T['card_shadow']}">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+            <div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                <span style="font-size:1.2rem">💰</span>
+                <span style="font-size:.72rem;font-weight:700;color:{T['muted']};text-transform:uppercase">Total Collection</span>
+              </div>
+              <div style="font-size:2.2rem;font-weight:900;color:{T['ink']};font-family:var(--font-mono);line-height:1">{fmt_full_inr(total_collection)}</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">
+              <div style="text-align:center;padding:6px 14px;border-radius:8px;background:{'rgba(239,68,68,.12)' if THEME=='dark' else 'rgba(239,68,68,.06)'};border:1px solid rgba(239,68,68,.2)">
+                <div style="font-size:.55rem;color:{T['muted']};font-weight:700">CURRENT</div>
+                <div style="font-size:1.2rem;font-weight:800;color:{T['red']}">{b1['slab']}%</div>
+                <div style="font-size:.7rem;font-weight:700;color:{T['ink']};margin-top:2px">{current_payout_full}</div>
+              </div>
+              <div style="text-align:center;padding:6px 14px;border-radius:8px;background:{'rgba(245,158,11,.12)' if THEME=='dark' else 'rgba(245,158,11,.06)'};border:1px solid rgba(245,158,11,.2)">
+                <div style="font-size:.55rem;color:{T['muted']};font-weight:700">10% SLAB</div>
+                <div style="font-size:1.2rem;font-weight:800;color:{T['amber']}">10%</div>
+                <div style="font-size:.7rem;font-weight:700;color:{T['ink']};margin-top:2px">{slab_10_full}</div>
+              </div>
+              <div style="text-align:center;padding:6px 14px;border-radius:8px;background:{'rgba(16,185,129,.12)' if THEME=='dark' else 'rgba(16,185,129,.06)'};border:1px solid rgba(16,185,129,.2)">
+                <div style="font-size:.55rem;color:{T['muted']};font-weight:700">12% SLAB</div>
+                <div style="font-size:1.2rem;font-weight:800;color:{T['green']}">12%</div>
+                <div style="font-size:.7rem;font-weight:700;color:{T['ink']};margin-top:2px">{slab_12_full}</div>
+              </div>
+              <div style="text-align:center;padding:6px 14px;border-radius:8px;background:{'rgba(139,92,246,.12)' if THEME=='dark' else 'rgba(139,92,246,.06)'};border:1px solid rgba(139,92,246,.2)">
+                <div style="font-size:.55rem;color:{T['muted']};font-weight:700">15% SLAB</div>
+                <div style="font-size:1.2rem;font-weight:800;color:{T['purple']}">15%</div>
+                <div style="font-size:.7rem;font-weight:700;color:{T['ink']};margin-top:2px">{slab_15_full}</div>
+              </div>
+              <div style="text-align:center;padding:6px 14px;border-radius:8px;background:{'rgba(74,222,128,.1)' if THEME=='dark' else 'rgba(5,150,105,.06)'};border:1px solid rgba(74,222,128,.2)">
+                <div style="font-size:.55rem;color:{T['muted']};font-weight:700">EXTRA</div>
+                <div style="font-size:1.2rem;font-weight:800;color:{T['green_val']}">+{extra_full}</div>
+                <div style="font-size:.6rem;color:{T['muted']};margin-top:2px">More Earnings</div>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:.65rem;color:{T['muted']};margin-top:12px">ℹ️ Payout calculated on total collection of {fmt_full_inr(total_collection)}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
         # ── BKT-1 / BKT-2 / RECEIPT CUT CARDS ──
-        c1, c2, c3 = st.columns(3)
-
-        def bkt_card(stats, bkt_num, next_rate, next_thresh, color, col):
-            rb_label = "✅ RB OK" if stats["rb_ok"] else f"⚠️ RB miss (-2%)"
-            rb_color = "#4ade80" if stats["rb_ok"] else "#f59e0b"
-            res_color = "#4ade80" if stats["res_pct"] >= (90 if bkt_num==1 else 70) else "#BA7517" if stats["res_pct"] >= (85 if bkt_num==1 else 60) else "#E24B4A"
-            rb_c = "#4ade80" if stats["rb_ok"] else "#E24B4A"
-            next_hint = f"Need {next_thresh} for {next_rate}% slab" if next_rate else "🏆 Max slab!"
-            with col:
-                st.markdown(f"""
-                <div style="background:#1a2540;border:1px solid #1e3460;border-radius:12px;padding:16px;margin-bottom:8px">
-                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-                    <span style="font-size:1.1rem">🏦</span>
-                    <span style="font-size:.9rem;font-weight:800;color:#f1f5f9">BKT-{bkt_num}</span>
-                    <span style="margin-left:auto;background:#0d1e38;border-radius:4px;padding:2px 8px;font-size:.65rem;font-weight:700;color:{color}">{stats['slab']}% SLAB</span>
-                  </div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-                    <div>
-                      <div style="font-size:.62rem;color:#7a8ba8;text-transform:uppercase;margin-bottom:2px">Resolution</div>
-                      <div style="font-size:1.3rem;font-weight:800;color:{res_color}">{stats['res_pct']:.1f}%</div>
-                    </div>
-                    <div>
-                      <div style="font-size:.62rem;color:#7a8ba8;text-transform:uppercase;margin-bottom:2px">RB %</div>
-                      <div style="font-size:1.3rem;font-weight:800;color:{rb_c}">{stats['rb_pct']:.1f}%</div>
-                    </div>
-                  </div>
-                  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px">
-                    <div style="background:#0d1e38;border-radius:6px;padding:8px;text-align:center">
-                      <div style="font-size:.58rem;color:#7a8ba8;text-transform:uppercase">Flow</div>
-                      <div style="font-size:1rem;font-weight:700;color:#7dd3fc">{stats['flow']:,}</div>
-                    </div>
-                    <div style="background:#0d1e38;border-radius:6px;padding:8px;text-align:center">
-                      <div style="font-size:.58rem;color:#7a8ba8;text-transform:uppercase">Stable</div>
-                      <div style="font-size:1rem;font-weight:700;color:#4ade80">{stats['stable']:,}</div>
-                    </div>
-                    <div style="background:#0d1e38;border-radius:6px;padding:8px;text-align:center">
-                      <div style="font-size:.58rem;color:#7a8ba8;text-transform:uppercase">RB</div>
-                      <div style="font-size:1rem;font-weight:700;color:#f472b6">{stats['rb']:,}</div>
-                    </div>
-                  </div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
-                    <div style="background:#0d1e38;border-radius:6px;padding:8px">
-                      <div style="font-size:.58rem;color:#7a8ba8;text-transform:uppercase">Collection</div>
-                      <div style="font-size:.85rem;font-weight:700;color:#f1f5f9">{format_indian(stats['collection'])}</div>
-                    </div>
-                    <div style="background:#0d1e38;border-radius:6px;padding:8px">
-                      <div style="font-size:.58rem;color:#7a8ba8;text-transform:uppercase">Payout</div>
-                      <div style="font-size:.85rem;font-weight:700;color:#4ade80">{format_indian(stats['payout'])}</div>
-                    </div>
-                  </div>
-                  <div style="font-size:.65rem;color:#f59e0b;font-weight:600">{next_hint}</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-        bkt_card(b1, 1, b1_next_rate, b1_next_thresh, "#7dd3fc", c1)
-        bkt_card(b2, 2, b2_next_rate, b2_next_thresh, "#BA7517", c2)
-
-        with c3:
-            rc_bar = min(rc_pct / rc_target * 100, 100) if rc_target else 0
-            st.markdown(f"""
-            <div style="background:#1a2540;border:1px solid #1e3460;border-radius:12px;padding:16px;margin-bottom:8px">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-                <span style="font-size:1.1rem">📋</span>
-                <span style="font-size:.9rem;font-weight:800;color:#f1f5f9">Receipt Cut</span>
+        def bkt_card_v2(stats, bkt_num, next_rate, next_thresh):
+            target_res = 90 if bkt_num == 1 else 70
+            rb_target = 25 if stats["res_pct"] >= target_res else 20 if stats["res_pct"] >= (88 if bkt_num==1 else 65) else 15
+            res_color = T["green_val"] if stats["res_pct"] >= target_res else T["amber_val"] if stats["res_pct"] >= (85 if bkt_num==1 else 60) else T["red_val"]
+            rb_color = T["green_val"] if stats["rb_pct"] >= rb_target else T["red_val"]
+            res_gap = round(target_res - stats["res_pct"], 1)
+            rb_gap_val = round(rb_target - stats["rb_pct"], 1)
+            parts = []
+            if res_gap > 0: parts.append(f"Need +{res_gap}% Resolution")
+            if rb_gap_val > 0: parts.append(f"Need +{rb_gap_val}% RB")
+            hint = " · ".join(parts) if parts else "🏆 All targets achieved!"
+            card_border = f"rgba({'16,185,129' if bkt_num==1 else '59,130,246'},.2)"
+            return f"""
+            <div style="background:{T['card_bg']};border:1px solid {card_border};border-radius:14px;padding:18px;box-shadow:{T['card_shadow']}">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+                <span style="font-size:1rem">🏦</span>
+                <span style="font-size:.9rem;font-weight:800;color:{T['ink']}">BKT-{bkt_num}</span>
               </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
-                <div>
-                  <div style="font-size:.62rem;color:#7a8ba8;text-transform:uppercase;margin-bottom:2px">Current</div>
-                  <div style="font-size:1.3rem;font-weight:800;color:#E24B4A">{rc_pct:.1f}%</div>
+              <div style="margin-bottom:12px">
+                <div style="font-size:.62rem;color:{T['muted']};font-weight:700;margin-bottom:3px">Resolution</div>
+                <div><span style="font-size:1.5rem;font-weight:900;color:{res_color}">{stats['res_pct']:.0f}%</span> <span style="font-size:.85rem;color:{T['muted']}">/ {target_res}%</span></div>
+              </div>
+              <div style="margin-bottom:14px">
+                <div style="font-size:.62rem;color:{T['muted']};font-weight:700;margin-bottom:3px">RB %</div>
+                <div><span style="font-size:1.5rem;font-weight:900;color:{rb_color}">{stats['rb_pct']:.0f}%</span> <span style="font-size:.85rem;color:{T['muted']}">/ {rb_target}%</span></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:{T['inner_bg']};border-radius:6px">
+                  <span style="font-size:.7rem;color:{T['muted']}">👥 Flow</span>
+                  <span style="font-size:.85rem;font-weight:700;color:{T['flow_color']}">{stats['flow']:,}</span>
                 </div>
-                <div>
-                  <div style="font-size:.62rem;color:#7a8ba8;text-transform:uppercase;margin-bottom:2px">Target</div>
-                  <div style="font-size:1.3rem;font-weight:800;color:#4ade80">{rc_target:.0f}%</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:{T['inner_bg']};border-radius:6px">
+                  <span style="font-size:.7rem;color:{T['muted']}">✅ Stable</span>
+                  <span style="font-size:.85rem;font-weight:700;color:{T['stable_color']}">{stats['stable']:,}</span>
                 </div>
-                <div>
-                  <div style="font-size:.62rem;color:#7a8ba8;text-transform:uppercase;margin-bottom:2px">Gap</div>
-                  <div style="font-size:1.3rem;font-weight:800;color:#BA7517">{max(rc_gap,0):.1f}%</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:{T['inner_bg']};border-radius:6px">
+                  <span style="font-size:.7rem;color:{T['muted']}">⚠️ RB Accounts</span>
+                  <span style="font-size:.85rem;font-weight:700;color:{T['rb_color']}">{stats['rb']:,}</span>
                 </div>
               </div>
-              <div style="height:5px;background:#0d1e38;border-radius:999px;margin-bottom:12px">
-                <div style="width:{rc_bar:.1f}%;height:100%;background:#7F77DD;border-radius:999px"></div>
-              </div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
-                <div style="background:#0d1e38;border-radius:6px;padding:8px;display:flex;align-items:center;gap:8px">
-                  <span style="font-size:1.1rem">✅</span>
-                  <div>
-                    <div style="font-size:.58rem;color:#7a8ba8">Paid</div>
-                    <div style="font-size:1rem;font-weight:700;color:#4ade80">{paid_cases:,}</div>
-                  </div>
-                </div>
-                <div style="background:#0d1e38;border-radius:6px;padding:8px;display:flex;align-items:center;gap:8px">
-                  <span style="font-size:1.1rem">❌</span>
-                  <div>
-                    <div style="font-size:.58rem;color:#7a8ba8">Unpaid</div>
-                    <div style="font-size:1rem;font-weight:700;color:#E24B4A">{unpaid_cases:,}</div>
-                  </div>
-                </div>
-              </div>
-              <div style="background:#0d1e38;border-radius:6px;padding:8px">
-                <div style="font-size:.58rem;color:#7a8ba8;text-transform:uppercase">Potential Impact</div>
-                <div style="font-size:.9rem;font-weight:700;color:#4ade80">+{format_indian(total_extra)} <span style="font-size:.7rem;color:#7a8ba8">more earnings</span></div>
-              </div>
+              <div style="background:{'rgba(245,158,11,.08)' if THEME=='dark' else 'rgba(245,158,11,.05)'};border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:8px 12px;font-size:.68rem;color:{T['amber_val']};font-weight:600">{hint}</div>
             </div>
-            """, unsafe_allow_html=True)
+            """
 
-        # ── BOTTOM SUMMARY BAR ──
-        total_accounts = len(exec_df)
-        flow_count  = int((exec_df["POS STATUS"] == "FLOW").sum())
-        stable_count= int((exec_df["POS STATUS"] == "STABLE").sum())
-        rb_count    = int((exec_df["POS STATUS"] == "RB").sum())
+        rc_bar = min(rc_pct / rc_target * 100, 100) if rc_target else 0
+        # Bucket-wise collection
+        bkt_collections = []
+        for bkt_num in sorted(exec_df["BUCKET"].dropna().unique()):
+            bkt_col = float(exec_df[exec_df["BUCKET"] == bkt_num]["Paid Amount"].sum())
+            if bkt_col > 0:
+                bkt_collections.append((int(bkt_num), bkt_col))
+        bkt_col_html = ""
+        for bnum, bcol in bkt_collections:
+            bkt_col_html += f'<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0"><span style="font-size:.68rem;color:{T["muted"]}">BKT-{bnum}</span><span style="font-size:.78rem;font-weight:700;color:{T["ink"]}">{fmt_full_inr(bcol)}</span></div>'
 
-        s1, s2, s3, s4 = st.columns(4)
-        for col, icon, label, val, color in [
-            (s1, "👥", "Flow Accounts", f"{flow_count:,}", "#7dd3fc"),
-            (s2, "🛡️", "Stable Accounts", f"{stable_count:,}", "#4ade80"),
-            (s3, "⚠️", "RB Accounts", f"{rb_count:,}", "#BA7517"),
-            (s4, "🧾", "Receipt Cut", f"{paid_cases:,}", "#7F77DD"),
-        ]:
-            with col:
-                st.markdown(f"""
-                <div style="background:#1a2540;border:1px solid #1e3460;border-radius:10px;padding:12px;text-align:center;margin-bottom:10px">
-                  <div style="font-size:1.3rem">{icon}</div>
-                  <div style="font-size:1.3rem;font-weight:800;color:{color};margin:4px 0">{val}</div>
-                  <div style="font-size:.65rem;color:#7a8ba8">{label}</div>
-                </div>
-                """, unsafe_allow_html=True)
+        receipt_card_html = f"""
+        <div style="background:{T['card_bg']};border:1px solid rgba(139,92,246,.2);border-radius:14px;padding:18px;box-shadow:{T['card_shadow']}">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+            <span style="font-size:1rem">📋</span>
+            <span style="font-size:.9rem;font-weight:800;color:{T['ink']}">RECEIPT CUT</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <div><div style="font-size:.62rem;color:{T['muted']};font-weight:700">Current</div><div style="font-size:1.5rem;font-weight:900;color:{T['green_val']}">{rc_pct:.0f}%</div></div>
+            <div style="text-align:right"><div style="font-size:.62rem;color:{T['muted']};font-weight:700">Target</div><div style="font-size:1.5rem;font-weight:900;color:{T['accent']}">{rc_target:.0f}%</div></div>
+          </div>
+          <div style="height:6px;background:{T['track_bg']};border-radius:99px;overflow:hidden;margin-bottom:10px"><div style="width:{rc_bar:.1f}%;height:100%;background:{T['accent']};border-radius:99px"></div></div>
+          <div style="font-size:.72rem;color:{T['muted']};margin-bottom:14px">Gap <span style="color:{T['amber_val']};font-weight:700">{max(rc_gap,0):.0f}%</span></div>
+          <div style="display:flex;gap:16px;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:6px"><span>✅</span><div><div style="font-size:.55rem;color:{T['muted']}">Paid</div><div style="font-size:1.1rem;font-weight:800;color:{T['green_val']}">{paid_cases:,}</div></div></div>
+            <div style="display:flex;align-items:center;gap:6px"><span>❌</span><div><div style="font-size:.55rem;color:{T['muted']}">Unpaid</div><div style="font-size:1.1rem;font-weight:800;color:{T['red_val']}">{unpaid_cases:,}</div></div></div>
+          </div>
+          <div style="background:{T['inner_bg']};border-radius:8px;padding:10px 12px">
+            <div style="font-size:.62rem;color:{T['muted']};font-weight:700;margin-bottom:6px">💰 Collection (Bucket-wise)</div>
+            {bkt_col_html}
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 0;margin-top:6px;border-top:1px solid {T['border']}"><span style="font-size:.72rem;color:{T['muted']};font-weight:700">Total</span><span style="font-size:.85rem;font-weight:900;color:{T['green_val']}">{fmt_full_inr(total_collection)}</span></div>
+          </div>
+        </div>
+        """
 
-        p1, p2, p3 = st.columns(3)
-        paid_pct = round(paid_cases/total_accounts*100,1) if total_accounts else 0
-        unpaid_pct = round(unpaid_cases/total_accounts*100,1) if total_accounts else 0
-        overall_res = round((stable_count + rb_count) / total_accounts * 100, 1) if total_accounts else 0
-        overall_target = 90.0
-        overall_bar = min(overall_res / overall_target * 100, 100)
-
-        with p1:
-            st.markdown(f"""
-            <div style="background:#1a2540;border:1px solid #1e3460;border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px">
-              <span style="font-size:1.8rem">✅</span>
-              <div>
-                <div style="font-size:.65rem;color:#7a8ba8">Paid Accounts</div>
-                <div style="font-size:1.4rem;font-weight:800;color:#4ade80">{paid_cases:,}</div>
-                <div style="font-size:.65rem;color:#7a8ba8">{paid_pct}% of total</div>
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-        with p2:
-            st.markdown(f"""
-            <div style="background:#1a2540;border:1px solid #1e3460;border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px">
-              <span style="font-size:1.8rem">❌</span>
-              <div>
-                <div style="font-size:.65rem;color:#7a8ba8">Unpaid Accounts</div>
-                <div style="font-size:1.4rem;font-weight:800;color:#E24B4A">{unpaid_cases:,}</div>
-                <div style="font-size:.65rem;color:#7a8ba8">{unpaid_pct}% of total</div>
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
-        with p3:
-            st.markdown(f"""
-            <div style="background:#1a2540;border:1px solid #1e3460;border-radius:10px;padding:14px">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                <span style="font-size:1.3rem">🏆</span>
-                <div style="font-size:.65rem;color:#7a8ba8">Overall Achievement</div>
-              </div>
-              <div style="font-size:1.4rem;font-weight:800;color:#BA7517">{overall_res}%</div>
-              <div style="font-size:.65rem;color:#7a8ba8;margin-bottom:6px">Target: {overall_target:.0f}%</div>
-              <div style="height:4px;background:#0d1e38;border-radius:999px">
-                <div style="width:{overall_bar:.1f}%;height:100%;background:#BA7517;border-radius:999px"></div>
-              </div>
-            </div>
-            """, unsafe_allow_html=True)
+        # Render as tabs (Receipt Cut default/first)
+        tab_rc, tab_b1, tab_b2 = st.tabs(["📋 Receipt Cut", "🏦 BKT-1", "🏦 BKT-2"])
+        with tab_rc:
+            st.markdown(receipt_card_html, unsafe_allow_html=True)
+        with tab_b1:
+            st.markdown(bkt_card_v2(b1, 1, b1_next_rate, b1_next_thresh), unsafe_allow_html=True)
+        with tab_b2:
+            st.markdown(bkt_card_v2(b2, 2, b2_next_rate, b2_next_thresh), unsafe_allow_html=True)
 
         # Admin only — executive payout table
         if user["role"] == "admin":
@@ -1470,6 +1877,10 @@ def main():
                         disp[f"BKT-{bkt} Collection"] = disp[f"BKT-{bkt} Collection"].apply(lambda x: format_indian(x) if isinstance(x, (int,float)) else x)
                     if f"BKT-{bkt} Payout" in disp.columns:
                         disp[f"BKT-{bkt} Payout"] = disp[f"BKT-{bkt} Payout"].apply(lambda x: format_indian(x) if isinstance(x, (int,float)) else x)
+                if "BKT 3-6 Collection" in disp.columns:
+                    disp["BKT 3-6 Collection"] = disp["BKT 3-6 Collection"].apply(lambda x: format_indian(x) if isinstance(x, (int,float)) else x)
+                if "BKT 3-6 Payout" in disp.columns:
+                    disp["BKT 3-6 Payout"] = disp["BKT 3-6 Payout"].apply(lambda x: format_indian(x) if isinstance(x, (int,float)) else x)
                 disp["Total Payout"] = exec_payout["Total Payout"].apply(format_indian)
                 display_table(disp, height=400)
 
@@ -1562,18 +1973,21 @@ def main():
         c1, c2 = st.columns([3, 1])
         with c1:
             st.markdown(f"""
-            <div style="background:linear-gradient(135deg,#1e3a5f,#2563eb);border-radius:10px;padding:14px 20px;display:flex;align-items:center;gap:16px;margin-bottom:12px">
+            <div style="background:linear-gradient(135deg,{'#1e3a5f' if THEME=='dark' else '#dbeafe'},{'#2563eb' if THEME=='dark' else '#3b82f6'});border-radius:10px;padding:14px 20px;display:flex;align-items:center;gap:16px;margin-bottom:12px">
               <span style="font-size:1.5rem">📋</span>
               <div>
-                <div style="color:rgba(255,255,255,0.7);font-size:.65rem;font-weight:700;text-transform:uppercase">Total Pending Cases</div>
-                <div style="color:#fff;font-size:1.9rem;font-weight:800;line-height:1.1">{total_pending}</div>
+                <div style="color:{'rgba(255,255,255,0.7)' if THEME=='dark' else 'rgba(30,64,175,.7)'};font-size:.65rem;font-weight:700;text-transform:uppercase">Total Pending Cases</div>
+                <div style="color:{'#fff' if THEME=='dark' else '#1e3a8a'};font-size:1.9rem;font-weight:800;line-height:1.1">{total_pending}</div>
               </div>
-              <div style="margin-left:auto;color:rgba(255,255,255,0.6);font-size:.8rem">Showing {showing}</div>
+              <div style="margin-left:auto;color:{'rgba(255,255,255,0.6)' if THEME=='dark' else 'rgba(30,64,175,.6)'};font-size:.8rem">Showing {showing}</div>
             </div>
             """, unsafe_allow_html=True)
         with c2:
             if user["role"] == "admin":
-                st.markdown(f'<div style="background:#1a2540;border:1px solid #1e3460;border-radius:8px;padding:8px 12px;font-size:.7rem;color:#7dd3fc;word-break:break-all;margin-bottom:6px">{share_url}</div>', unsafe_allow_html=True)
+                link_bg = "#1a2540" if THEME == "dark" else "#eff6ff"
+                link_border = "#1e3460" if THEME == "dark" else "#bfdbfe"
+                link_color = "#7dd3fc" if THEME == "dark" else "#1d4ed8"
+                st.markdown(f'<div style="background:{link_bg};border:1px solid {link_border};border-radius:8px;padding:10px 14px;font-size:.72rem;color:{link_color};word-break:break-all;margin-bottom:6px;font-family:var(--font-mono)">{share_url}</div>', unsafe_allow_html=True)
                 if st.button("📋 Copy Link", use_container_width=True, key="copy_trails_link"):
                     st.code(share_url)
 
@@ -1583,16 +1997,24 @@ def main():
         else:
             pending_df = pending_df.sort_values("AREA").reset_index(drop=True)
             is_admin = user["role"] == "admin"
-            exec_th = '<th style="padding:10px 12px;text-align:left;font-size:.7rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Executive</th>' if is_admin else ""
+            exec_th = f'<th style="padding:10px 14px;text-align:left;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">Executive</th>' if is_admin else ""
             rows_html = ""
-            for _, row in pending_df.iterrows():
+            row_border = "#1e3460" if THEME == "dark" else "#edf2f7"
+            area_bg = "#1e3460" if THEME == "dark" else "#e0e7ff"
+            area_color = "#7dd3fc" if THEME == "dark" else "#3730a3"
+            for idx_r, (_, row) in enumerate(pending_df.iterrows()):
                 loan = str(row["LOAN NO"])
                 name = str(row["CUSTOMER NAME"])
                 area = str(row.get("AREA", "—"))
                 team = str(row.get("TEAM", ""))
-                exec_td = f'<td style="padding:9px 12px;font-size:.78rem;color:#7dd3fc">{team}</td>' if is_admin else ""
-                rows_html += f'<tr style="border-bottom:1px solid #1a2540"><td style="padding:9px 12px;font-family:monospace;font-size:.82rem;font-weight:700;color:#f1f5f9">{loan}</td><td style="padding:9px 12px;font-size:.82rem;color:#f1f5f9">{name}</td><td style="padding:9px 12px;font-size:.78rem;vertical-align:middle"><span style="background:#1e3460;color:#7dd3fc;border-radius:4px;padding:3px 10px;font-size:.75rem;font-weight:700;letter-spacing:.02em">{area}</span></td>{exec_td}</tr>'
-            st.markdown(f'<div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460;-webkit-overflow-scrolling:touch"><table style="width:100%;border-collapse:collapse;min-width:500px"><thead><tr style="background:#0a1628;border-bottom:2px solid #1e3460"><th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase;white-space:nowrap">Loan No</th><th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase;white-space:nowrap">Customer Name</th><th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase;white-space:nowrap">Area</th>{exec_th}</tr></thead><tbody>{rows_html}</tbody></table></div>', unsafe_allow_html=True)
+                exec_td = f'<td style="padding:10px 14px;font-size:.8rem;color:{T["blue_val"]}">{team}</td>' if is_admin else ""
+                row_bg = T["inner_bg2"] if idx_r % 2 == 1 else T["surface"]
+                rows_html += f'<tr style="background:{row_bg};border-bottom:1px solid {row_border}"><td style="padding:10px 14px;font-family:monospace;font-size:.84rem;font-weight:700;color:{T["ink"]}">{loan}</td><td style="padding:10px 14px;font-size:.84rem;color:{T["ink"]}">{name}</td><td style="padding:10px 14px;font-size:.8rem;vertical-align:middle"><span style="background:{area_bg};color:{area_color};border-radius:6px;padding:4px 12px;font-size:.72rem;font-weight:700;letter-spacing:.02em;display:inline-block">{area}</span></td>{exec_td}</tr>'
+            table_border = "#1e3460" if THEME == "dark" else "#e2e8f0"
+            table_shadow = "0 4px 16px rgba(0,0,0,.2)" if THEME == "dark" else "0 4px 12px rgba(0,0,0,.05)"
+            thead_bg = "#0a1628" if THEME == "dark" else "linear-gradient(180deg,#f8fafc,#f1f5f9)"
+            thead_border = "#1e3460" if THEME == "dark" else "#cbd5e1"
+            st.markdown(f'<div style="overflow-x:auto;border-radius:12px;border:1px solid {table_border};box-shadow:{table_shadow};-webkit-overflow-scrolling:touch"><table style="width:100%;border-collapse:collapse;min-width:500px"><thead><tr style="background:{thead_bg};border-bottom:2px solid {thead_border}"><th style="padding:10px 14px;text-align:left;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;white-space:nowrap;letter-spacing:.03em">Loan No</th><th style="padding:10px 14px;text-align:left;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;white-space:nowrap;letter-spacing:.03em">Customer Name</th><th style="padding:10px 14px;text-align:left;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;white-space:nowrap;letter-spacing:.03em">Area</th>{exec_th}</tr></thead><tbody>{rows_html}</tbody></table></div>', unsafe_allow_html=True)
 
     # ── PAGE: FLOW LIST ──
     elif active == "flowlist":
@@ -1627,7 +2049,10 @@ def main():
         # Share link - only for admin
         if user["role"] == "admin":
             share_url = "https://app.rccapp.xyz/?view=flowlist"
-            st.markdown(f'<div style="background:#1a2540;border:1px solid #1e3460;border-radius:6px;padding:8px 12px;font-size:.7rem;color:#7dd3fc;word-break:break-all;margin:8px 0">{share_url}</div>', unsafe_allow_html=True)
+            link_bg = "#1a2540" if THEME == "dark" else "#eff6ff"
+            link_border = "#1e3460" if THEME == "dark" else "#bfdbfe"
+            link_color = "#7dd3fc" if THEME == "dark" else "#1d4ed8"
+            st.markdown(f'<div style="background:{link_bg};border:1px solid {link_border};border-radius:8px;padding:10px 14px;font-size:.72rem;color:{link_color};word-break:break-all;margin:8px 0;font-family:var(--font-mono)">{share_url}</div>', unsafe_allow_html=True)
             if st.button("📋 Copy Link", use_container_width=True, key="copy_flow_link"):
                 st.toast("Link copied! Share on WhatsApp.")
 
@@ -1641,7 +2066,9 @@ def main():
 
             # Build table HTML - POS in Indian format, center aligned
             rows_flow = ""
-            for _, row in flow_df.iterrows():
+            row_border = "#1e3460" if THEME == "dark" else "#e2e8f0"
+            row_hover_bg = "rgba(59,130,246,.06)" if THEME == "dark" else "#f8fafc"
+            for idx_r, (_, row) in enumerate(flow_df.iterrows()):
                 name = str(row["CUSTOMER NAME"])
                 pos_val = row["POS"]
                 # Indian comma format: 1,23,456
@@ -1659,12 +2086,17 @@ def main():
                 
                 dra = f'{row["DRA CASE%"]:.1f}%'
                 team = str(row.get("TEAM", ""))
-                exec_td = f'<td class="flow-col-exec" style="padding:8px 10px;font-size:.78rem;color:#7dd3fc;text-align:center">{team}</td>' if is_admin else ""
-                rows_flow += f'<tr style="border-bottom:1px solid #1a2540"><td style="padding:8px 10px;font-size:.82rem;color:#f1f5f9">{name}</td><td style="padding:8px 10px;font-size:.82rem;color:#4ade80;font-family:var(--font-mono);text-align:center">{pos}</td><td style="padding:8px 10px;font-size:.82rem;color:#f59e0b;font-family:var(--font-mono);text-align:center">{dra}</td>{exec_td}</tr>'
+                row_bg = T["inner_bg2"] if idx_r % 2 == 1 else T["surface"]
+                exec_td = f'<td class="flow-col-exec" style="padding:10px 14px;font-size:.8rem;color:{T["blue_val"]};text-align:center">{team}</td>' if is_admin else ""
+                rows_flow += f'<tr style="background:{row_bg};border-bottom:1px solid {row_border}"><td style="padding:10px 14px;font-size:.84rem;font-weight:500;color:{T["ink"]}">{name}</td><td style="padding:10px 14px;font-size:.84rem;color:{T["green_val"]};font-family:var(--font-mono);text-align:center;font-weight:700">{pos}</td><td style="padding:10px 14px;font-size:.84rem;color:{T["amber_val"]};font-family:var(--font-mono);text-align:center;font-weight:600">{dra}</td>{exec_td}</tr>'
 
-            exec_th = '<th class="flow-col-exec" style="padding:8px 10px;text-align:center;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Executive</th>' if is_admin else ""
+            exec_th = f'<th class="flow-col-exec" style="padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">Executive</th>' if is_admin else ""
 
-            html_out = f'<style>@media (max-width: 768px) {{ .flow-col-exec {{ display:none!important; }} }}</style><div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3460"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#0a1628;border-bottom:2px solid #1e3460"><th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">Customer Name</th><th style="padding:8px 10px;text-align:center;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">POS</th><th style="padding:8px 10px;text-align:center;font-size:.68rem;font-weight:700;color:#7a8ba8;text-transform:uppercase">DRA Case %</th>{exec_th}</tr></thead><tbody>{rows_flow}</tbody></table></div>'
+            table_border = "#1e3460" if THEME == "dark" else "#e2e8f0"
+            table_shadow = "0 4px 16px rgba(0,0,0,.2)" if THEME == "dark" else "0 4px 12px rgba(0,0,0,.05)"
+            thead_bg = "#0a1628" if THEME == "dark" else "linear-gradient(180deg,#f8fafc,#f1f5f9)"
+            thead_border = "#1e3460" if THEME == "dark" else "#cbd5e1"
+            html_out = f'<style>@media (max-width: 768px) {{ .flow-col-exec {{ display:none!important; }} }}</style><div style="overflow-x:auto;border-radius:12px;border:1px solid {table_border};box-shadow:{table_shadow}"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:{thead_bg};border-bottom:2px solid {thead_border}"><th style="padding:10px 14px;text-align:left;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">Customer Name</th><th style="padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">POS</th><th style="padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">DRA Case %</th>{exec_th}</tr></thead><tbody>{rows_flow}</tbody></table></div>'
             st.markdown(html_out, unsafe_allow_html=True)
 
     # ── PAGE: EXECUTIVE TRACKER ──
