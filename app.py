@@ -1746,30 +1746,30 @@ def main():
               <div style="font-size:2.2rem;font-weight:900;color:{T['ink']};font-family:var(--font-mono);line-height:1">{fmt_full_inr(total_collection)}</div>
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">
-              <div style="text-align:center;padding:6px 14px;border-radius:8px;background:{'rgba(239,68,68,.12)' if THEME=='dark' else 'rgba(239,68,68,.06)'};border:1px solid rgba(239,68,68,.2)">
+              <div style="text-align:center;padding:8px 16px;border-radius:10px;background:{'rgba(239,68,68,.12)' if THEME=='dark' else 'rgba(239,68,68,.06)'};border:1px solid rgba(239,68,68,.25)">
                 <div style="font-size:.55rem;color:{T['muted']};font-weight:700">CURRENT</div>
-                <div style="font-size:1.2rem;font-weight:800;color:{T['red']}">{b1['slab']}%</div>
-                <div style="font-size:.7rem;font-weight:700;color:{T['ink']};margin-top:2px">{current_payout_full}</div>
+                <div style="font-size:1.3rem;font-weight:900;color:{T['red']}">{b1['slab']}%</div>
+                <div style="font-size:.72rem;font-weight:700;color:{T['ink']};margin-top:3px">{current_payout_full}</div>
               </div>
-              <div style="text-align:center;padding:6px 14px;border-radius:8px;background:{'rgba(245,158,11,.12)' if THEME=='dark' else 'rgba(245,158,11,.06)'};border:1px solid rgba(245,158,11,.2)">
+              <div style="text-align:center;padding:8px 16px;border-radius:10px;background:{'rgba(245,158,11,.12)' if THEME=='dark' else 'rgba(245,158,11,.06)'};border:1px solid rgba(245,158,11,.25)">
                 <div style="font-size:.55rem;color:{T['muted']};font-weight:700">10% SLAB</div>
-                <div style="font-size:1.2rem;font-weight:800;color:{T['amber']}">10%</div>
-                <div style="font-size:.7rem;font-weight:700;color:{T['ink']};margin-top:2px">{slab_10_full}</div>
+                <div style="font-size:1.3rem;font-weight:900;color:{T['amber']}">10%</div>
+                <div style="font-size:.72rem;font-weight:700;color:{T['ink']};margin-top:3px">{slab_10_full}</div>
               </div>
-              <div style="text-align:center;padding:6px 14px;border-radius:8px;background:{'rgba(16,185,129,.12)' if THEME=='dark' else 'rgba(16,185,129,.06)'};border:1px solid rgba(16,185,129,.2)">
+              <div style="text-align:center;padding:8px 16px;border-radius:10px;background:{'rgba(16,185,129,.12)' if THEME=='dark' else 'rgba(16,185,129,.06)'};border:1px solid rgba(16,185,129,.25)">
                 <div style="font-size:.55rem;color:{T['muted']};font-weight:700">12% SLAB</div>
-                <div style="font-size:1.2rem;font-weight:800;color:{T['green']}">12%</div>
-                <div style="font-size:.7rem;font-weight:700;color:{T['ink']};margin-top:2px">{slab_12_full}</div>
+                <div style="font-size:1.3rem;font-weight:900;color:{T['green']}">12%</div>
+                <div style="font-size:.72rem;font-weight:700;color:{T['ink']};margin-top:3px">{slab_12_full}</div>
               </div>
-              <div style="text-align:center;padding:6px 14px;border-radius:8px;background:{'rgba(139,92,246,.12)' if THEME=='dark' else 'rgba(139,92,246,.06)'};border:1px solid rgba(139,92,246,.2)">
+              <div style="text-align:center;padding:8px 16px;border-radius:10px;background:{'rgba(139,92,246,.12)' if THEME=='dark' else 'rgba(139,92,246,.06)'};border:1px solid rgba(139,92,246,.25)">
                 <div style="font-size:.55rem;color:{T['muted']};font-weight:700">15% SLAB</div>
-                <div style="font-size:1.2rem;font-weight:800;color:{T['purple']}">15%</div>
-                <div style="font-size:.7rem;font-weight:700;color:{T['ink']};margin-top:2px">{slab_15_full}</div>
+                <div style="font-size:1.3rem;font-weight:900;color:{T['purple']}">15%</div>
+                <div style="font-size:.72rem;font-weight:700;color:{T['ink']};margin-top:3px">{slab_15_full}</div>
               </div>
-              <div style="text-align:center;padding:6px 14px;border-radius:8px;background:{'rgba(74,222,128,.1)' if THEME=='dark' else 'rgba(5,150,105,.06)'};border:1px solid rgba(74,222,128,.2)">
-                <div style="font-size:.55rem;color:{T['muted']};font-weight:700">EXTRA</div>
-                <div style="font-size:1.2rem;font-weight:800;color:{T['green_val']}">+{extra_full}</div>
-                <div style="font-size:.6rem;color:{T['muted']};margin-top:2px">More Earnings</div>
+              <div style="text-align:center;padding:8px 16px;border-radius:10px;background:{'linear-gradient(135deg,rgba(74,222,128,.12),rgba(59,130,246,.08))' if THEME=='dark' else 'linear-gradient(135deg,rgba(5,150,105,.08),rgba(37,99,235,.04))'};border:1px solid rgba(74,222,128,.3)">
+                <div style="font-size:.55rem;color:{T['green_val']};font-weight:700">🚀 EXTRA</div>
+                <div style="font-size:1.3rem;font-weight:900;color:{T['green_val']}">+{extra_full}</div>
+                <div style="font-size:.6rem;color:{T['muted']};margin-top:3px">Next Slab Bonus</div>
               </div>
             </div>
           </div>
@@ -1780,7 +1780,7 @@ def main():
         # ── BKT-1 / BKT-2 / RECEIPT CUT CARDS ──
         def bkt_card_v2(stats, bkt_num, next_rate, next_thresh):
             target_res = 90 if bkt_num == 1 else 70
-            rb_target = 25 if stats["res_pct"] >= target_res else 20 if stats["res_pct"] >= (88 if bkt_num==1 else 65) else 15
+            rb_target = 25 if bkt_num == 1 else (20 if stats["res_pct"] >= (65 if bkt_num==2 else 65) else 15)
             res_color = T["green_val"] if stats["res_pct"] >= target_res else T["amber_val"] if stats["res_pct"] >= (85 if bkt_num==1 else 60) else T["red_val"]
             rb_color = T["green_val"] if stats["rb_pct"] >= rb_target else T["red_val"]
             res_gap = round(target_res - stats["res_pct"], 1)
@@ -1790,35 +1790,44 @@ def main():
             if rb_gap_val > 0: parts.append(f"Need +{rb_gap_val}% RB")
             hint = " · ".join(parts) if parts else "🏆 All targets achieved!"
             card_border = f"rgba({'16,185,129' if bkt_num==1 else '59,130,246'},.2)"
+            total_cases = stats["flow"] + stats["stable"] + stats["rb"]
+            bkt_collection = fmt_full_inr(stats["collection"])
+            res_bar = min(stats["res_pct"], 100)
+            rb_bar = min(stats["rb_pct"], 100)
             return f"""
-            <div style="background:{T['card_bg']};border:1px solid {card_border};border-radius:14px;padding:18px;box-shadow:{T['card_shadow']}">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-                <span style="font-size:1rem">🏦</span>
-                <span style="font-size:.9rem;font-weight:800;color:{T['ink']}">BKT-{bkt_num}</span>
+            <div style="background:{T['card_bg']};border:1px solid {card_border};border-radius:14px;padding:20px;box-shadow:{T['card_shadow']}">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                <div style="display:flex;align-items:center;gap:8px"><span style="font-size:1.2rem">🏦</span><span style="font-size:1rem;font-weight:800;color:{T['ink']}">BKT-{bkt_num}</span></div>
+                <div style="font-size:.75rem;color:{T['muted']}">Cases: <span style="font-weight:800;color:{T['ink']}">{total_cases:,}</span></div>
               </div>
-              <div style="margin-bottom:12px">
-                <div style="font-size:.62rem;color:{T['muted']};font-weight:700;margin-bottom:3px">Resolution</div>
-                <div><span style="font-size:1.5rem;font-weight:900;color:{res_color}">{stats['res_pct']:.0f}%</span> <span style="font-size:.85rem;color:{T['muted']}">/ {target_res}%</span></div>
-              </div>
-              <div style="margin-bottom:14px">
-                <div style="font-size:.62rem;color:{T['muted']};font-weight:700;margin-bottom:3px">RB %</div>
-                <div><span style="font-size:1.5rem;font-weight:900;color:{rb_color}">{stats['rb_pct']:.0f}%</span> <span style="font-size:.85rem;color:{T['muted']}">/ {rb_target}%</span></div>
-              </div>
-              <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:{T['inner_bg']};border-radius:6px">
-                  <span style="font-size:.7rem;color:{T['muted']}">👥 Flow</span>
-                  <span style="font-size:.85rem;font-weight:700;color:{T['flow_color']}">{stats['flow']:,}</span>
+              <div style="margin-bottom:16px">
+                <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:6px">
+                  <div><div style="font-size:.65rem;color:{T['muted']};font-weight:700;margin-bottom:4px">Resolution</div><div style="font-size:1.8rem;font-weight:900;color:{res_color};font-family:var(--font-mono)">{stats['res_pct']:.0f}%</div></div>
+                  <div style="font-size:.82rem;color:{T['muted']};font-weight:600">Target {target_res}%</div>
                 </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:{T['inner_bg']};border-radius:6px">
-                  <span style="font-size:.7rem;color:{T['muted']}">✅ Stable</span>
-                  <span style="font-size:.85rem;font-weight:700;color:{T['stable_color']}">{stats['stable']:,}</span>
-                </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 10px;background:{T['inner_bg']};border-radius:6px">
-                  <span style="font-size:.7rem;color:{T['muted']}">⚠️ RB Accounts</span>
-                  <span style="font-size:.85rem;font-weight:700;color:{T['rb_color']}">{stats['rb']:,}</span>
-                </div>
+                <div style="height:8px;background:{T['track_bg']};border-radius:99px;position:relative"><div style="position:absolute;left:0;top:0;height:100%;width:{res_bar:.1f}%;background:linear-gradient(90deg,{'#10b981,#4ade80' if bkt_num==1 else '#3b82f6,#7dd3fc'});border-radius:99px"></div><div style="position:absolute;left:{target_res}%;top:-4px;width:2px;height:16px;background:{T['amber']};border-radius:2px"></div></div>
+                <div style="display:flex;justify-content:space-between;font-size:.6rem;color:{T['muted']};margin-top:4px"><span>0%</span><span>100%</span></div>
               </div>
-              <div style="background:{'rgba(245,158,11,.08)' if THEME=='dark' else 'rgba(245,158,11,.05)'};border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:8px 12px;font-size:.68rem;color:{T['amber_val']};font-weight:600">{hint}</div>
+              <div style="margin-bottom:16px">
+                <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:6px">
+                  <div><div style="font-size:.65rem;color:{T['muted']};font-weight:700;margin-bottom:4px">RB %</div><div style="font-size:1.8rem;font-weight:900;color:{rb_color};font-family:var(--font-mono)">{stats['rb_pct']:.0f}%</div></div>
+                  <div style="font-size:.82rem;color:{T['muted']};font-weight:600">Target {rb_target}%</div>
+                </div>
+                <div style="height:8px;background:{T['track_bg']};border-radius:99px;position:relative"><div style="position:absolute;left:0;top:0;height:100%;width:{rb_bar:.1f}%;background:linear-gradient(90deg,#8b5cf6,#c4b5fd);border-radius:99px"></div><div style="position:absolute;left:{rb_target}%;top:-4px;width:2px;height:16px;background:{T['amber']};border-radius:2px"></div></div>
+                <div style="display:flex;justify-content:space-between;font-size:.6rem;color:{T['muted']};margin-top:4px"><span>0%</span><span>100%</span></div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+                <div style="background:{T['inner_bg']};border:1px solid {T['border']};border-radius:8px;padding:10px;text-align:center"><div style="font-size:.58rem;color:{T['muted']};font-weight:700">👥 Flow</div><div style="font-size:1.1rem;font-weight:800;color:{T['flow_color']};margin-top:2px">{stats['flow']:,}</div></div>
+                <div style="background:{T['inner_bg']};border:1px solid {T['border']};border-radius:8px;padding:10px;text-align:center"><div style="font-size:.58rem;color:{T['muted']};font-weight:700">✅ Stable</div><div style="font-size:1.1rem;font-weight:800;color:{T['stable_color']};margin-top:2px">{stats['stable']:,}</div></div>
+                <div style="background:{T['inner_bg']};border:1px solid {T['border']};border-radius:8px;padding:10px;text-align:center"><div style="font-size:.58rem;color:{T['muted']};font-weight:700">⚠️ RB</div><div style="font-size:1.1rem;font-weight:800;color:{T['rb_color']};margin-top:2px">{stats['rb']:,}</div></div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:{T['inner_bg']};border:1px solid {T['border']};border-radius:8px;margin-bottom:12px"><span style="font-size:.72rem;color:{T['muted']};font-weight:700">💰 Collection</span><span style="font-size:1rem;font-weight:800;color:{T['green_val']};font-family:var(--font-mono)">{bkt_collection}</span></div>
+              <div style="background:{T['inner_bg']};border:1px solid {T['border']};border-radius:8px;padding:10px 14px;margin-bottom:12px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><span style="font-size:.72rem;color:{T['muted']};font-weight:700">📊 Projection</span><span style="font-size:1rem;font-weight:900;color:{res_color};font-family:var(--font-mono)">{stats['res_pct']:.1f}%</span></div>
+                <div style="height:4px;background:{T['track_bg']};border-radius:99px;position:relative"><div style="position:absolute;left:0;top:0;height:100%;width:{min(stats['res_pct'],100):.1f}%;background:linear-gradient(90deg,{'#10b981,#4ade80' if bkt_num==1 else '#3b82f6,#7dd3fc'});border-radius:99px"></div></div>
+                <div style="font-size:.6rem;color:{T['muted']};margin-top:4px">Target: {target_res}% · Need {int(max(0,(target_res*(stats['flow']+stats['stable']+stats['rb'])/100-(stats['stable']+stats['rb']))/(1-target_res/100)))} more stable/RB</div>
+              </div>
+              <div style="background:{'rgba(245,158,11,.08)' if THEME=='dark' else 'rgba(245,158,11,.05)'};border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px 14px;font-size:.72rem;color:{T['amber_val']};font-weight:600">{hint}</div>
             </div>
             """
 
@@ -1831,39 +1840,60 @@ def main():
                 bkt_collections.append((int(bkt_num), bkt_col))
         bkt_col_html = ""
         for bnum, bcol in bkt_collections:
-            bkt_col_html += f'<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0"><span style="font-size:.68rem;color:{T["muted"]}">BKT-{bnum}</span><span style="font-size:.78rem;font-weight:700;color:{T["ink"]}">{fmt_full_inr(bcol)}</span></div>'
+            bkt_col_html += f'<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:{T["surface2"]};border-radius:8px;border:1px solid {T["border"]}"><span style="font-size:.75rem;color:{T["muted"]};font-weight:600">BKT-{bnum}</span><span style="font-size:.85rem;font-weight:800;color:{T["ink"]};font-family:var(--font-mono)">{fmt_full_inr(bcol)}</span></div>'
 
         receipt_card_html = f"""
-        <div style="background:{T['card_bg']};border:1px solid rgba(139,92,246,.2);border-radius:14px;padding:18px;box-shadow:{T['card_shadow']}">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-            <span style="font-size:1rem">📋</span>
-            <span style="font-size:.9rem;font-weight:800;color:{T['ink']}">RECEIPT CUT</span>
+        <div style="background:{T['card_bg']};border:1px solid rgba(139,92,246,.2);border-radius:14px;padding:20px;box-shadow:{T['card_shadow']}">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+            <span style="font-size:1.2rem">📋</span>
+            <span style="font-size:1rem;font-weight:800;color:{T['ink']}">RECEIPT CUT</span>
           </div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-            <div><div style="font-size:.62rem;color:{T['muted']};font-weight:700">Current</div><div style="font-size:1.5rem;font-weight:900;color:{T['green_val']}">{rc_pct:.0f}%</div></div>
-            <div style="text-align:right"><div style="font-size:.62rem;color:{T['muted']};font-weight:700">Target</div><div style="font-size:1.5rem;font-weight:900;color:{T['accent']}">{rc_target:.0f}%</div></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px">
+            <div><div style="font-size:.65rem;color:{T['muted']};font-weight:700;margin-bottom:4px">Current</div><div style="font-size:2rem;font-weight:900;color:{T['green_val']};font-family:var(--font-mono)">{rc_pct:.0f}%</div></div>
+            <div style="text-align:right"><div style="font-size:.65rem;color:{T['muted']};font-weight:700;margin-bottom:4px">Target</div><div style="font-size:2rem;font-weight:900;color:{T['accent']};font-family:var(--font-mono)">{rc_target:.0f}%</div></div>
           </div>
-          <div style="height:6px;background:{T['track_bg']};border-radius:99px;overflow:hidden;margin-bottom:10px"><div style="width:{rc_bar:.1f}%;height:100%;background:{T['accent']};border-radius:99px"></div></div>
-          <div style="font-size:.72rem;color:{T['muted']};margin-bottom:14px">Gap <span style="color:{T['amber_val']};font-weight:700">{max(rc_gap,0):.0f}%</span></div>
-          <div style="display:flex;gap:16px;margin-bottom:14px">
-            <div style="display:flex;align-items:center;gap:6px"><span>✅</span><div><div style="font-size:.55rem;color:{T['muted']}">Paid</div><div style="font-size:1.1rem;font-weight:800;color:{T['green_val']}">{paid_cases:,}</div></div></div>
-            <div style="display:flex;align-items:center;gap:6px"><span>❌</span><div><div style="font-size:.55rem;color:{T['muted']}">Unpaid</div><div style="font-size:1.1rem;font-weight:800;color:{T['red_val']}">{unpaid_cases:,}</div></div></div>
+          <div style="height:8px;background:{T['track_bg']};border-radius:99px;overflow:hidden;margin-bottom:12px;position:relative">
+            <div style="position:absolute;left:0;top:0;height:100%;width:{rc_bar:.1f}%;background:linear-gradient(90deg,{T['accent']},{T['green']});border-radius:99px"></div>
+            <div style="position:absolute;left:65%;top:-4px;width:2px;height:16px;background:{T['amber']};border-radius:2px"></div>
           </div>
-          <div style="background:{T['inner_bg']};border-radius:8px;padding:10px 12px">
-            <div style="font-size:.62rem;color:{T['muted']};font-weight:700;margin-bottom:6px">💰 Collection (Bucket-wise)</div>
-            {bkt_col_html}
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 0;margin-top:6px;border-top:1px solid {T['border']}"><span style="font-size:.72rem;color:{T['muted']};font-weight:700">Total</span><span style="font-size:.85rem;font-weight:900;color:{T['green_val']}">{fmt_full_inr(total_collection)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:.65rem;color:{T['muted']};margin-bottom:16px">
+            <span>0%</span>
+            <span style="color:{T['amber_val']};font-weight:700">Target 65%</span>
+            <span>100%</span>
+          </div>
+          <div style="font-size:.78rem;color:{T['muted']};margin-bottom:16px">Gap <span style="color:{T['amber_val']};font-weight:800;font-size:.85rem">{max(rc_gap,0):.0f}%</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+            <div style="background:{'rgba(16,185,129,.08)' if THEME=='dark' else 'rgba(5,150,105,.04)'};border:1px solid {'rgba(16,185,129,.2)' if THEME=='dark' else 'rgba(5,150,105,.15)'};border-radius:10px;padding:14px;text-align:center">
+              <div style="font-size:.62rem;color:{T['muted']};font-weight:700;margin-bottom:4px">✅ Paid</div>
+              <div style="font-size:1.6rem;font-weight:900;color:{T['green_val']};font-family:var(--font-mono)">{paid_cases:,}</div>
+              <div style="font-size:.6rem;color:{T['muted']};margin-top:2px">{round(paid_cases/len(exec_df)*100,1) if len(exec_df) else 0}%</div>
+            </div>
+            <div style="background:{'rgba(239,68,68,.08)' if THEME=='dark' else 'rgba(220,38,38,.04)'};border:1px solid {'rgba(239,68,68,.2)' if THEME=='dark' else 'rgba(220,38,38,.15)'};border-radius:10px;padding:14px;text-align:center">
+              <div style="font-size:.62rem;color:{T['muted']};font-weight:700;margin-bottom:4px">❌ Unpaid</div>
+              <div style="font-size:1.6rem;font-weight:900;color:{T['red_val']};font-family:var(--font-mono)">{unpaid_cases:,}</div>
+              <div style="font-size:.6rem;color:{T['muted']};margin-top:2px">{round(unpaid_cases/len(exec_df)*100,1) if len(exec_df) else 0}%</div>
+            </div>
+          </div>
+          <div style="background:{T['inner_bg']};border-radius:12px;padding:16px;border:1px solid {T['border']}">
+            <div style="font-size:.72rem;color:{T['muted']};font-weight:700;margin-bottom:12px">💰 Collection (Bucket-wise)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+              {bkt_col_html}
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:{'rgba(16,185,129,.08)' if THEME=='dark' else 'rgba(5,150,105,.05)'};border:1px solid {'rgba(16,185,129,.2)' if THEME=='dark' else 'rgba(5,150,105,.15)'};border-radius:8px">
+              <span style="font-size:.78rem;color:{T['muted']};font-weight:700">Total Collection</span>
+              <span style="font-size:1.1rem;font-weight:900;color:{T['green_val']};font-family:var(--font-mono)">{fmt_full_inr(total_collection)}</span>
+            </div>
           </div>
         </div>
         """
 
-        # Render as tabs (Receipt Cut default/first)
-        tab_rc, tab_b1, tab_b2 = st.tabs(["📋 Receipt Cut", "🏦 BKT-1", "🏦 BKT-2"])
-        with tab_rc:
+        # Render: 3 columns - stacks on mobile automatically
+        dc1, dc2, dc3 = st.columns(3)
+        with dc1:
             st.markdown(receipt_card_html, unsafe_allow_html=True)
-        with tab_b1:
+        with dc2:
             st.markdown(bkt_card_v2(b1, 1, b1_next_rate, b1_next_thresh), unsafe_allow_html=True)
-        with tab_b2:
+        with dc3:
             st.markdown(bkt_card_v2(b2, 2, b2_next_rate, b2_next_thresh), unsafe_allow_html=True)
 
         # Admin only — executive payout table
