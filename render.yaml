@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: rcc-mobile
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: RCC_CLOUD
+        value: "1"
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+    plan: free
