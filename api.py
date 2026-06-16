@@ -409,10 +409,19 @@ async def ranking():
     return {"ranking": rows}
 
 
-# Serve PWA root
+# Serve PWA root — detect mobile vs desktop
 @app.get("/")
-async def root():
-    return FileResponse(str(APP_DIR / "mobile" / "index.html"))
+async def root(request: Request):
+    user_agent = request.headers.get("user-agent", "").lower()
+    mobile_keywords = ["mobile", "android", "iphone", "ipad", "ipod", "webos", "opera mini", "opera mobi"]
+    is_mobile = any(kw in user_agent for kw in mobile_keywords)
+    
+    if is_mobile:
+        return FileResponse(str(APP_DIR / "mobile" / "index.html"))
+    else:
+        # Desktop — redirect to Streamlit
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="https://rccapp.xyz", status_code=302)
 
 
 if __name__ == "__main__":
