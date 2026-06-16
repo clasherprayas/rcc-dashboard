@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0b1120">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="RCC">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=13">
+  <title>RCC Mobile</title>
+</head>
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-logo">R<span>CC</span></div>
+    <div class="login-sub">Resolution Command Center</div>
+    <div class="login-form">
+      <div class="input-group">
+        <label>Username</label>
+        <input type="text" id="loginUser" placeholder="Enter name" autocomplete="username">
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password">
+      </div>
+      <button class="btn-primary" id="loginBtn">Sign In</button>
+      <div class="login-error" id="loginError">Invalid username or password</div>
+    </div>
+  </div>
+
+  <!-- APP SHELL -->
+  <div class="app-container" id="appContainer">
+    
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn-menu" id="menuBtn" onclick="toggleMenu()">☰</button>
+        <div class="topbar-title">R<span>CC</span></div>
+      </div>
+      <div class="topbar-user">
+        <span class="topbar-badge" id="userBadge">Admin</span>
+        <button class="btn-theme" id="themeBtn" onclick="toggleTheme()">☀️</button>
+        <button class="btn-logout" id="logoutBtn">Logout</button>
+      </div>
+    </div>
+
+    <!-- SIDE MENU (Admin) -->
+    <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+    <div class="side-menu" id="sideMenu">
+      <div class="menu-header">
+        <div class="menu-title">R<span>CC</span> Menu</div>
+        <button class="menu-close" onclick="toggleMenu()">✕</button>
+      </div>
+      <div class="menu-section">
+        <div class="menu-section-title">📤 Share Links</div>
+        <div class="menu-item" onclick="copyLink('trails')">
+          <span>📌 Pending Trails Link</span>
+          <span class="menu-hint">Copy</span>
+        </div>
+        <div class="menu-item" onclick="copyLink('flowlist')">
+          <span>📋 Flow List Link</span>
+          <span class="menu-hint">Copy</span>
+        </div>
+      </div>
+      <div class="menu-section">
+        <div class="menu-section-title">⚙️ Settings</div>
+        <div class="menu-item" onclick="toggleTheme();toggleMenu()">
+          <span id="menuThemeLabel">☀️ Light Mode</span>
+        </div>
+        <div class="menu-item" onclick="forceRefresh()">
+          <span>🔄 Refresh Data</span>
+        </div>
+        <div class="menu-item" onclick="installApp()">
+          <span>📱 Install App</span>
+        </div>
+      </div>
+      <div class="menu-section">
+        <div class="menu-item menu-danger" onclick="document.getElementById('logoutBtn').click();toggleMenu()">
+          <span>🚪 Logout</span>
+        </div>
+      </div>
+      <div class="menu-footer" id="menuFooter">Logged in as ADMIN</div>
+    </div>
+
+    <!-- REFRESH INDICATOR -->
+    <div class="refresh-indicator" id="refreshIndicator">🔄 Refreshing...</div>
+
+    <!-- PAGE CONTENT -->
+    <div class="page-content">
+      
+      <!-- DASHBOARD PAGE -->
+      <div class="page active" id="pageDashboard">
+        <div id="dashboardContent"><div class="loader"><div class="spinner"></div></div></div>
+      </div>
+
+      <!-- TRAILS PAGE -->
+      <div class="page" id="pageTrails">
+        <div id="trailsContent"><div class="loader"><div class="spinner"></div></div></div>
+      </div>
+
+      <!-- FLOW LIST PAGE -->
+      <div class="page" id="pageFlow">
+        <div id="flowContent"><div class="loader"><div class="spinner"></div></div></div>
+      </div>
+
+      <!-- SEARCH PAGE -->
+      <div class="page" id="pageSearch">
+        <div class="search-box">
+          <span class="icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Loan No / Customer Name">
+        </div>
+        <div class="pill-tabs" id="searchBktTabs">
+          <div class="pill-tab active" onclick="setSearchBkt('ALL')">ALL</div>
+          <div class="pill-tab" onclick="setSearchBkt(1)">BKT-1</div>
+          <div class="pill-tab" onclick="setSearchBkt(2)">BKT-2</div>
+          <div class="pill-tab" onclick="setSearchBkt(3)">BKT-3</div>
+          <div class="pill-tab" onclick="setSearchBkt(4)">BKT-4</div>
+          <div class="pill-tab" onclick="setSearchBkt(5)">BKT-5</div>
+          <div class="pill-tab" onclick="setSearchBkt(6)">BKT-6</div>
+        </div>
+        <div id="searchResults"></div>
+      </div>
+
+      <!-- RANKING PAGE -->
+      <div class="page" id="pageRanking">
+        <div id="rankingContent"><div class="loader"><div class="spinner"></div></div></div>
+      </div>
+
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <div class="bottom-nav">
+      <div class="nav-item active" data-page="pageDashboard">
+        <span class="icon">📊</span>
+        <span class="label">Dashboard</span>
+      </div>
+      <div class="nav-item" data-page="pageTrails">
+        <span class="icon">📌</span>
+        <span class="label">Trails</span>
+      </div>
+      <div class="nav-item" data-page="pageFlow">
+        <span class="icon">📋</span>
+        <span class="label">Flow</span>
+      </div>
+      <div class="nav-item" data-page="pageSearch">
+        <span class="icon">🔍</span>
+        <span class="label">Search</span>
+      </div>
+      <div class="nav-item" data-page="pageRanking">
+        <span class="icon">🏆</span>
+        <span class="label">Ranking</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js?v=13"></script>
+</body>
+</html>

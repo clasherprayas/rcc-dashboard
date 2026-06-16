@@ -110,9 +110,30 @@ def sync():
         log("ERROR", f"Copy failed: {e}")
 
 
+def wait_for_network(max_wait=120, check_interval=5):
+    """Wait for network path to become available after boot."""
+    log("INFO", f"Waiting for network path (max {max_wait}s)...")
+    waited = 0
+    while waited < max_wait:
+        try:
+            if SOURCE_FILE.parent.exists():
+                log("INFO", f"Network path available after {waited}s")
+                return True
+        except OSError:
+            pass
+        time.sleep(check_interval)
+        waited += check_interval
+    log("WARN", f"Network path NOT available after {max_wait}s. Starting anyway.")
+    return False
+
+
 def main():
     """Main loop: poll every 30 seconds."""
     log("INFO", f"Sync worker started | PID: {os.getpid()}")
+
+    # Wait for network/OneDrive to be ready (critical after reboot)
+    wait_for_network()
+
     cycle = 0
     while True:
         cycle += 1
