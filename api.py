@@ -71,15 +71,32 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(NoCacheMiddleware)
 
+# ── PUBLIC LINKS ACCESS CONTROL ──
+_public_access = {"enabled": True}
+
+@app.get("/api/public-access")
+async def get_public_access():
+    return {"enabled": _public_access["enabled"]}
+
+@app.post("/api/public-access")
+async def set_public_access(request: Request):
+    body = await request.json()
+    _public_access["enabled"] = body.get("enabled", True)
+    return {"enabled": _public_access["enabled"]}
+
 # ── PUBLIC PAGES (no login required) — must be before StaticFiles mount ──
 from fastapi.responses import HTMLResponse
 
 @app.get("/public/trails")
 async def public_trails_page():
+    if not _public_access["enabled"]:
+        return HTMLResponse(content="""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Access Disabled</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#f0f4f8;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}.card{background:white;border-radius:16px;padding:40px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.08);max-width:360px}.icon{font-size:48px;margin-bottom:16px}.title{font-size:18px;font-weight:700;color:#1e293b;margin-bottom:8px}.msg{font-size:14px;color:#64748b}</style></head><body><div class="card"><div class="icon">🔒</div><div class="title">Access Disabled</div><div class="msg">This link has been disabled by the admin. Contact your administrator for access.</div></div></body></html>""", status_code=403)
     return FileResponse(str(APP_DIR / "mobile" / "public_trails.html"))
 
 @app.get("/public/flowlist")
 async def public_flowlist_page():
+    if not _public_access["enabled"]:
+        return HTMLResponse(content="""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Access Disabled</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#f0f4f8;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}.card{background:white;border-radius:16px;padding:40px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.08);max-width:360px}.icon{font-size:48px;margin-bottom:16px}.title{font-size:18px;font-weight:700;color:#1e293b;margin-bottom:8px}.msg{font-size:14px;color:#64748b}</style></head><body><div class="card"><div class="icon">🔒</div><div class="title">Access Disabled</div><div class="msg">This link has been disabled by the admin. Contact your administrator for access.</div></div></body></html>""", status_code=403)
     return FileResponse(str(APP_DIR / "mobile" / "public_flowlist.html"))
 
 app.mount("/mobile", StaticFiles(directory=str(APP_DIR / "mobile"), html=True), name="mobile")

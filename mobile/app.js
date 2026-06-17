@@ -141,6 +141,7 @@ function showApp() {
   document.getElementById('menuBtn').style.display = currentUser.role === 'admin' ? 'inline-flex' : 'none';
   if (currentUser.role === 'admin') {
     loadExecFilter();
+    loadPublicAccessStatus();
   }
   loadDashboard();
   loadTrails();
@@ -185,6 +186,7 @@ function toggleMenu() {
     overlay.classList.add('open');
     const theme = document.documentElement.getAttribute('data-theme') || 'dark';
     document.getElementById('menuThemeLabel').textContent = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    loadPublicAccessStatus();
   }
 }
 
@@ -202,6 +204,41 @@ function copyLink(type) {
     prompt('Copy this link:', url);
   });
   toggleMenu();
+}
+
+// ── PUBLIC ACCESS TOGGLE ──
+async function loadPublicAccessStatus() {
+  try {
+    const res = await fetch(`${API_BASE}/api/public-access`);
+    const data = await res.json();
+    updatePublicAccessUI(data.enabled);
+  } catch(e) {}
+}
+
+function updatePublicAccessUI(enabled) {
+  const label = document.getElementById('publicAccessLabel');
+  const hint = document.getElementById('publicAccessHint');
+  if (label) {
+    label.textContent = enabled ? '🔓 Links: Enabled' : '🔒 Links: Disabled';
+    hint.textContent = enabled ? 'Tap to disable' : 'Tap to enable';
+  }
+}
+
+async function togglePublicAccess() {
+  try {
+    const res = await fetch(`${API_BASE}/api/public-access`);
+    const data = await res.json();
+    const newState = !data.enabled;
+    await fetch(`${API_BASE}/api/public-access`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: newState })
+    });
+    updatePublicAccessUI(newState);
+    showToast(newState ? '🔓 Public links enabled' : '🔒 Public links disabled');
+  } catch(e) {
+    showToast('❌ Error toggling access');
+  }
 }
 
 function showToast(msg) {
