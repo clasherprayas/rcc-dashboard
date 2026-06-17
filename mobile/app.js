@@ -197,6 +197,8 @@ function copyLink(type) {
     url = `${baseUrl}/public/trails`;
   } else if (type === 'flowlist') {
     url = `${baseUrl}/public/flowlist`;
+  } else if (type === 'search') {
+    url = `${baseUrl}/public/search`;
   }
   navigator.clipboard.writeText(url).then(() => {
     showToast('✅ Link copied! Share on WhatsApp');
@@ -213,11 +215,17 @@ async function loadPublicAccessStatus() {
     const data = await res.json();
     const linkToggle = document.getElementById('linkToggle');
     const pwdToggle = document.getElementById('pwdToggle');
+    const searchToggle = document.getElementById('searchToggle');
     if (linkToggle) linkToggle.checked = data.enabled;
     if (pwdToggle) pwdToggle.checked = data.password_required;
+    if (searchToggle) searchToggle.checked = data.search_enabled;
     if (data.password) {
       const el = document.getElementById('currentPwd');
       if (el) el.textContent = data.password;
+    }
+    if (data.search_password) {
+      const el = document.getElementById('searchPwd');
+      if (el) el.textContent = data.search_password;
     }
   } catch(e) {}
 }
@@ -268,6 +276,40 @@ async function changePassword() {
     });
     document.getElementById('currentPwd').textContent = newPwd.trim();
     showToast('✅ Password changed to: ' + newPwd.trim());
+  } catch(e) {
+    showToast('❌ Error changing password');
+  }
+}
+
+// ── SEARCH/ACTION CENTER ACCESS ──
+async function toggleSearchAccess() {
+  try {
+    const res = await fetch(`${API}/api/public-access`);
+    const data = await res.json();
+    const newState = !data.search_enabled;
+    await fetch(`${API}/api/public-access`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ search_enabled: newState })
+    });
+    document.getElementById('searchToggle').checked = newState;
+    showToast(newState ? '🔓 Action Center enabled' : '🔒 Action Center disabled');
+  } catch(e) {
+    showToast('❌ Error toggling access');
+  }
+}
+
+async function changeSearchPassword() {
+  const newPwd = prompt('Enter new password for Action Center:');
+  if (!newPwd || newPwd.trim() === '') return;
+  try {
+    await fetch(`${API}/api/public-access`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ search_password: newPwd.trim() })
+    });
+    document.getElementById('searchPwd').textContent = newPwd.trim();
+    showToast('✅ Search password changed to: ' + newPwd.trim());
   } catch(e) {
     showToast('❌ Error changing password');
   }

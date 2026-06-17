@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>RCC - Action Center</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f0f4f8; color: #1a202c; min-height: 100vh; }
+    .topbar { background: linear-gradient(135deg, #1e293b, #334155); color: white; padding: 16px 20px; text-align: center; font-size: 15px; font-weight: 700; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.2); }
+    .topbar small { display: block; font-size: 11px; font-weight: 400; opacity: 0.7; margin-top: 3px; }
+    .container { padding: 16px; max-width: 600px; margin: 0 auto; }
+    .search-wrap { position: relative; margin-bottom: 14px; }
+    .search-wrap input { width: 100%; padding: 14px 16px 14px 42px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 14px; font-weight: 500; background: white; color: #1e293b; outline: none; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .search-wrap input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .search-wrap .icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; }
+    .bkt-tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; padding: 2px; }
+    .bkt-tab { padding: 8px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap; background: #e2e8f0; color: #475569; transition: all 0.2s; }
+    .bkt-tab.active { background: linear-gradient(135deg, #2563eb, #1e40af); color: white; }
+    .count-info { font-size: 12px; color: #64748b; margin-bottom: 12px; font-weight: 500; }
+    .count-info strong { color: #1e293b; }
+    .case-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+    .case-card:active { transform: scale(0.98); }
+    .case-card.expanded { border-color: #93c5fd; box-shadow: 0 4px 16px rgba(37,99,235,0.1); }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+    .card-name { font-size: 13px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px; }
+    .card-chip { display: inline-flex; padding: 3px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .chip-stable { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+    .chip-flow { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+    .chip-rb { background: #ede9fe; color: #7c3aed; border: 1px solid #ddd6fe; }
+    .card-sub { font-size: 11px; color: #64748b; font-weight: 500; }
+    .card-sub .green { color: #059669; font-weight: 700; }
+    .card-details { display: none; margin-top: 12px; border-top: 1px solid #f1f5f9; padding-top: 12px; }
+    .case-card.expanded .card-details { display: block; }
+    .detail-section { margin-bottom: 12px; }
+    .detail-section:last-child { margin-bottom: 0; }
+    .section-title { font-size: 10px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #eff6ff; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .detail-item { display: flex; flex-direction: column; gap: 1px; }
+    .detail-label { font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; }
+    .detail-val { font-size: 12px; font-weight: 600; color: #1e293b; }
+    .detail-val.mono { font-family: 'JetBrains Mono', monospace; }
+    .detail-val.green { color: #059669; }
+    .detail-val.amber { color: #d97706; }
+    .detail-val.red { color: #dc2626; }
+    .detail-val.purple { color: #7c3aed; }
+    .empty { text-align: center; padding: 40px; color: #94a3b8; font-size: 13px; }
+    .empty .emoji { font-size: 36px; margin-bottom: 8px; }
+
+    /* PASSWORD GATE */
+    .password-gate { position: fixed; inset: 0; background: linear-gradient(135deg, #0f172a, #1e293b); display: flex; justify-content: center; align-items: center; z-index: 9999; padding: 20px; }
+    .password-card { background: white; border-radius: 20px; padding: 36px 28px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 340px; width: 100%; }
+    .password-card .lock-icon { width: 60px; height: 60px; background: linear-gradient(135deg, #ef4444, #dc2626); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 16px; box-shadow: 0 4px 20px rgba(239,68,68,0.3); }
+    .password-card .title { font-size: 18px; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+    .password-card .subtitle { font-size: 12px; color: #64748b; margin-bottom: 24px; }
+    .password-card input { width: 100%; padding: 14px 16px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px; outline: none; text-align: center; letter-spacing: 3px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .password-card input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .password-card button { width: 100%; padding: 14px; margin-top: 14px; background: linear-gradient(135deg, #2563eb, #1e40af); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.3); transition: all 0.2s; }
+    .password-card button:active { transform: scale(0.97); }
+    .password-card .error { color: #dc2626; font-size: 12px; margin-top: 10px; display: none; font-weight: 600; }
+    .password-card .warning { font-size: 10px; color: #94a3b8; margin-top: 16px; padding-top: 12px; border-top: 1px solid #f1f5f9; }
+  </style>
+</head>
+<body>
+  <!-- PASSWORD GATE (always required for search) -->
+  <div class="password-gate" id="passwordGate">
+    <div class="password-card">
+      <div class="lock-icon">🔐</div>
+      <div class="title">Restricted Access</div>
+      <div class="subtitle">Enter password to access Action Center</div>
+      <input type="password" id="gatePassword" placeholder="• • • • • •" onkeypress="if(event.key==='Enter')verifyPassword()">
+      <button onclick="verifyPassword()">Unlock Access</button>
+      <div class="error" id="gateError">❌ Wrong password. Access denied.</div>
+      <div class="warning">⚠️ This page contains sensitive loan data. Unauthorized access is prohibited.</div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div id="mainApp" style="display:none">
+    <div class="topbar">
+      🔍 RCC — Action Center
+      <small>Search loan details</small>
+    </div>
+    <div class="container">
+      <div class="search-wrap">
+        <span class="icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Loan No / Customer Name">
+      </div>
+      <div class="bkt-tabs" id="bktTabs">
+        <div class="bkt-tab active" onclick="setBkt('ALL')">ALL</div>
+        <div class="bkt-tab" onclick="setBkt(1)">BKT-1</div>
+        <div class="bkt-tab" onclick="setBkt(2)">BKT-2</div>
+        <div class="bkt-tab" onclick="setBkt(3)">BKT-3</div>
+        <div class="bkt-tab" onclick="setBkt(4)">BKT-4</div>
+        <div class="bkt-tab" onclick="setBkt(5)">BKT-5</div>
+        <div class="bkt-tab" onclick="setBkt(6)">BKT-6</div>
+      </div>
+      <div id="results"><div class="empty"><div class="emoji">🔍</div>Search for a loan or customer name</div></div>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin;
+    let currentBkt = 'ALL';
+    let searchTimeout = null;
+
+    function fmtIndian(num) {
+      if (!num || isNaN(num)) return '0';
+      num = Math.round(Math.abs(num));
+      const str = num.toString();
+      if (str.length <= 3) return '₹' + str;
+      const last3 = str.slice(-3);
+      const rest = str.slice(0, -3);
+      const formatted = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + last3;
+      return '₹' + formatted;
+    }
+
+    // PASSWORD VERIFICATION
+    async function verifyPassword() {
+      const pwd = document.getElementById('gatePassword').value;
+      try {
+        const res = await fetch(`${API}/api/public-verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pwd, type: 'search' })
+        });
+        const data = await res.json();
+        if (data.verified) {
+          document.getElementById('passwordGate').style.display = 'none';
+          document.getElementById('mainApp').style.display = 'block';
+          loadCases('');
+        } else {
+          document.getElementById('gateError').style.display = 'block';
+          document.getElementById('gatePassword').value = '';
+        }
+      } catch(e) {
+        document.getElementById('gateError').style.display = 'block';
+      }
+    }
+
+    // SEARCH
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => loadCases(e.target.value), 300);
+    });
+
+    function setBkt(b) {
+      currentBkt = b;
+      document.querySelectorAll('.bkt-tab').forEach((t, i) => {
+        if (b === 'ALL' && i === 0) t.classList.add('active');
+        else if (b === i) t.classList.add('active');
+        else t.classList.remove('active');
+      });
+      loadCases(document.getElementById('searchInput').value);
+    }
+
+    async function loadCases(query) {
+      let url = `${API}/api/search?q=${encodeURIComponent(query || '')}&user=ADMIN&role=admin`;
+      if (currentBkt !== 'ALL') url += `&bucket=${currentBkt}`;
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data || !data.results || data.results.length === 0) {
+          document.getElementById('results').innerHTML = '<div class="empty"><div class="emoji">📭</div>No cases found</div>';
+          return;
+        }
+        let html = `<div class="count-info">Showing <strong>${data.results.length}</strong> cases</div>`;
+        data.results.forEach(r => {
+          const chipCls = r.pos_status === 'STABLE' ? 'chip-stable' : r.pos_status === 'RB' ? 'chip-rb' : 'chip-flow';
+          const rcCls = r.receipt_cut === 'PAID' ? 'green' : 'red';
+          html += `
+            <div class="case-card" onclick="this.classList.toggle('expanded')">
+              <div class="card-header">
+                <div class="card-name"><span>🏦</span>${r.customer_name}</div>
+                <span class="card-chip ${chipCls}">${r.pos_status}</span>
+              </div>
+              <div class="card-sub">For Stable <span class="green">${fmtIndian(r.stab_amount)}</span> · POS ${fmtIndian(r.pos)} · BKT-${r.bucket}</div>
+              <div class="card-details">
+                <div class="detail-section">
+                  <div class="section-title">Basic Details</div>
+                  <div class="detail-grid">
+                    <div class="detail-item"><span class="detail-label">Loan No</span><span class="detail-val mono">${r.loan_no}</span></div>
+                    <div class="detail-item"><span class="detail-label">Customer</span><span class="detail-val">${r.customer_name}</span></div>
+                    <div class="detail-item"><span class="detail-label">Executive</span><span class="detail-val">${r.team}</span></div>
+                    <div class="detail-item"><span class="detail-label">Area</span><span class="detail-val">${r.area || '—'}</span></div>
+                    <div class="detail-item"><span class="detail-label">Mobile</span><span class="detail-val mono">${r.mobile || '—'}</span></div>
+                    <div class="detail-item"><span class="detail-label">Bucket</span><span class="detail-val">BKT-${r.bucket}</span></div>
+                  </div>
+                </div>
+                <div class="detail-section">
+                  <div class="section-title">Recovery Info</div>
+                  <div class="detail-grid">
+                    <div class="detail-item"><span class="detail-label">EMI</span><span class="detail-val mono">${fmtIndian(r.emi)}</span></div>
+                    <div class="detail-item"><span class="detail-label">Stable Amt</span><span class="detail-val mono green">${fmtIndian(r.stab_amount)}</span></div>
+                    <div class="detail-item"><span class="detail-label">POS</span><span class="detail-val mono green">${fmtIndian(r.pos)}</span></div>
+                    <div class="detail-item"><span class="detail-label">Paid</span><span class="detail-val mono green">${fmtIndian(r.paid_amount)}</span></div>
+                    <div class="detail-item"><span class="detail-label">DRA%</span><span class="detail-val mono amber">${r.dra_pct}%</span></div>
+                    <div class="detail-item"><span class="detail-label">Receipt</span><span class="detail-val ${rcCls}">${r.receipt_cut}</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        document.getElementById('results').innerHTML = html;
+      } catch(e) {
+        document.getElementById('results').innerHTML = '<div class="empty"><div class="emoji">⚠️</div>Error loading data</div>';
+      }
+    }
+  </script>
+</body>
+</html>
