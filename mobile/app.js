@@ -580,6 +580,10 @@ async function loadFlowList(bucket = currentFlowBucket) {
     return;
   }
 
+  // Projection targets per bucket
+  const projTargets = { 1: 90, 2: 70, 3: 50, 4: 30, 5: 15, 6: 10 };
+  const projTarget = projTargets[bucket] || 50;
+
   let tabs = '';
   for (let i = 1; i <= 6; i++) {
     tabs += `<div class="pill-tab ${bucket===i?'active':''}" onclick="loadFlowList(${i})">BKT-${i}</div>`;
@@ -590,7 +594,8 @@ async function loadFlowList(bucket = currentFlowBucket) {
     rows = `<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--muted)">✅ No flow cases in this bucket</td></tr>`;
   } else {
     data.cases.forEach(c => {
-      rows += `<tr><td>${c.customer_name}</td><td class="mono green text-right">${fmtIndianFull(c.pos)}</td><td class="mono amber text-right">${c.dra_pct}%</td></tr>`;
+      const draCls = c.dra_pct >= 50 ? 'green' : c.dra_pct >= 20 ? 'amber' : 'red';
+      rows += `<tr><td>${c.customer_name}</td><td class="mono green text-right">₹${fmtIndianFull(c.pos)}</td><td class="mono ${draCls} text-right">${c.dra_pct}%</td></tr>`;
     });
   }
 
@@ -600,12 +605,16 @@ async function loadFlowList(bucket = currentFlowBucket) {
       <div class="banner-left">
         <span style="font-size:1.3rem">📋</span>
         <div>
-          <div class="banner-label">FLOW CASES · BKT-${bucket}</div>
+          <div class="banner-label">BKT-${bucket} FLOW CASES</div>
           <div class="banner-value">${data.total}</div>
         </div>
       </div>
+      <div class="banner-projection">
+        <div class="proj-label">PROJECTION</div>
+        <div class="proj-value">${projTarget}%</div>
+      </div>
     </div>
-    <div class="rcc-table-wrap">
+    <div class="rcc-table-wrap flow-table-wrap">
       <table class="rcc-table flow-table">
         <colgroup><col><col><col></colgroup>
         <thead><tr><th>CUSTOMER NAME</th><th class="text-right">POS</th><th class="text-right">DRA CASE %</th></tr></thead>

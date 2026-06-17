@@ -150,6 +150,7 @@
       font-weight: 500;
       word-wrap: break-word;
       overflow-wrap: break-word;
+      border-left: 3px solid #059669;
     }
     td.text-right {
       text-align: right;
@@ -331,6 +332,10 @@
         document.getElementById('content').innerHTML = `
           <div class="summary-banner">
             <div>BKT-${currentBucket} Flow Cases</div>
+            <div style="text-align:center">
+              <div style="font-size:10px;opacity:.7">PROJECTION</div>
+              <div style="font-size:18px;font-weight:800">${{1:90,2:70,3:50,4:30,5:15,6:10}[currentBucket]}%</div>
+            </div>
             <div class="banner-count">${data.total}</div>
           </div>
           <div class="table-wrap">

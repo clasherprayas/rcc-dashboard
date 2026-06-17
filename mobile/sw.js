@@ -1,5 +1,5 @@
 // RCC Service Worker — Offline caching
-const CACHE_NAME = 'rcc-pwa-v15';
+const CACHE_NAME = 'rcc-pwa-v16';
 const STATIC_ASSETS = [
   '/mobile/',
   '/mobile/index.html',

@@ -257,18 +257,32 @@ body {
 .receipt-stat-val { font-size: 1.6rem; font-weight: 900; font-family: var(--mono); }
 
 /* ── TABLE STYLES (Streamlit match) ── */
-.rcc-table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; background: var(--surface); box-shadow: var(--shadow); margin-bottom: 14px; }
+.rcc-table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow); margin-bottom: 14px; }
 .rcc-table { width: 100%; border-collapse: collapse; font-size: .78rem; table-layout: fixed; }
 .rcc-table thead th {
   position: sticky; top: 0; z-index: 5; background: var(--surface2); color: var(--muted);
   font-weight: 700; text-align: left; border-bottom: 2px solid var(--border);
-  padding: 10px 10px; font-size: .65rem; text-transform: uppercase; letter-spacing: .04em;
+  padding: 12px 12px; font-size: .65rem; text-transform: uppercase; letter-spacing: .04em;
 }
-.rcc-table tbody td { background: var(--surface); color: var(--ink); border-bottom: 1px solid var(--border); padding: 10px 10px; transition: background .15s; font-size: .8rem; word-wrap: break-word; }
+.rcc-table tbody td { background: var(--surface); color: var(--ink); border-bottom: 1px solid var(--border); padding: 12px 12px; transition: background .15s; font-size: .8rem; word-wrap: break-word; }
 .rcc-table tbody tr:nth-child(even) td { background: var(--surface2); }
 .rcc-table tbody tr:hover td { background: rgba(59,130,246,.06); }
+.rcc-table tbody tr:last-child td { border-bottom: none; }
 .rcc-table .mono { font-family: var(--mono); font-weight: 700; font-size: .78rem; white-space: nowrap; }
 .rcc-table .text-right { text-align: right; }
+
+/* Flow table — left green border on rows (like screenshot) */
+.flow-table-wrap .rcc-table tbody td:first-child { border-left: 3px solid var(--green); }
+.flow-table-wrap .rcc-table tbody tr:nth-child(even) td:first-child { border-left-color: var(--green); }
+
+/* ── PROJECTION BADGE (in banner) ── */
+.banner-projection { text-align: center; background: rgba(255,255,255,.15); border-radius: 8px; padding: 6px 14px; }
+.proj-label { font-size: .55rem; font-weight: 700; color: rgba(255,255,255,.6); text-transform: uppercase; letter-spacing: .04em; }
+.proj-value { font-size: 1.4rem; font-weight: 900; color: #fff; font-family: var(--mono); line-height: 1.1; }
+
+[data-theme="light"] .banner-projection { background: rgba(30,64,175,.1); }
+[data-theme="light"] .proj-label { color: rgba(30,64,175,.6); }
+[data-theme="light"] .proj-value { color: #1e3a8a; }
 
 /* Trail table: col widths */
 .rcc-table.trails-table col:nth-child(1) { width: 28%; }
