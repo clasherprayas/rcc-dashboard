@@ -69,15 +69,15 @@
         </div>
         <div class="menu-item toggle-item">
           <span>🔗 Links Access</span>
-          <label class="toggle-switch" onclick="togglePublicAccess()">
-            <input type="checkbox" id="linkToggle" checked>
+          <label class="toggle-switch">
+            <input type="checkbox" id="linkToggle" checked onchange="togglePublicAccess()">
             <span class="toggle-slider"></span>
           </label>
         </div>
         <div class="menu-item toggle-item">
           <span>🔑 Password Lock</span>
-          <label class="toggle-switch" onclick="togglePasswordRequired()">
-            <input type="checkbox" id="pwdToggle">
+          <label class="toggle-switch">
+            <input type="checkbox" id="pwdToggle" onchange="togglePasswordRequired()">
             <span class="toggle-slider"></span>
           </label>
         </div>
@@ -94,8 +94,8 @@
         </div>
         <div class="menu-item toggle-item">
           <span>🔓 Search Access</span>
-          <label class="toggle-switch" onclick="toggleSearchAccess()">
-            <input type="checkbox" id="searchToggle">
+          <label class="toggle-switch">
+            <input type="checkbox" id="searchToggle" onchange="toggleSearchAccess()">
             <span class="toggle-slider"></span>
           </label>
         </div>
@@ -108,8 +108,8 @@
         <div class="menu-section-title">⚙️ Settings</div>
         <div class="menu-item toggle-item">
           <span>📊 Projection %</span>
-          <label class="toggle-switch" onclick="toggleProjection()">
-            <input type="checkbox" id="projToggle" checked>
+          <label class="toggle-switch">
+            <input type="checkbox" id="projToggle" checked onchange="toggleProjection()">
             <span class="toggle-slider"></span>
           </label>
         </div>
@@ -203,6 +203,6 @@
 
   </div>
 
-  <script src="app.js?v=31"></script>
+  <script src="app.js?v=32"></script>
 </body>
 </html>

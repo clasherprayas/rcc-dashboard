@@ -234,15 +234,12 @@ async function loadPublicAccessStatus() {
 
 async function togglePublicAccess() {
   try {
-    const res = await fetch(`${API}/api/public-access`);
-    const data = await res.json();
-    const newState = !data.enabled;
+    const newState = document.getElementById('linkToggle').checked;
     await fetch(`${API}/api/public-access`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled: newState })
     });
-    document.getElementById('linkToggle').checked = newState;
     showToast(newState ? '🔓 Links enabled' : '🔒 Links disabled');
   } catch(e) {
     showToast('❌ Error toggling access');
@@ -252,15 +249,12 @@ async function togglePublicAccess() {
 // ── PASSWORD CONTROL ──
 async function togglePasswordRequired() {
   try {
-    const res = await fetch(`${API}/api/public-access`);
-    const data = await res.json();
-    const newState = !data.password_required;
+    const newState = document.getElementById('pwdToggle').checked;
     await fetch(`${API}/api/public-access`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password_required: newState })
     });
-    document.getElementById('pwdToggle').checked = newState;
     showToast(newState ? '🔑 Password ON' : '🔓 Password OFF');
   } catch(e) {
     showToast('❌ Error toggling password');
@@ -286,15 +280,12 @@ async function changePassword() {
 // ── SEARCH/ACTION CENTER ACCESS ──
 async function toggleSearchAccess() {
   try {
-    const res = await fetch(`${API}/api/public-access`);
-    const data = await res.json();
-    const newState = !data.search_enabled;
+    const newState = document.getElementById('searchToggle').checked;
     await fetch(`${API}/api/public-access`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ search_enabled: newState })
     });
-    document.getElementById('searchToggle').checked = newState;
     showToast(newState ? '🔓 Action Center enabled' : '🔒 Action Center disabled');
   } catch(e) {
     showToast('❌ Error toggling access');
@@ -334,9 +325,8 @@ function showToast(msg) {
 let showProjection = localStorage.getItem('rcc_projection') !== 'false';
 
 function toggleProjection() {
-  showProjection = !showProjection;
+  showProjection = document.getElementById('projToggle').checked;
   localStorage.setItem('rcc_projection', showProjection);
-  document.getElementById('projToggle').checked = showProjection;
   showToast(showProjection ? '📊 Projection visible' : '📊 Projection hidden');
   loadFlowList();
 }
