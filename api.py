@@ -470,7 +470,7 @@ async def flowlist(user: str = "", bucket: int = 1, role: str = "executive", aut
 
 
 @app.get("/api/search")
-async def search_loan(q: str = "", user: str = "", role: str = "executive", bucket: int = 0):
+async def search_loan(q: str = "", user: str = "", role: str = "executive", bucket: int = 0, status: str = ""):
     df = load_data()
     if df is None:
         raise HTTPException(status_code=500, detail="Data file not found")
@@ -485,6 +485,10 @@ async def search_loan(q: str = "", user: str = "", role: str = "executive", buck
     # Bucket filter
     if bucket > 0:
         search_df = search_df[search_df["BUCKET"] == bucket]
+    
+    # POS Status filter (FLOW / STABLE / RB)
+    if status and status.upper() in ("FLOW", "STABLE", "RB"):
+        search_df = search_df[search_df["POS STATUS"] == status.upper()]
     
     # If no query, return all cases sorted by STAB amount
     if not q.strip():

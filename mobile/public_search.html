@@ -96,6 +96,12 @@
         <div class="bkt-tab" onclick="setBkt(5)">BKT-5</div>
         <div class="bkt-tab" onclick="setBkt(6)">BKT-6</div>
       </div>
+      <div class="bkt-tabs" id="statusTabs">
+        <div class="bkt-tab active" onclick="setStatus('ALL')">ALL</div>
+        <div class="bkt-tab" onclick="setStatus('FLOW')" style="--tab-color:#d97706">FLOW</div>
+        <div class="bkt-tab" onclick="setStatus('STABLE')" style="--tab-color:#059669">STABLE</div>
+        <div class="bkt-tab" onclick="setStatus('RB')" style="--tab-color:#7c3aed">RB</div>
+      </div>
       <div id="results"><div class="empty"><div class="emoji">🔍</div>Search for a loan or customer name</div></div>
     </div>
   </div>
@@ -103,6 +109,7 @@
   <script>
     const API = window.location.origin;
     let currentBkt = 'ALL';
+    let currentStatus = 'ALL';
     let searchTimeout = null;
 
     function fmtIndian(num) {
@@ -147,7 +154,7 @@
 
     function setBkt(b) {
       currentBkt = b;
-      document.querySelectorAll('.bkt-tab').forEach((t, i) => {
+      document.querySelectorAll('#bktTabs .bkt-tab').forEach((t, i) => {
         if (b === 'ALL' && i === 0) t.classList.add('active');
         else if (b === i) t.classList.add('active');
         else t.classList.remove('active');
@@ -155,9 +162,19 @@
       loadCases(document.getElementById('searchInput').value);
     }
 
+    function setStatus(s) {
+      currentStatus = s;
+      document.querySelectorAll('#statusTabs .bkt-tab').forEach((t, i) => {
+        const vals = ['ALL', 'FLOW', 'STABLE', 'RB'];
+        t.classList.toggle('active', vals[i] === s);
+      });
+      loadCases(document.getElementById('searchInput').value);
+    }
+
     async function loadCases(query) {
       let url = `${API}/api/search?q=${encodeURIComponent(query || '')}&user=ADMIN&role=admin`;
       if (currentBkt !== 'ALL') url += `&bucket=${currentBkt}`;
+      if (currentStatus !== 'ALL') url += `&status=${currentStatus}`;
       try {
         const res = await fetch(url);
         const data = await res.json();
