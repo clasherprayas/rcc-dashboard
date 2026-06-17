@@ -186,6 +186,8 @@ function toggleMenu() {
     overlay.classList.add('open');
     const theme = document.documentElement.getAttribute('data-theme') || 'dark';
     document.getElementById('menuThemeLabel').textContent = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    const projToggle = document.getElementById('projToggle');
+    if (projToggle) projToggle.checked = showProjection;
     loadPublicAccessStatus();
   }
 }
@@ -326,6 +328,17 @@ function showToast(msg) {
   toast.textContent = msg;
   toast.classList.add('show');
   setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ── PROJECTION TOGGLE ──
+let showProjection = localStorage.getItem('rcc_projection') !== 'false';
+
+function toggleProjection() {
+  showProjection = !showProjection;
+  localStorage.setItem('rcc_projection', showProjection);
+  document.getElementById('projToggle').checked = showProjection;
+  showToast(showProjection ? '📊 Projection visible' : '📊 Projection hidden');
+  loadFlowList();
 }
 
 async function forceRefresh() {
@@ -651,10 +664,10 @@ async function loadFlowList(bucket = currentFlowBucket) {
           <div class="banner-value">${data.total}</div>
         </div>
       </div>
-      <div class="banner-projection">
+      ${showProjection ? `<div class="banner-projection">
         <div class="proj-label">PROJECTION</div>
         <div class="proj-value">${projTarget}%</div>
-      </div>
+      </div>` : ''}
     </div>
     <div class="rcc-table-wrap flow-table-wrap">
       <table class="rcc-table flow-table">

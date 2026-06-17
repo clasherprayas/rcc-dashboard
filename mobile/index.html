@@ -106,6 +106,13 @@
       </div>
       <div class="menu-section">
         <div class="menu-section-title">⚙️ Settings</div>
+        <div class="menu-item toggle-item">
+          <span>📊 Projection %</span>
+          <label class="toggle-switch" onclick="toggleProjection()">
+            <input type="checkbox" id="projToggle" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
         <div class="menu-item" onclick="toggleTheme();toggleMenu()">
           <span id="menuThemeLabel">☀️ Light Mode</span>
         </div>
@@ -196,6 +203,6 @@
 
   </div>
 
-  <script src="app.js?v=30"></script>
+  <script src="app.js?v=31"></script>
 </body>
 </html>
