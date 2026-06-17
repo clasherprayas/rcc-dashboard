@@ -9,6 +9,7 @@ import shutil
 import time
 import os
 import threading
+import subprocess
 from datetime import datetime
 from pathlib import Path
 
@@ -32,6 +33,31 @@ def log(level, msg):
             f.write(entry + "\n")
     except Exception:
         pass
+
+
+RCC_DIR = str(LOCAL_COPY.parent)
+
+def _git_push():
+    """Auto git push RCC_DATA.xlsx to GitHub → triggers Render redeploy."""
+    try:
+        subprocess.run(
+            ["git", "add", "RCC_DATA.xlsx"],
+            cwd=RCC_DIR, capture_output=True, timeout=10
+        )
+        subprocess.run(
+            ["git", "commit", "-m", "Auto sync: data updated"],
+            cwd=RCC_DIR, capture_output=True, timeout=10
+        )
+        result = subprocess.run(
+            ["git", "push"],
+            cwd=RCC_DIR, capture_output=True, timeout=30
+        )
+        if result.returncode == 0:
+            log("SUCCESS", "Git push done → Render will redeploy")
+        else:
+            log("WARN", f"Git push failed: {result.stderr.decode()[:100]}")
+    except Exception as e:
+        log("ERROR", f"Git push error: {e}")
 
 
 def get_mtime(path):
@@ -102,6 +128,9 @@ def sync():
                 log("ERROR", f"OneDrive folder missing: {ONEDRIVE_COPY.parent}")
                 return
             log("SUCCESS", f"Synced | Source: {fmt_time(source_mtime)}")
+            
+            # Auto git push to Render
+            _git_push()
         else:
             log("INFO", "No changes detected")
     except PermissionError:
