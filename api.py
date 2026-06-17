@@ -160,6 +160,24 @@ async def public_flowlist_page():
         return HTMLResponse(content="""<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Access Disabled</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Inter',sans-serif;background:#f0f4f8;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}.card{background:white;border-radius:16px;padding:40px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,0.08);max-width:360px}.icon{font-size:48px;margin-bottom:16px}.title{font-size:18px;font-weight:700;color:#1e293b;margin-bottom:8px}.msg{font-size:14px;color:#64748b}</style></head><body><div class="card"><div class="icon">🔒</div><div class="title">Access Disabled</div><div class="msg">This link has been disabled by the admin. Contact your administrator for access.</div></div></body></html>""", status_code=403)
     return FileResponse(str(APP_DIR / "mobile" / "public_flowlist.html"))
 
+# ── FORCE SYNC API (admin can trigger manual refresh) ──
+@app.post("/api/force-sync")
+async def force_sync():
+    """Force re-download from OneDrive and reload data."""
+    if CLOUD_MODE and ONEDRIVE_SHARE_URL:
+        success = _sync_from_onedrive()
+        if success:
+            _cache["df"] = None  # Force reload
+            _cache["mtime"] = 0
+            load_data()
+            return {"status": "ok", "message": "Data synced from OneDrive"}
+        return {"status": "error", "message": "OneDrive download failed"}
+    else:
+        _cache["df"] = None
+        _cache["mtime"] = 0
+        load_data()
+        return {"status": "ok", "message": "Data reloaded from file"}
+
 app.mount("/mobile", StaticFiles(directory=str(APP_DIR / "mobile"), html=True), name="mobile")
 
 
@@ -171,7 +189,7 @@ def load_data():
     # In cloud mode, check OneDrive every 5 minutes for fresh data
     if CLOUD_MODE and ONEDRIVE_SHARE_URL:
         now = _time.time()
-        if now - _last_onedrive_check["t"] > 300:  # 5 min
+        if now - _last_onedrive_check["t"] > 120:  # 2 min
             _last_onedrive_check["t"] = now
             _sync_from_onedrive()
 

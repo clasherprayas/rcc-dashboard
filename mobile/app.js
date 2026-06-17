@@ -300,11 +300,16 @@ function showToast(msg) {
   setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
-function forceRefresh() {
+async function forceRefresh() {
   toggleMenu();
+  showToast('🔄 Syncing data...');
+  try {
+    await fetch(`${API}/api/force-sync`, { method: 'POST' });
+  } catch(e) {}
   loadDashboard();
   loadTrails();
   loadRanking();
+  showToast('✅ Data refreshed!');
 }
 
 let deferredPrompt = null;
