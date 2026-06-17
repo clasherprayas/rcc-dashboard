@@ -409,10 +409,12 @@ async def ranking():
     return {"ranking": rows}
 
 
-# Root → device-based redirect
+# Root → device-based redirect (with query params forwarding)
 @app.get("/")
 async def root(request: Request):
     user_agent = request.headers.get("user-agent", "").lower()
+    query_string = str(request.query_params)
+    suffix = f"?{query_string}" if query_string else ""
 
     mobile_keywords = [
         "android",
@@ -423,12 +425,12 @@ async def root(request: Request):
 
     if any(keyword in user_agent for keyword in mobile_keywords):
         return RedirectResponse(
-            url="/mobile/",
+            url=f"/mobile/{suffix}",
             status_code=302
         )
 
     return RedirectResponse(
-        url="https://dashboard.rccapp.xyz",
+        url=f"https://dashboard.rccapp.xyz{suffix}",
         status_code=302
     )
 

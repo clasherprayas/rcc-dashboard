@@ -146,6 +146,30 @@ function showApp() {
   loadTrails();
   loadRanking();
   refreshTimer = setInterval(() => { loadDashboard(); }, 30000);
+
+  // Handle ?view= URL parameter for shared links
+  const urlParams = new URLSearchParams(window.location.search);
+  const view = urlParams.get('view');
+  if (view) {
+    let targetPage = null;
+    if (view === 'trails') targetPage = 'pageTrails';
+    else if (view === 'flowlist') targetPage = 'pageFlow';
+    else if (view === 'search') targetPage = 'pageSearch';
+    else if (view === 'ranking') targetPage = 'pageRanking';
+
+    if (targetPage) {
+      navItems.forEach(n => n.classList.remove('active'));
+      pages.forEach(p => p.classList.remove('active'));
+      document.getElementById(targetPage).classList.add('active');
+      // Highlight correct nav item
+      navItems.forEach(n => { if (n.dataset.page === targetPage) n.classList.add('active'); });
+      // Load data for that page
+      if (targetPage === 'pageTrails') loadTrails();
+      if (targetPage === 'pageFlow') loadFlowList();
+      if (targetPage === 'pageRanking') loadRanking();
+      if (targetPage === 'pageSearch') loadSearchCases();
+    }
+  }
 }
 
 // ── SIDE MENU ──
