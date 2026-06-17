@@ -518,7 +518,7 @@ async function loadDashboard() {
 // ── PENDING TRAILS (TABLE — LOAN NO + CUSTOMER NAME + AREA) ──
 async function loadTrails() {
   const el = document.getElementById('trailsContent');
-  const data = await apiCall(`/api/trails?${getFilterParams()}`);
+  const data = await apiCall(`/api/trails?${getFilterParams()}&auth=rcc-admin-token`);
   if (!data) {
     el.innerHTML = '<div class="empty-state"><div class="emoji">⚠️</div><div class="msg">Failed to load</div></div>';
     return;
@@ -574,7 +574,7 @@ function fmtIndianFull(v) {
 async function loadFlowList(bucket = currentFlowBucket) {
   currentFlowBucket = bucket;
   const el = document.getElementById('flowContent');
-  const data = await apiCall(`/api/flowlist?${getFilterParams()}&bucket=${bucket}`);
+  const data = await apiCall(`/api/flowlist?${getFilterParams()}&bucket=${bucket}&auth=rcc-admin-token`);
   if (!data) {
     el.innerHTML = '<div class="empty-state"><div class="emoji">⚠️</div><div class="msg">Failed to load</div></div>';
     return;

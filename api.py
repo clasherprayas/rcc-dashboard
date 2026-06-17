@@ -388,7 +388,10 @@ async def dashboard(user: str = "", role: str = "executive"):
 
 
 @app.get("/api/trails")
-async def trails(user: str = "", role: str = "executive"):
+async def trails(user: str = "", role: str = "executive", auth: str = ""):
+    # Block if public access is disabled and no auth token
+    if not _public_access["enabled"] and auth != "rcc-admin-token":
+        raise HTTPException(status_code=403, detail="Access disabled")
     df = load_data()
     if df is None:
         raise HTTPException(status_code=500, detail="Data file not found")
@@ -414,7 +417,10 @@ async def trails(user: str = "", role: str = "executive"):
 
 
 @app.get("/api/flowlist")
-async def flowlist(user: str = "", bucket: int = 1, role: str = "executive"):
+async def flowlist(user: str = "", bucket: int = 1, role: str = "executive", auth: str = ""):
+    # Block if public access is disabled and no auth token
+    if not _public_access["enabled"] and auth != "rcc-admin-token":
+        raise HTTPException(status_code=403, detail="Access disabled")
     df = load_data()
     if df is None:
         raise HTTPException(status_code=500, detail="Data file not found")
