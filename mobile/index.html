@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20">
+  <link rel="stylesheet" href="style.css?v=21">
   <title>RCC Mobile</title>
 </head>
 <body>
@@ -67,13 +67,19 @@
           <span>📋 Flow List Link</span>
           <span class="menu-hint">Copy</span>
         </div>
-        <div class="menu-item" onclick="togglePublicAccess()">
-          <span id="publicAccessLabel">🔓 Links: Enabled</span>
-          <span class="menu-hint" id="publicAccessHint">Tap to disable</span>
+        <div class="menu-item toggle-item">
+          <span>🔗 Links Access</span>
+          <label class="toggle-switch" onclick="togglePublicAccess()">
+            <input type="checkbox" id="linkToggle" checked>
+            <span class="toggle-slider"></span>
+          </label>
         </div>
-        <div class="menu-item" onclick="togglePasswordRequired()">
-          <span id="passwordLabel">🔑 Password: OFF</span>
-          <span class="menu-hint" id="passwordHint">Tap to enable</span>
+        <div class="menu-item toggle-item">
+          <span>🔑 Password Lock</span>
+          <label class="toggle-switch" onclick="togglePasswordRequired()">
+            <input type="checkbox" id="pwdToggle">
+            <span class="toggle-slider"></span>
+          </label>
         </div>
         <div class="menu-item" onclick="changePassword()">
           <span>✏️ Change Password</span>
@@ -172,6 +178,6 @@
 
   </div>
 
-  <script src="app.js?v=25"></script>
+  <script src="app.js?v=26"></script>
 </body>
 </html>

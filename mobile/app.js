@@ -211,18 +211,15 @@ async function loadPublicAccessStatus() {
   try {
     const res = await fetch(`${API}/api/public-access`);
     const data = await res.json();
-    updatePublicAccessUI(data.enabled);
-    updatePasswordUI(data.password_required, data.password);
+    const linkToggle = document.getElementById('linkToggle');
+    const pwdToggle = document.getElementById('pwdToggle');
+    if (linkToggle) linkToggle.checked = data.enabled;
+    if (pwdToggle) pwdToggle.checked = data.password_required;
+    if (data.password) {
+      const el = document.getElementById('currentPwd');
+      if (el) el.textContent = data.password;
+    }
   } catch(e) {}
-}
-
-function updatePublicAccessUI(enabled) {
-  const label = document.getElementById('publicAccessLabel');
-  const hint = document.getElementById('publicAccessHint');
-  if (label) {
-    label.textContent = enabled ? '🔓 Links: Enabled' : '🔒 Links: Disabled';
-    hint.textContent = enabled ? 'Tap to disable' : 'Tap to enable';
-  }
 }
 
 async function togglePublicAccess() {
@@ -235,8 +232,8 @@ async function togglePublicAccess() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled: newState })
     });
-    updatePublicAccessUI(newState);
-    showToast(newState ? '🔓 Public links enabled' : '🔒 Public links disabled');
+    document.getElementById('linkToggle').checked = newState;
+    showToast(newState ? '🔓 Links enabled' : '🔒 Links disabled');
   } catch(e) {
     showToast('❌ Error toggling access');
   }
@@ -253,22 +250,11 @@ async function togglePasswordRequired() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password_required: newState })
     });
-    updatePasswordUI(newState, data.password);
-    showToast(newState ? '🔑 Password protection ON' : '🔓 Password protection OFF');
+    document.getElementById('pwdToggle').checked = newState;
+    showToast(newState ? '🔑 Password ON' : '🔓 Password OFF');
   } catch(e) {
     showToast('❌ Error toggling password');
   }
-}
-
-function updatePasswordUI(required, password) {
-  const label = document.getElementById('passwordLabel');
-  const hint = document.getElementById('passwordHint');
-  const pwdEl = document.getElementById('currentPwd');
-  if (label) {
-    label.textContent = required ? '🔑 Password: ON' : '🔑 Password: OFF';
-    hint.textContent = required ? 'Tap to disable' : 'Tap to enable';
-  }
-  if (pwdEl && password) pwdEl.textContent = password;
 }
 
 async function changePassword() {
