@@ -29,11 +29,21 @@ def _sync_from_onedrive():
     if not ONEDRIVE_SHARE_URL:
         return False
     try:
-        # Convert share link to direct download
-        separator = "&" if "?" in ONEDRIVE_SHARE_URL else "?"
-        download_url = f"{ONEDRIVE_SHARE_URL}{separator}download=1"
-        resp = requests.get(download_url, timeout=30, allow_redirects=True)
+        share_url = ONEDRIVE_SHARE_URL.strip()
+        
+        # Append &download=1 to force direct download from OneDrive
+        separator = "&" if "?" in share_url else "?"
+        download_url = f"{share_url}{separator}download=1"
+        
+        print(f"☁️ Attempting OneDrive download...")
+        resp = requests.get(download_url, timeout=60, allow_redirects=True)
+        
+        # Verify it's actual Excel content (not HTML error page)
         if resp.status_code == 200 and len(resp.content) > 1000:
+            if b'<!DOCTYPE' in resp.content[:200] or b'<html' in resp.content[:200]:
+                print(f"⚠️ Got HTML instead of Excel. Download failed.")
+                return False
+            
             DATA_FILE.write_bytes(resp.content)
             print(f"☁️ Fresh data downloaded from OneDrive ({len(resp.content)} bytes)")
             return True
