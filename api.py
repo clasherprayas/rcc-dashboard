@@ -110,17 +110,40 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 app.add_middleware(NoCacheMiddleware)
 
 # ── PUBLIC LINKS ACCESS CONTROL ──
-_public_access = {"enabled": True}
+_public_access = {"enabled": True, "password_required": False, "password": "rcc123"}
 
 @app.get("/api/public-access")
 async def get_public_access():
-    return {"enabled": _public_access["enabled"]}
+    return {
+        "enabled": _public_access["enabled"],
+        "password_required": _public_access["password_required"],
+        "password": _public_access["password"]
+    }
 
 @app.post("/api/public-access")
 async def set_public_access(request: Request):
     body = await request.json()
-    _public_access["enabled"] = body.get("enabled", True)
-    return {"enabled": _public_access["enabled"]}
+    if "enabled" in body:
+        _public_access["enabled"] = body["enabled"]
+    if "password_required" in body:
+        _public_access["password_required"] = body["password_required"]
+    if "password" in body:
+        _public_access["password"] = body["password"]
+    return {
+        "enabled": _public_access["enabled"],
+        "password_required": _public_access["password_required"],
+        "password": _public_access["password"]
+    }
+
+@app.post("/api/public-verify")
+async def verify_public_password(request: Request):
+    body = await request.json()
+    entered = body.get("password", "")
+    if not _public_access["password_required"]:
+        return {"verified": True}
+    if entered == _public_access["password"]:
+        return {"verified": True}
+    return {"verified": False}
 
 # ── PUBLIC PAGES (no login required) — must be before StaticFiles mount ──
 from fastapi.responses import HTMLResponse

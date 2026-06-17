@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="icon" type="image/png" href="icons/icon-192.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=16">
+  <link rel="stylesheet" href="style.css?v=17">
   <title>RCC Mobile</title>
 </head>
 <body>
@@ -70,6 +70,14 @@
         <div class="menu-item" onclick="togglePublicAccess()">
           <span id="publicAccessLabel">🔓 Links: Enabled</span>
           <span class="menu-hint" id="publicAccessHint">Tap to disable</span>
+        </div>
+        <div class="menu-item" onclick="togglePasswordRequired()">
+          <span id="passwordLabel">🔑 Password: OFF</span>
+          <span class="menu-hint" id="passwordHint">Tap to enable</span>
+        </div>
+        <div class="menu-item" onclick="changePassword()">
+          <span>✏️ Change Password</span>
+          <span class="menu-hint" id="currentPwd">rcc123</span>
         </div>
       </div>
       <div class="menu-section">
@@ -164,6 +172,6 @@
 
   </div>
 
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=19"></script>
 </body>
 </html>

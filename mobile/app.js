@@ -212,6 +212,7 @@ async function loadPublicAccessStatus() {
     const res = await fetch(`${API}/api/public-access`);
     const data = await res.json();
     updatePublicAccessUI(data.enabled);
+    updatePasswordUI(data.password_required, data.password);
   } catch(e) {}
 }
 
@@ -238,6 +239,51 @@ async function togglePublicAccess() {
     showToast(newState ? '🔓 Public links enabled' : '🔒 Public links disabled');
   } catch(e) {
     showToast('❌ Error toggling access');
+  }
+}
+
+// ── PASSWORD CONTROL ──
+async function togglePasswordRequired() {
+  try {
+    const res = await fetch(`${API}/api/public-access`);
+    const data = await res.json();
+    const newState = !data.password_required;
+    await fetch(`${API}/api/public-access`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password_required: newState })
+    });
+    updatePasswordUI(newState, data.password);
+    showToast(newState ? '🔑 Password protection ON' : '🔓 Password protection OFF');
+  } catch(e) {
+    showToast('❌ Error toggling password');
+  }
+}
+
+function updatePasswordUI(required, password) {
+  const label = document.getElementById('passwordLabel');
+  const hint = document.getElementById('passwordHint');
+  const pwdEl = document.getElementById('currentPwd');
+  if (label) {
+    label.textContent = required ? '🔑 Password: ON' : '🔑 Password: OFF';
+    hint.textContent = required ? 'Tap to disable' : 'Tap to enable';
+  }
+  if (pwdEl && password) pwdEl.textContent = password;
+}
+
+async function changePassword() {
+  const newPwd = prompt('Enter new password for public links:');
+  if (!newPwd || newPwd.trim() === '') return;
+  try {
+    await fetch(`${API}/api/public-access`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: newPwd.trim() })
+    });
+    document.getElementById('currentPwd').textContent = newPwd.trim();
+    showToast('✅ Password changed to: ' + newPwd.trim());
+  } catch(e) {
+    showToast('❌ Error changing password');
   }
 }
 
