@@ -19,6 +19,31 @@ APP_DIR = Path(__file__).resolve().parent
 DATA_FILE = APP_DIR / "RCC_DATA.xlsx"
 SHEET_NAME = "MAIN"
 
+# ── CLOUD MODE — download from OneDrive if ONEDRIVE_SHARE_URL is set ──
+CLOUD_MODE = os.environ.get("RCC_CLOUD", "0") == "1"
+ONEDRIVE_SHARE_URL = os.environ.get("ONEDRIVE_SHARE_URL", "")
+
+def _sync_from_onedrive():
+    """Download RCC_DATA.xlsx from OneDrive share link (cloud mode)."""
+    import requests
+    if not ONEDRIVE_SHARE_URL:
+        return False
+    try:
+        # Convert share link to direct download
+        separator = "&" if "?" in ONEDRIVE_SHARE_URL else "?"
+        download_url = f"{ONEDRIVE_SHARE_URL}{separator}download=1"
+        resp = requests.get(download_url, timeout=30, allow_redirects=True)
+        if resp.status_code == 200 and len(resp.content) > 1000:
+            DATA_FILE.write_bytes(resp.content)
+            print(f"☁️ Fresh data downloaded from OneDrive ({len(resp.content)} bytes)")
+            return True
+        else:
+            print(f"⚠️ OneDrive download failed (HTTP {resp.status_code})")
+            return False
+    except Exception as e:
+        print(f"⚠️ OneDrive sync error: {e}")
+        return False
+
 # ── CACHING — Excel sirf tab reload hoga jab file change ho ──
 _cache = {"df": None, "mtime": 0}
 
@@ -49,6 +74,9 @@ app = FastAPI(title="RCC Mobile API")
 @app.on_event("startup")
 async def startup_preload():
     """Pre-load Excel data when server starts (for Render/cloud)."""
+    if CLOUD_MODE and ONEDRIVE_SHARE_URL:
+        print("☁️ Cloud mode — downloading from OneDrive...")
+        _sync_from_onedrive()
     load_data()
 
 app.add_middleware(
@@ -102,8 +130,18 @@ async def public_flowlist_page():
 app.mount("/mobile", StaticFiles(directory=str(APP_DIR / "mobile"), html=True), name="mobile")
 
 
+import time as _time
+_last_onedrive_check = {"t": 0}
+
 def load_data():
     """Load and clean Excel data with caching — only re-reads when file changes."""
+    # In cloud mode, check OneDrive every 5 minutes for fresh data
+    if CLOUD_MODE and ONEDRIVE_SHARE_URL:
+        now = _time.time()
+        if now - _last_onedrive_check["t"] > 300:  # 5 min
+            _last_onedrive_check["t"] = now
+            _sync_from_onedrive()
+
     if not DATA_FILE.exists():
         return None
     
