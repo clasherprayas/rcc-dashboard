@@ -209,7 +209,7 @@ function copyLink(type) {
 // ── PUBLIC ACCESS TOGGLE ──
 async function loadPublicAccessStatus() {
   try {
-    const res = await fetch(`${API_BASE}/api/public-access`);
+    const res = await fetch(`${API}/api/public-access`);
     const data = await res.json();
     updatePublicAccessUI(data.enabled);
   } catch(e) {}
@@ -226,10 +226,10 @@ function updatePublicAccessUI(enabled) {
 
 async function togglePublicAccess() {
   try {
-    const res = await fetch(`${API_BASE}/api/public-access`);
+    const res = await fetch(`${API}/api/public-access`);
     const data = await res.json();
     const newState = !data.enabled;
-    await fetch(`${API_BASE}/api/public-access`, {
+    await fetch(`${API}/api/public-access`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled: newState })
