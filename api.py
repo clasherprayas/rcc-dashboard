@@ -11,7 +11,7 @@ from pathlib import Path
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
@@ -409,12 +409,28 @@ async def ranking():
     return {"ranking": rows}
 
 
-# Root → redirect to /mobile/
-from fastapi.responses import RedirectResponse
-
+# Root → device-based redirect
 @app.get("/")
-async def root():
-    return RedirectResponse(url="/mobile/")
+async def root(request: Request):
+    user_agent = request.headers.get("user-agent", "").lower()
+
+    mobile_keywords = [
+        "android",
+        "iphone",
+        "ipad",
+        "mobile"
+    ]
+
+    if any(keyword in user_agent for keyword in mobile_keywords):
+        return RedirectResponse(
+            url="/mobile/",
+            status_code=302
+        )
+
+    return RedirectResponse(
+        url="https://dashboard.rccapp.xyz",
+        status_code=302
+    )
 
 
 if __name__ == "__main__":
