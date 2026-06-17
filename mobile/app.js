@@ -192,9 +192,9 @@ function copyLink(type) {
   const baseUrl = 'https://app.rccapp.xyz';
   let url = '';
   if (type === 'trails') {
-    url = `${baseUrl}/?view=trails`;
+    url = `${baseUrl}/public/trails`;
   } else if (type === 'flowlist') {
-    url = `${baseUrl}/?view=flowlist`;
+    url = `${baseUrl}/public/flowlist`;
   }
   navigator.clipboard.writeText(url).then(() => {
     showToast('✅ Link copied! Share on WhatsApp');

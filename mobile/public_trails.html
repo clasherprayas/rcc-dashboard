@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>RCC - Pending Trails</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f0f4f8;
+      color: #1a202c;
+      min-height: 100vh;
+      padding: 0;
+    }
+    .topbar {
+      background: linear-gradient(135deg, #1e3a5f, #2d5a87);
+      color: white;
+      padding: 16px 20px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .topbar small {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      opacity: 0.8;
+      margin-top: 2px;
+    }
+    .summary-banner {
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+      color: white;
+      margin: 12px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .banner-count {
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .table-wrap {
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 12px;
+    }
+    colgroup col:nth-child(1) { width: 28%; }
+    colgroup col:nth-child(2) { width: 44%; }
+    colgroup col:nth-child(3) { width: 28%; }
+    thead {
+      background: #f1f5f9;
+    }
+    th {
+      padding: 10px 8px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #64748b;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+    td:first-child {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: #2563eb;
+    }
+    td:nth-child(2) {
+      font-weight: 500;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+    .area-chip {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #64748b;
+      font-size: 14px;
+    }
+    .refresh-note {
+      text-align: center;
+      padding: 8px;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    📌 RCC — Pending Trails
+    <small>Auto-refresh every 30s</small>
+  </div>
+  <div id="content"><div class="loading">Loading...</div></div>
+  <div class="refresh-note">Last updated: <span id="lastUpdate">-</span></div>
+
+  <script>
+    const API_BASE = window.location.origin;
+
+    async function loadTrails() {
+      try {
+        const res = await fetch(`${API_BASE}/api/trails?user=ADMIN&role=admin`);
+        const data = await res.json();
+
+        let rows = '';
+        data.trails.forEach(t => {
+          rows += `<tr>
+            <td>${t.loan_no}</td>
+            <td>${t.customer_name}</td>
+            <td><span class="area-chip">${t.area}</span></td>
+          </tr>`;
+        });
+
+        document.getElementById('content').innerHTML = `
+          <div class="summary-banner">
+            <div>Total Pending Cases</div>
+            <div class="banner-count">${data.total}</div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <colgroup><col><col><col></colgroup>
+              <thead><tr><th>LOAN NO</th><th>CUSTOMER NAME</th><th>AREA</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        `;
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+      } catch (e) {
+        document.getElementById('content').innerHTML = '<div class="loading">❌ Error loading data</div>';
+      }
+    }
+
+    loadTrails();
+    setInterval(loadTrails, 30000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>RCC - Flow List</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f0f4f8;
+      color: #1a202c;
+      min-height: 100vh;
+      padding: 0;
+    }
+    .topbar {
+      background: linear-gradient(135deg, #1e3a5f, #2d5a87);
+      color: white;
+      padding: 16px 20px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .topbar small {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      opacity: 0.8;
+      margin-top: 2px;
+    }
+    .pill-tabs {
+      display: flex;
+      gap: 6px;
+      padding: 12px;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+    }
+    .pill-tab {
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      background: #e2e8f0;
+      color: #475569;
+      transition: all 0.2s;
+    }
+    .pill-tab.active {
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+      color: white;
+    }
+    .summary-banner {
+      background: linear-gradient(135deg, #059669, #047857);
+      color: white;
+      margin: 0 12px 12px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .banner-count {
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .table-wrap {
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 12px;
+    }
+    colgroup col:nth-child(1) { width: 50%; }
+    colgroup col:nth-child(2) { width: 25%; }
+    colgroup col:nth-child(3) { width: 25%; }
+    thead {
+      background: #f1f5f9;
+    }
+    th {
+      padding: 10px 8px;
+      text-align: left;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #64748b;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    th.text-right { text-align: right; }
+    td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+    td:first-child {
+      font-weight: 500;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+    td.text-right {
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+    }
+    .pos-val { color: #059669; }
+    .dra-val { color: #d97706; }
+    .dra-high { color: #dc2626; }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #64748b;
+      font-size: 14px;
+    }
+    .refresh-note {
+      text-align: center;
+      padding: 8px;
+      font-size: 11px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    📋 RCC — Flow List
+    <small>Auto-refresh every 30s</small>
+  </div>
+  <div id="tabs" class="pill-tabs"></div>
+  <div id="content"><div class="loading">Loading...</div></div>
+  <div class="refresh-note">Last updated: <span id="lastUpdate">-</span></div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let currentBucket = 1;
+
+    function fmtIndian(num) {
+      if (num >= 100000) return '₹' + (num / 100000).toFixed(2) + ' L';
+      if (num >= 1000) return '₹' + (num / 1000).toFixed(1) + ' K';
+      return '₹' + num.toFixed(0);
+    }
+
+    function renderTabs() {
+      let html = '';
+      for (let i = 1; i <= 6; i++) {
+        html += `<div class="pill-tab ${i === currentBucket ? 'active' : ''}" onclick="switchBucket(${i})">BKT-${i}</div>`;
+      }
+      document.getElementById('tabs').innerHTML = html;
+    }
+
+    function switchBucket(b) {
+      currentBucket = b;
+      renderTabs();
+      loadFlowList();
+    }
+
+    async function loadFlowList() {
+      try {
+        const res = await fetch(`${API_BASE}/api/flowlist?user=ADMIN&role=admin&bucket=${currentBucket}`);
+        const data = await res.json();
+
+        let rows = '';
+        data.cases.forEach(c => {
+          const draCls = c.dra_pct >= 50 ? 'dra-high' : 'dra-val';
+          rows += `<tr>
+            <td>${c.customer_name}</td>
+            <td class="text-right pos-val">${fmtIndian(c.pos)}</td>
+            <td class="text-right ${draCls}">${c.dra_pct}%</td>
+          </tr>`;
+        });
+
+        document.getElementById('content').innerHTML = `
+          <div class="summary-banner">
+            <div>BKT-${currentBucket} Flow Cases</div>
+            <div class="banner-count">${data.total}</div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <colgroup><col><col><col></colgroup>
+              <thead><tr><th>CUSTOMER NAME</th><th class="text-right">POS</th><th class="text-right">DRA CASE %</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        `;
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+      } catch (e) {
+        document.getElementById('content').innerHTML = '<div class="loading">❌ Error loading data</div>';
+      }
+    }
+
+    renderTabs();
+    loadFlowList();
+    setInterval(loadFlowList, 30000);
+  </script>
+</body>
+</html>

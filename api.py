@@ -435,6 +435,16 @@ async def root(request: Request):
     )
 
 
+# ── PUBLIC PAGES (no login required) ──
+@app.get("/public/trails")
+async def public_trails_page():
+    return FileResponse(str(APP_DIR / "mobile" / "public_trails.html"))
+
+@app.get("/public/flowlist")
+async def public_flowlist_page():
+    return FileResponse(str(APP_DIR / "mobile" / "public_flowlist.html"))
+
+
 if __name__ == "__main__":
     # Pre-load data at startup so first request is instant
     print("⏳ Pre-loading Excel data...")
