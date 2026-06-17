@@ -12,7 +12,6 @@
       background: #f0f4f8;
       color: #1a202c;
       min-height: 100vh;
-      padding: 0;
     }
     .topbar {
       background: linear-gradient(135deg, #1e3a5f, #2d5a87);
@@ -32,6 +31,28 @@
       font-weight: 400;
       opacity: 0.8;
       margin-top: 2px;
+    }
+    .filter-bar {
+      padding: 10px 12px;
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      position: sticky;
+      top: 56px;
+      z-index: 99;
+    }
+    .filter-bar select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 2px solid #e2e8f0;
+      font-size: 13px;
+      font-weight: 600;
+      background: #f8fafc;
+      color: #1e293b;
+      outline: none;
+    }
+    .filter-bar select:focus {
+      border-color: #2563eb;
     }
     .pill-tabs {
       display: flex;
@@ -87,9 +108,7 @@
     colgroup col:nth-child(1) { width: 50%; }
     colgroup col:nth-child(2) { width: 25%; }
     colgroup col:nth-child(3) { width: 25%; }
-    thead {
-      background: #f1f5f9;
-    }
+    thead { background: #f1f5f9; }
     th {
       padding: 10px 8px;
       text-align: left;
@@ -138,6 +157,11 @@
     📋 RCC — Flow List
     <small>Auto-refresh every 30s</small>
   </div>
+  <div class="filter-bar">
+    <select id="execFilter" onchange="loadFlowList()">
+      <option value="ALL">👥 ALL EXECUTIVES</option>
+    </select>
+  </div>
   <div id="tabs" class="pill-tabs"></div>
   <div id="content"><div class="loading">Loading...</div></div>
   <div class="refresh-note">Last updated: <span id="lastUpdate">-</span></div>
@@ -146,10 +170,29 @@
     const API_BASE = window.location.origin;
     let currentBucket = 1;
 
+    // Indian number format: 10,000 / 1,00,000 / 2,78,730
     function fmtIndian(num) {
-      if (num >= 100000) return '₹' + (num / 100000).toFixed(2) + ' L';
-      if (num >= 1000) return '₹' + (num / 1000).toFixed(1) + ' K';
-      return '₹' + num.toFixed(0);
+      num = Math.round(num);
+      const str = num.toString();
+      if (str.length <= 3) return '₹' + str;
+      const last3 = str.slice(-3);
+      const rest = str.slice(0, -3);
+      const formatted = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + last3;
+      return '₹' + formatted;
+    }
+
+    async function loadExecutives() {
+      try {
+        const res = await fetch(`${API_BASE}/api/executives`);
+        const data = await res.json();
+        const sel = document.getElementById('execFilter');
+        data.executives.forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          sel.appendChild(opt);
+        });
+      } catch(e) {}
     }
 
     function renderTabs() {
@@ -168,7 +211,14 @@
 
     async function loadFlowList() {
       try {
-        const res = await fetch(`${API_BASE}/api/flowlist?user=ADMIN&role=admin&bucket=${currentBucket}`);
+        const exec = document.getElementById('execFilter').value;
+        let url = `${API_BASE}/api/flowlist?bucket=${currentBucket}&`;
+        if (exec === 'ALL') {
+          url += 'user=ADMIN&role=admin';
+        } else {
+          url += `user=${encodeURIComponent(exec)}&role=executive`;
+        }
+        const res = await fetch(url);
         const data = await res.json();
 
         let rows = '';
@@ -200,6 +250,7 @@
       }
     }
 
+    loadExecutives();
     renderTabs();
     loadFlowList();
     setInterval(loadFlowList, 30000);
