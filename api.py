@@ -70,6 +70,18 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
         return response
 
 app.add_middleware(NoCacheMiddleware)
+
+# ── PUBLIC PAGES (no login required) — must be before StaticFiles mount ──
+from fastapi.responses import HTMLResponse
+
+@app.get("/public/trails")
+async def public_trails_page():
+    return FileResponse(str(APP_DIR / "mobile" / "public_trails.html"))
+
+@app.get("/public/flowlist")
+async def public_flowlist_page():
+    return FileResponse(str(APP_DIR / "mobile" / "public_flowlist.html"))
+
 app.mount("/mobile", StaticFiles(directory=str(APP_DIR / "mobile"), html=True), name="mobile")
 
 
@@ -433,16 +445,6 @@ async def root(request: Request):
         url=f"https://dashboard.rccapp.xyz{suffix}",
         status_code=302
     )
-
-
-# ── PUBLIC PAGES (no login required) ──
-@app.get("/public/trails")
-async def public_trails_page():
-    return FileResponse(str(APP_DIR / "mobile" / "public_trails.html"))
-
-@app.get("/public/flowlist")
-async def public_flowlist_page():
-    return FileResponse(str(APP_DIR / "mobile" / "public_flowlist.html"))
 
 
 if __name__ == "__main__":
