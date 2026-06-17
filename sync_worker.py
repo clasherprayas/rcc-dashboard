@@ -14,7 +14,44 @@ from datetime import datetime
 from pathlib import Path
 
 # ─── PATHS ───
-SOURCE_FILE = Path(r"\\Hdfc1\d\HDFC\ALLOCATION FILE\TW FILES\JUNE 26\TW ALLOCATION JUNE 26.xlsx")
+# Auto-detect current month's folder
+BASE_TW_PATH = Path(r"\\Hdfc1\d\HDFC\ALLOCATION FILE\TW FILES")
+
+def get_source_file():
+    """Auto-detect the latest month's TW ALLOCATION file."""
+    import calendar
+    from datetime import datetime
+    
+    now = datetime.now()
+    
+    # Try current month first, then previous month
+    for months_back in range(0, 3):
+        d = now.month - months_back
+        y = now.year
+        if d <= 0:
+            d += 12
+            y -= 1
+        month_name = calendar.month_name[d].upper()
+        yr = str(y)[2:]  # "26" from 2026
+        
+        folder_name = f"{month_name} {yr}"
+        file_name = f"TW ALLOCATION {month_name} {yr}.xlsx"
+        full_path = BASE_TW_PATH / folder_name / file_name
+        
+        try:
+            if full_path.exists():
+                return full_path
+        except OSError:
+            continue
+    
+    # Fallback — return current month path even if not found yet
+    month_name = calendar.month_name[now.month].upper()
+    yr = str(now.year)[2:]
+    folder_name = f"{month_name} {yr}"
+    file_name = f"TW ALLOCATION {month_name} {yr}.xlsx"
+    return BASE_TW_PATH / folder_name / file_name
+
+SOURCE_FILE = get_source_file()
 LOCAL_COPY = Path(r"C:\Users\BAJAJ1\Desktop\RCC\RCC_DATA.xlsx")
 ONEDRIVE_COPY = Path(r"C:\Users\BAJAJ1\OneDrive\RCC\RCC_DATA.xlsx")
 LOG_FILE = Path(r"C:\Users\BAJAJ1\Desktop\RCC\sync_log.txt")
@@ -99,7 +136,9 @@ def check_source_exists_with_timeout(timeout=NETWORK_TIMEOUT):
 
 def sync():
     """Check source vs destination timestamps and sync if needed."""
-    log("INFO", "Cycle start")
+    global SOURCE_FILE
+    SOURCE_FILE = get_source_file()  # Re-detect each cycle (handles month change)
+    log("INFO", f"Cycle start | Source: {SOURCE_FILE.name}")
 
     # Check source reachable with timeout
     source_exists = check_source_exists_with_timeout()
