@@ -336,8 +336,19 @@ async def dashboard(user: str = "", role: str = "executive"):
         flow = int((g["POS STATUS"] == "FLOW").sum())
         stable = int((g["POS STATUS"] == "STABLE").sum())
         rb = int((g["POS STATUS"] == "RB").sum())
-        res_pct = round((stable + rb) / total * 100, 2)
-        rb_pct = round(rb / total * 100, 2)
+        
+        # Calculate resolution & RB% using POS amounts (not case counts)
+        total_pos = float(g["POS"].sum())
+        stable_pos = float(g[g["POS STATUS"] == "STABLE"]["POS"].sum())
+        rb_pos = float(g[g["POS STATUS"] == "RB"]["POS"].sum())
+        
+        if total_pos > 0:
+            res_pct = round((stable_pos + rb_pos) / total_pos * 100, 2)
+            rb_pct = round(rb_pos / total_pos * 100, 2)
+        else:
+            res_pct = 0
+            rb_pct = 0
+        
         collection = float(g["Paid Amount"].sum())
         slab, rb_ok = calc_payout_slab(res_pct, rb_pct, bkt)
         payout = collection * slab / 100
