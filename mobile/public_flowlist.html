@@ -32,32 +32,53 @@
       opacity: 0.8;
       margin-top: 2px;
     }
-    .filter-bar {
-      padding: 10px 12px;
-      background: #fff;
-      border-bottom: 1px solid #e2e8f0;
-      position: sticky;
-      top: 56px;
-      z-index: 99;
+    .select-section {
+      padding: 20px 16px;
+      text-align: center;
     }
-    .filter-bar select {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 2px solid #e2e8f0;
-      font-size: 13px;
+    .select-section label {
+      display: block;
+      font-size: 14px;
       font-weight: 600;
-      background: #f8fafc;
+      color: #475569;
+      margin-bottom: 10px;
+    }
+    .select-section select {
+      width: 100%;
+      max-width: 320px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 2px solid #e2e8f0;
+      font-size: 14px;
+      font-weight: 600;
+      background: white;
       color: #1e293b;
       outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
     }
-    .filter-bar select:focus {
+    .select-section select:focus {
       border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    }
+    .info-msg {
+      margin: 20px 16px;
+      padding: 16px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      text-align: center;
+      color: #1e40af;
+      font-size: 13px;
+      font-weight: 500;
     }
     .pill-tabs {
       display: flex;
       gap: 6px;
-      padding: 12px;
+      padding: 0 12px 12px;
       overflow-x: auto;
       flex-wrap: nowrap;
     }
@@ -138,12 +159,6 @@
     .pos-val { color: #059669; }
     .dra-val { color: #d97706; }
     .dra-high { color: #dc2626; }
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: #64748b;
-      font-size: 14px;
-    }
     .refresh-note {
       text-align: center;
       padding: 8px;
@@ -155,22 +170,25 @@
 <body>
   <div class="topbar">
     📋 RCC — Flow List
-    <small>Auto-refresh every 30s</small>
+    <small>Select your name to view flow cases</small>
   </div>
-  <div class="filter-bar">
-    <select id="execFilter" onchange="loadFlowList()">
-      <option value="ALL">👥 ALL EXECUTIVES</option>
+  <div class="select-section">
+    <label>Select Your Name</label>
+    <select id="execFilter" onchange="onSelectChange()">
+      <option value="">-- Select --</option>
     </select>
   </div>
-  <div id="tabs" class="pill-tabs"></div>
-  <div id="content"><div class="loading">Loading...</div></div>
-  <div class="refresh-note">Last updated: <span id="lastUpdate">-</span></div>
+  <div id="tabs"></div>
+  <div id="content">
+    <div class="info-msg">👆 Select your name above to view your flow cases.</div>
+  </div>
+  <div class="refresh-note" id="refreshNote" style="display:none">Auto-refresh every 30s · Last updated: <span id="lastUpdate">-</span></div>
 
   <script>
     const API_BASE = window.location.origin;
     let currentBucket = 1;
+    let refreshInterval = null;
 
-    // Indian number format: 10,000 / 1,00,000 / 2,78,730
     function fmtIndian(num) {
       num = Math.round(num);
       const str = num.toString();
@@ -195,12 +213,28 @@
       } catch(e) {}
     }
 
+    function onSelectChange() {
+      const exec = document.getElementById('execFilter').value;
+      if (!exec) {
+        document.getElementById('tabs').innerHTML = '';
+        document.getElementById('content').innerHTML = '<div class="info-msg">👆 Select your name above to view your flow cases.</div>';
+        document.getElementById('refreshNote').style.display = 'none';
+        if (refreshInterval) clearInterval(refreshInterval);
+        return;
+      }
+      renderTabs();
+      loadFlowList();
+      document.getElementById('refreshNote').style.display = 'block';
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(loadFlowList, 30000);
+    }
+
     function renderTabs() {
       let html = '';
       for (let i = 1; i <= 6; i++) {
         html += `<div class="pill-tab ${i === currentBucket ? 'active' : ''}" onclick="switchBucket(${i})">BKT-${i}</div>`;
       }
-      document.getElementById('tabs').innerHTML = html;
+      document.getElementById('tabs').innerHTML = `<div class="pill-tabs">${html}</div>`;
     }
 
     function switchBucket(b) {
@@ -210,16 +244,17 @@
     }
 
     async function loadFlowList() {
+      const exec = document.getElementById('execFilter').value;
+      if (!exec) return;
       try {
-        const exec = document.getElementById('execFilter').value;
-        let url = `${API_BASE}/api/flowlist?bucket=${currentBucket}&`;
-        if (exec === 'ALL') {
-          url += 'user=ADMIN&role=admin';
-        } else {
-          url += `user=${encodeURIComponent(exec)}&role=executive`;
-        }
-        const res = await fetch(url);
+        const res = await fetch(`${API_BASE}/api/flowlist?user=${encodeURIComponent(exec)}&role=executive&bucket=${currentBucket}`);
         const data = await res.json();
+
+        if (data.total === 0) {
+          document.getElementById('content').innerHTML = '<div class="info-msg">✅ No flow cases in BKT-' + currentBucket + '</div>';
+          document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+          return;
+        }
 
         let rows = '';
         data.cases.forEach(c => {
@@ -246,14 +281,11 @@
         `;
         document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
       } catch (e) {
-        document.getElementById('content').innerHTML = '<div class="loading">❌ Error loading data</div>';
+        document.getElementById('content').innerHTML = '<div class="info-msg">❌ Error loading data</div>';
       }
     }
 
     loadExecutives();
-    renderTabs();
-    loadFlowList();
-    setInterval(loadFlowList, 30000);
   </script>
 </body>
 </html>
