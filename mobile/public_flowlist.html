@@ -20,8 +20,6 @@
       text-align: center;
       font-size: 16px;
       font-weight: 700;
-      position: sticky;
-      top: 0;
       z-index: 100;
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
@@ -100,16 +98,18 @@
     .summary-banner {
       background: linear-gradient(135deg, #1e40af 0%, #2563eb 40%, #60a5fa 100%);
       color: white;
-      margin: 0 12px 12px;
+      margin: 0 12px 0;
       padding: 18px 18px;
-      border-radius: 14px;
+      border-radius: 14px 14px 0 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-size: 13px;
       font-weight: 600;
       box-shadow: 0 8px 32px rgba(37,99,235,.25), 0 2px 8px rgba(0,0,0,.1);
-      position: relative;
+      position: sticky;
+      top: 0;
+      z-index: 50;
       overflow: hidden;
     }
     .summary-banner::before {
@@ -165,7 +165,7 @@
     }
     .table-wrap {
       margin: 0 12px 12px;
-      border-radius: 12px;
+      border-radius: 0 0 12px 12px;
       overflow: hidden;
       background: white;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
@@ -176,10 +176,10 @@
       table-layout: fixed;
       font-size: 12px;
     }
-    colgroup col:nth-child(1) { width: 50%; }
-    colgroup col:nth-child(2) { width: 25%; }
-    colgroup col:nth-child(3) { width: 25%; }
-    thead { background: #f1f5f9; }
+    colgroup col:nth-child(1) { width: 46%; }
+    colgroup col:nth-child(2) { width: 28%; }
+    colgroup col:nth-child(3) { width: 26%; }
+    thead { background: #f1f5f9; position: sticky; top: 0; z-index: 10; }
     th {
       padding: 10px 8px;
       text-align: left;
