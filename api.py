@@ -110,7 +110,7 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 app.add_middleware(NoCacheMiddleware)
 
 # ── PUBLIC LINKS ACCESS CONTROL ──
-_public_access = {"enabled": True, "password_required": False, "password": "rcc123"}
+_public_access = {"enabled": True, "password_required": False, "password": "rcc123", "show_projection": True}
 _search_access = {"enabled": False, "password": "rcc@admin"}
 
 @app.get("/api/public-access")
@@ -119,6 +119,7 @@ async def get_public_access():
         "enabled": _public_access["enabled"],
         "password_required": _public_access["password_required"],
         "password": _public_access["password"],
+        "show_projection": _public_access["show_projection"],
         "search_enabled": _search_access["enabled"],
         "search_password": _search_access["password"]
     }
@@ -132,6 +133,8 @@ async def set_public_access(request: Request):
         _public_access["password_required"] = body["password_required"]
     if "password" in body:
         _public_access["password"] = body["password"]
+    if "show_projection" in body:
+        _public_access["show_projection"] = body["show_projection"]
     if "search_enabled" in body:
         _search_access["enabled"] = body["search_enabled"]
     if "search_password" in body:
@@ -140,6 +143,7 @@ async def set_public_access(request: Request):
         "enabled": _public_access["enabled"],
         "password_required": _public_access["password_required"],
         "password": _public_access["password"],
+        "show_projection": _public_access["show_projection"],
         "search_enabled": _search_access["enabled"],
         "search_password": _search_access["password"]
     }

@@ -329,6 +329,12 @@ function toggleProjection() {
   showProjection = document.getElementById('projToggle').checked;
   localStorage.setItem('rcc_projection', showProjection);
   showToast(showProjection ? '📊 Projection visible' : '📊 Projection hidden');
+  // Sync to server for public pages
+  fetch(`${API}/api/public-access`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({show_projection: showProjection})
+  }).catch(() => {});
   loadFlowList();
 }
 
