@@ -627,9 +627,14 @@ async function loadFlowList(bucket = currentFlowBucket) {
     return;
   }
 
-  // Projection targets per bucket
-  const projTargets = { 1: 90, 2: 70, 3: 50, 4: 30, 5: 15, 6: 10 };
-  const projTarget = projTargets[bucket] || 50;
+  // Fetch real projection Resolution% from API
+  let projValue = '--';
+  if (showProjection) {
+    const projData = await apiCall(`/api/projection?bucket=${bucket}`);
+    if (projData && projData.grand_total) {
+      projValue = projData.grand_total.resolution.toFixed(1);
+    }
+  }
 
   let tabs = '';
   for (let i = 1; i <= 6; i++) {
@@ -658,7 +663,7 @@ async function loadFlowList(bucket = currentFlowBucket) {
       </div>
       ${showProjection ? `<div class="banner-projection">
         <div class="proj-label">PROJECTION</div>
-        <div class="proj-value">${projTarget}%</div>
+        <div class="proj-value">${projValue}%</div>
       </div>` : ''}
     </div>
     <div class="rcc-table-wrap flow-table-wrap">
