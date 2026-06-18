@@ -402,6 +402,7 @@ body {
 .red { color: var(--red-val) !important; }
 .amber { color: var(--amber-val) !important; }
 .orange { color: #f97316 !important; }
+[data-theme="light"] .orange { color: #ea580c !important; }
 .purple { color: var(--purple-val) !important; }
 
 /* ── TOAST ── */
