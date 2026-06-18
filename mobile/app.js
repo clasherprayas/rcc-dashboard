@@ -367,6 +367,43 @@ function installApp() {
   toggleMenu();
 }
 
+// ── VISITOR LOGS ──
+async function showVisitorLogs() {
+  toggleMenu();
+  const data = await apiCall('/api/visitor-logs');
+  if (!data || !data.logs || !data.logs.length) {
+    showToast('📋 No visitor logs yet');
+    return;
+  }
+  let rows = '';
+  data.logs.forEach(l => {
+    rows += `<tr><td style="font-size:.7rem">${l.time}</td><td>${l.page}</td><td><b>${l.executive}</b></td><td>${l.device}</td></tr>`;
+  });
+  // Show in flow content area (reuse page)
+  const pages = document.querySelectorAll('.page');
+  const navItems = document.querySelectorAll('.nav-item');
+  pages.forEach(p => p.classList.remove('active'));
+  navItems.forEach(n => n.classList.remove('active'));
+  document.getElementById('pageFlow').classList.add('active');
+  document.getElementById('flowContent').innerHTML = `
+    <div class="summary-banner">
+      <div class="banner-left">
+        <span style="font-size:1.3rem">👁️</span>
+        <div>
+          <div class="banner-label">VISITOR LOGS</div>
+          <div class="banner-value">${data.logs.length}</div>
+        </div>
+      </div>
+    </div>
+    <div class="rcc-table-wrap">
+      <table class="rcc-table">
+        <thead><tr><th>TIME</th><th>PAGE</th><th>EXECUTIVE</th><th>DEVICE</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
 // ── ADMIN EXECUTIVE FILTER ──
 async function loadExecFilter() {
   const data = await apiCall('/api/executives');

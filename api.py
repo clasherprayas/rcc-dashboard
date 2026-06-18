@@ -109,6 +109,37 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(NoCacheMiddleware)
 
+# ── VISITOR TRACKING ──
+from datetime import datetime as _dt
+_visitor_logs = []  # In-memory log (max 500 entries)
+
+@app.post("/api/track")
+async def track_visit(request: Request):
+    """Log public page visits — called from public pages."""
+    body = await request.json()
+    ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
+    if "," in ip:
+        ip = ip.split(",")[0].strip()
+    ua = request.headers.get("user-agent", "")
+    device = "Mobile" if any(k in ua.lower() for k in ["android", "iphone", "mobile"]) else "Desktop"
+    entry = {
+        "time": _dt.now().strftime("%d %b, %I:%M %p"),
+        "timestamp": _dt.now().isoformat(),
+        "page": body.get("page", "--"),
+        "executive": body.get("executive", "--"),
+        "device": device,
+        "ip": ip[:20],
+    }
+    _visitor_logs.insert(0, entry)
+    if len(_visitor_logs) > 500:
+        _visitor_logs.pop()
+    return {"ok": True}
+
+@app.get("/api/visitor-logs")
+async def get_visitor_logs():
+    """Admin endpoint — returns recent visitor logs."""
+    return {"logs": _visitor_logs[:100]}
+
 # ── PUBLIC LINKS ACCESS CONTROL ──
 _public_access = {"enabled": True, "password_required": False, "password": "rcc123", "show_projection": False}
 _search_access = {"enabled": False, "password": "rcc@admin"}
