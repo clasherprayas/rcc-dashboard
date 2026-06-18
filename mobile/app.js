@@ -372,7 +372,24 @@ async function showVisitorLogs() {
   toggleMenu();
   const data = await apiCall('/api/visitor-logs');
   if (!data || !data.logs || !data.logs.length) {
-    showToast('📋 No visitor logs yet');
+    // Show empty state in page instead of just toast
+    const pages = document.querySelectorAll('.page');
+    const navItems = document.querySelectorAll('.nav-item');
+    pages.forEach(p => p.classList.remove('active'));
+    navItems.forEach(n => n.classList.remove('active'));
+    document.getElementById('pageFlow').classList.add('active');
+    document.getElementById('flowContent').innerHTML = `
+      <div class="summary-banner">
+        <div class="banner-left">
+          <span style="font-size:1.3rem">👁️</span>
+          <div>
+            <div class="banner-label">VISITOR LOGS</div>
+            <div class="banner-value">0</div>
+          </div>
+        </div>
+      </div>
+      <div class="empty-state"><div class="emoji">📋</div><div class="msg">No logs yet. Jab koi public link kholega tab yahan dikhega.</div></div>
+    `;
     return;
   }
   let rows = '';
