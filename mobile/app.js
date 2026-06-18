@@ -383,6 +383,7 @@ function onExecFilterChange(val) {
   loadDashboard();
   loadTrails();
   loadFlowList();
+  loadFlowList();
   loadRanking();
 }
 
@@ -627,25 +628,6 @@ async function loadFlowList(bucket = currentFlowBucket) {
     return;
   }
 
-  // Fetch real projection Resolution% from API (executive-wise)
-  let projValue = '--';
-  let curResValue = '--';
-  if (showProjection) {
-    const execParam = (currentUser.role === 'admin' && selectedExec !== 'ALL') ? selectedExec : 
-                      (currentUser.role !== 'admin') ? currentUser.username : '';
-    const projUrl = execParam ? `/api/projection?bucket=${bucket}&user=${encodeURIComponent(execParam)}` : `/api/projection?bucket=${bucket}`;
-    const projData = await apiCall(projUrl);
-    if (projData) {
-      if (projData.grand_total) {
-        projValue = projData.grand_total.resolution.toFixed(1);
-        curResValue = (projData.grand_total.current_res || 0).toFixed(1);
-      } else if (projData.resolution !== undefined) {
-        projValue = projData.resolution.toFixed(1);
-        curResValue = (projData.current_res || 0).toFixed(1);
-      }
-    }
-  }
-
   let tabs = '';
   for (let i = 1; i <= 6; i++) {
     tabs += `<div class="pill-tab ${bucket===i?'active':''}" onclick="loadFlowList(${i})">BKT-${i}</div>`;
@@ -661,6 +643,7 @@ async function loadFlowList(bucket = currentFlowBucket) {
     });
   }
 
+  // Render table immediately (no delay)
   el.innerHTML = `
     <div class="pill-tabs">${tabs}</div>
     <div class="summary-banner">
@@ -672,14 +655,14 @@ async function loadFlowList(bucket = currentFlowBucket) {
         </div>
       </div>
       ${showProjection ? `
-      <div style="display:flex;gap:8px;position:relative;z-index:1">
-        <div class="banner-projection">
+      <div style="display:flex;gap:6px;position:relative;z-index:1">
+        <div class="banner-projection" id="curResBox">
           <div class="proj-label">CURRENT</div>
-          <div class="proj-value">${curResValue}%</div>
+          <div class="proj-value" id="curResVal">--%</div>
         </div>
-        <div class="banner-projection">
+        <div class="banner-projection" id="projResBox">
           <div class="proj-label">PROJECTION</div>
-          <div class="proj-value">${projValue}%</div>
+          <div class="proj-value" id="projResVal">--%</div>
         </div>
       </div>` : ''}
     </div>
@@ -691,6 +674,28 @@ async function loadFlowList(bucket = currentFlowBucket) {
       </table>
     </div>
   `;
+
+  // Load projection in background (no blocking)
+  if (showProjection) {
+    const execParam = (currentUser.role === 'admin' && selectedExec !== 'ALL') ? selectedExec : 
+                      (currentUser.role !== 'admin') ? currentUser.username : '';
+    const projUrl = execParam ? `/api/projection?bucket=${bucket}&user=${encodeURIComponent(execParam)}` : `/api/projection?bucket=${bucket}`;
+    apiCall(projUrl).then(projData => {
+      if (!projData) return;
+      let projValue = '--', curResValue = '--';
+      if (projData.grand_total) {
+        projValue = projData.grand_total.resolution.toFixed(1);
+        curResValue = (projData.grand_total.current_res || 0).toFixed(1);
+      } else if (projData.resolution !== undefined) {
+        projValue = projData.resolution.toFixed(1);
+        curResValue = (projData.current_res || 0).toFixed(1);
+      }
+      const curEl = document.getElementById('curResVal');
+      const projEl = document.getElementById('projResVal');
+      if (curEl) curEl.textContent = curResValue + '%';
+      if (projEl) projEl.textContent = projValue + '%';
+    });
+  }
 }
 
 // ── SEARCH (ACTION CENTER STYLE) ──
