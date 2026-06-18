@@ -110,7 +110,7 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 app.add_middleware(NoCacheMiddleware)
 
 # ── PUBLIC LINKS ACCESS CONTROL ──
-_public_access = {"enabled": True, "password_required": False, "password": "rcc123", "show_projection": True}
+_public_access = {"enabled": True, "password_required": False, "password": "rcc123", "show_projection": False}
 _search_access = {"enabled": False, "password": "rcc@admin"}
 
 @app.get("/api/public-access")

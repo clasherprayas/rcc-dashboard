@@ -219,9 +219,14 @@ async function loadPublicAccessStatus() {
     const linkToggle = document.getElementById('linkToggle');
     const pwdToggle = document.getElementById('pwdToggle');
     const searchToggle = document.getElementById('searchToggle');
+    const projToggle = document.getElementById('projToggle');
     if (linkToggle) linkToggle.checked = data.enabled;
     if (pwdToggle) pwdToggle.checked = data.password_required;
     if (searchToggle) searchToggle.checked = data.search_enabled;
+    if (projToggle) {
+      projToggle.checked = data.show_projection !== false;
+      showProjection = data.show_projection !== false;
+    }
     if (data.password) {
       const el = document.getElementById('currentPwd');
       if (el) el.textContent = data.password;
