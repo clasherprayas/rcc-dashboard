@@ -263,18 +263,21 @@ body {
 .receipt-stat-val { font-size: 1.6rem; font-weight: 900; font-family: var(--mono); }
 
 /* ── TABLE STYLES (Streamlit match) ── */
-.rcc-table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow); margin-bottom: 14px; }
-.rcc-table { width: 100%; border-collapse: collapse; font-size: .78rem; table-layout: fixed; }
+.rcc-table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow); margin-bottom: 14px; overflow-x: hidden; }
+.rcc-table { width: 100%; border-collapse: collapse; font-size: .78rem; table-layout: fixed; overflow: hidden; }
 .rcc-table thead th {
   position: sticky; top: 0; z-index: 5; background: var(--surface2); color: var(--muted);
   font-weight: 700; text-align: left; border-bottom: 2px solid var(--border);
-  padding: 12px 12px; font-size: .65rem; text-transform: uppercase; letter-spacing: .04em;
+  padding: 10px 8px; font-size: .62rem; text-transform: uppercase; letter-spacing: .04em;
+  border-right: 1px solid var(--border);
 }
-.rcc-table tbody td { background: var(--surface); color: var(--ink); border-bottom: 1px solid var(--border); padding: 12px 12px; transition: background .15s; font-size: .8rem; word-wrap: break-word; }
+.rcc-table thead th:last-child { border-right: none; }
+.rcc-table tbody td { background: var(--surface); color: var(--ink); border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); padding: 10px 8px; transition: background .15s; font-size: .78rem; word-wrap: break-word; overflow-wrap: break-word; }
+.rcc-table tbody td:last-child { border-right: none; }
 .rcc-table tbody tr:nth-child(even) td { background: var(--surface2); }
 .rcc-table tbody tr:hover td { background: rgba(59,130,246,.06); }
 .rcc-table tbody tr:last-child td { border-bottom: none; }
-.rcc-table .mono { font-family: var(--mono); font-weight: 700; font-size: .78rem; white-space: nowrap; }
+.rcc-table .mono { font-family: var(--mono); font-weight: 700; font-size: .75rem; white-space: nowrap; }
 .rcc-table .text-right { text-align: right; }
 
 /* Flow table — left green border on rows (like screenshot) */
@@ -296,9 +299,9 @@ body {
 .rcc-table.trails-table col:nth-child(3) { width: 28%; }
 
 /* Flow table: col widths */
-.rcc-table.flow-table col:nth-child(1) { width: 50%; }
-.rcc-table.flow-table col:nth-child(2) { width: 25%; }
-.rcc-table.flow-table col:nth-child(3) { width: 25%; }
+.rcc-table.flow-table col:nth-child(1) { width: 46%; }
+.rcc-table.flow-table col:nth-child(2) { width: 28%; }
+.rcc-table.flow-table col:nth-child(3) { width: 26%; }
 
 /* Area chip */
 .area-chip { background: var(--surface2); color: #7dd3fc; border-radius: 4px; padding: 3px 10px; font-size: .72rem; font-weight: 700; display: inline-block; }

@@ -189,13 +189,17 @@
       color: #64748b;
       letter-spacing: 0.5px;
       border-bottom: 2px solid #e2e8f0;
+      border-right: 1px solid #e2e8f0;
     }
+    th:last-child { border-right: none; }
     th.text-right { text-align: right; }
     td {
       padding: 10px 8px;
       border-bottom: 1px solid #f1f5f9;
+      border-right: 1px solid #f1f5f9;
       vertical-align: middle;
     }
+    td:last-child { border-right: none; }
     td:first-child {
       font-weight: 500;
       word-wrap: break-word;
@@ -389,12 +393,11 @@
 
         let rows = '';
         data.cases.forEach(c => {
-          const draCls = c.dra_pct >= 50 ? 'dra-high' : 'dra-val';
           const posCls = c.projection === 'FLOW' ? 'pos-warn' : 'pos-val';
           rows += `<tr>
             <td>${c.customer_name}</td>
             <td class="text-right ${posCls}">${fmtIndian(c.pos)}</td>
-            <td class="text-right ${draCls}">${c.dra_pct}%</td>
+            <td class="text-right ${posCls}">${c.dra_pct}%</td>
           </tr>`;
         });
 
