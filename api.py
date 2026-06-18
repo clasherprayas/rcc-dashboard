@@ -464,6 +464,7 @@ async def flowlist(user: str = "", bucket: int = 1, role: str = "executive", aut
             "dra_pct": round(float(row["DRA CASE%"]) * 100, 1),
             "mobile": str(row.get("MOBILE", "")),
             "area": str(row.get("AREA", "")),
+            "projection": str(row.get("PROJECTION", "")),
         })
     
     return {"total": len(result), "bucket": bucket, "cases": result}

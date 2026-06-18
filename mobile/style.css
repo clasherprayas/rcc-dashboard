@@ -401,6 +401,7 @@ body {
 .blue { color: var(--accent) !important; }
 .red { color: var(--red-val) !important; }
 .amber { color: var(--amber-val) !important; }
+.orange { color: #f97316 !important; }
 .purple { color: var(--purple-val) !important; }
 
 /* ── TOAST ── */

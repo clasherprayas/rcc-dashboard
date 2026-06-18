@@ -639,7 +639,8 @@ async function loadFlowList(bucket = currentFlowBucket) {
   } else {
     data.cases.forEach(c => {
       const draCls = c.dra_pct >= 50 ? 'green' : c.dra_pct >= 20 ? 'amber' : 'red';
-      rows += `<tr><td>${c.customer_name}</td><td class="mono green text-right">₹${fmtIndianFull(c.pos)}</td><td class="mono ${draCls} text-right">${c.dra_pct}%</td></tr>`;
+      const posCls = c.projection === 'FLOW' ? 'orange' : 'green';
+      rows += `<tr><td>${c.customer_name}</td><td class="mono ${posCls} text-right">₹${fmtIndianFull(c.pos)}</td><td class="mono ${draCls} text-right">${c.dra_pct}%</td></tr>`;
     });
   }
 

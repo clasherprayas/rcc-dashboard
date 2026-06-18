@@ -208,6 +208,7 @@
       font-weight: 600;
     }
     .pos-val { color: #059669; }
+    .pos-warn { color: #f97316; font-weight: 700; }
     .dra-val { color: #d97706; }
     .dra-high { color: #dc2626; }
     .refresh-note {
@@ -389,9 +390,10 @@
         let rows = '';
         data.cases.forEach(c => {
           const draCls = c.dra_pct >= 50 ? 'dra-high' : 'dra-val';
+          const posCls = c.projection === 'FLOW' ? 'pos-warn' : 'pos-val';
           rows += `<tr>
             <td>${c.customer_name}</td>
-            <td class="text-right pos-val">${fmtIndian(c.pos)}</td>
+            <td class="text-right ${posCls}">${fmtIndian(c.pos)}</td>
             <td class="text-right ${draCls}">${c.dra_pct}%</td>
           </tr>`;
         });
