@@ -64,14 +64,16 @@
     }
     .info-msg {
       margin: 20px 16px;
-      padding: 16px;
+      padding: 20px 16px;
       background: #eff6ff;
-      border: 1px solid #bfdbfe;
+      border: 2px solid #bfdbfe;
+      border-left: 5px solid #2563eb;
       border-radius: 10px;
       text-align: center;
       color: #1e40af;
-      font-size: 13px;
-      font-weight: 500;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.5;
     }
     .pill-tabs {
       display: flex;
@@ -302,7 +304,7 @@
   </div>
   <div id="tabs"></div>
   <div id="content">
-    <div class="info-msg">👆 Select your name above to view your flow cases.</div>
+    <div class="info-msg">👆 वरती तुमचे नाव निवडा आणि तुमचे फ्लो केसेस पहा<br><span style="font-size:11px;opacity:.7;margin-top:4px;display:inline-block">Select your name above to view your flow cases</span></div>
   </div>
   <div class="refresh-note" id="refreshNote" style="display:none">Auto-refresh every 30s · Last updated: <span id="lastUpdate">-</span></div>
   </div><!-- end mainApp -->
@@ -340,7 +342,7 @@
       const exec = document.getElementById('execFilter').value;
       if (!exec) {
         document.getElementById('tabs').innerHTML = '';
-        document.getElementById('content').innerHTML = '<div class="info-msg">👆 Select your name above to view your flow cases.</div>';
+        document.getElementById('content').innerHTML = '<div class=\"info-msg\">👆 वरती तुमचे नाव निवडा आणि तुमचे फ्लो केसेस पहा<br><span style=\"font-size:11px;opacity:.7;margin-top:4px;display:inline-block\">Select your name above to view your flow cases</span></div>';
         document.getElementById('refreshNote').style.display = 'none';
         if (refreshInterval) clearInterval(refreshInterval);
         return;
