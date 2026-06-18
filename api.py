@@ -141,7 +141,7 @@ async def get_visitor_logs():
     return {"logs": _visitor_logs[:100]}
 
 # ── PUBLIC LINKS ACCESS CONTROL ──
-_public_access = {"enabled": True, "password_required": False, "password": "rcc123", "show_projection": False}
+_public_access = {"enabled": True, "password_required": False, "password": "rcc123", "show_projection": True}
 _search_access = {"enabled": False, "password": "rcc@admin"}
 
 @app.get("/api/public-access")
