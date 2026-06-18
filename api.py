@@ -537,6 +537,65 @@ async def executives():
     return {"executives": teams}
 
 
+@app.get("/api/projection")
+async def projection(bucket: int = 1):
+    """BKT-wise projection pivot — TEAM × PROJECTION(FLOW/STABLE/RB) with Resolution%."""
+    df = load_data()
+    if df is None:
+        raise HTTPException(status_code=500, detail="Data file not found")
+    
+    bkt_df = df[df["BUCKET"] == bucket]
+    
+    if bkt_df.empty:
+        return {"bucket": bucket, "teams": [], "grand_total": {}}
+    
+    # Group by TEAM and PROJECTION column (FLOW/STABLE/RB)
+    pivot = bkt_df.groupby(["TEAM", "PROJECTION"])["POS"].sum().unstack(fill_value=0)
+    
+    # Ensure all columns exist
+    for col in ["FLOW", "STABLE", "RB"]:
+        if col not in pivot.columns:
+            pivot[col] = 0.0
+    
+    pivot["grand_total"] = pivot["FLOW"] + pivot["STABLE"] + pivot["RB"]
+    pivot["stable_pct"] = (pivot["STABLE"] / pivot["grand_total"] * 100).round(2).fillna(0)
+    pivot["rb_pct"] = (pivot["RB"] / pivot["grand_total"] * 100).round(2).fillna(0)
+    pivot["resolution"] = (pivot["stable_pct"] + pivot["rb_pct"]).round(2)
+    
+    # Sort by resolution descending
+    pivot = pivot.sort_values("resolution", ascending=False)
+    
+    teams = []
+    for team_name, row in pivot.iterrows():
+        teams.append({
+            "team": str(team_name),
+            "flow": round(float(row["FLOW"]), 2),
+            "stable": round(float(row["STABLE"]), 2),
+            "rb": round(float(row["RB"]), 2),
+            "grand_total": round(float(row["grand_total"]), 2),
+            "stable_pct": float(row["stable_pct"]),
+            "rb_pct": float(row["rb_pct"]),
+            "resolution": float(row["resolution"]),
+        })
+    
+    # Grand total row
+    total_flow = pivot["FLOW"].sum()
+    total_stable = pivot["STABLE"].sum()
+    total_rb = pivot["RB"].sum()
+    total_all = total_flow + total_stable + total_rb
+    grand = {
+        "flow": round(total_flow, 2),
+        "stable": round(total_stable, 2),
+        "rb": round(total_rb, 2),
+        "grand_total": round(total_all, 2),
+        "stable_pct": round(total_stable / total_all * 100, 2) if total_all else 0,
+        "rb_pct": round(total_rb / total_all * 100, 2) if total_all else 0,
+        "resolution": round((total_stable + total_rb) / total_all * 100, 2) if total_all else 0,
+    }
+    
+    return {"bucket": bucket, "teams": teams, "grand_total": grand}
+
+
 @app.get("/api/ranking")
 async def ranking():
     df = load_data()

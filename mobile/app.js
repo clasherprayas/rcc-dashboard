@@ -169,6 +169,7 @@ function showApp() {
       if (targetPage === 'pageFlow') loadFlowList();
       if (targetPage === 'pageRanking') loadRanking();
       if (targetPage === 'pageSearch') loadSearchCases();
+      if (targetPage === 'pageProjection') loadProjection();
     }
   }
 }
@@ -400,6 +401,7 @@ navItems.forEach(item => {
     if (pageId === 'pageFlow') loadFlowList();
     if (pageId === 'pageRanking') loadRanking();
     if (pageId === 'pageSearch') loadSearchCases();
+    if (pageId === 'pageProjection') loadProjection();
   });
 });
 
@@ -801,6 +803,78 @@ async function loadRanking() {
     <div class="rcc-table-wrap">
       <table class="rcc-table">
         <thead><tr><th>#</th><th>EXECUTIVE</th><th>CASES</th><th>PAID</th><th>RES%</th><th>COLLECTION</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ── PROJECTION ──
+let currentProjBkt = 1;
+
+function setProjBkt(bkt) {
+  currentProjBkt = bkt;
+  document.querySelectorAll('#projBktTabs .pill-tab').forEach((t, i) => {
+    t.classList.toggle('active', i === bkt - 1);
+  });
+  loadProjection();
+}
+
+async function loadProjection() {
+  const el = document.getElementById('projContent');
+  el.innerHTML = '<div class="loader"><div class="spinner"></div></div>';
+  const data = await apiCall(`/api/projection?bucket=${currentProjBkt}`);
+  if (!data || !data.teams || !data.teams.length) {
+    el.innerHTML = '<div class="empty-state"><div class="emoji">📈</div><div class="msg">No projection data for BKT-' + currentProjBkt + '</div></div>';
+    return;
+  }
+
+  let rows = '';
+  data.teams.forEach((t, i) => {
+    const resColor = t.resolution >= 85 ? '#22c55e' : t.resolution >= 70 ? '#f59e0b' : t.resolution >= 50 ? '#f97316' : '#ef4444';
+    const bgColor = t.resolution >= 85 ? 'rgba(34,197,94,0.08)' : t.resolution >= 70 ? 'rgba(245,158,11,0.08)' : t.resolution >= 50 ? 'rgba(249,115,22,0.08)' : 'rgba(239,68,68,0.08)';
+    rows += `<tr style="background:${bgColor}">
+      <td class="exec-name">${t.team}</td>
+      <td class="mono">${formatIndian(t.flow)}</td>
+      <td class="mono green">${formatIndian(t.stable)}</td>
+      <td class="mono" style="color:#f59e0b">${formatIndian(t.rb)}</td>
+      <td class="mono">${formatIndian(t.grand_total)}</td>
+      <td class="mono">${t.stable_pct.toFixed(1)}%</td>
+      <td class="mono">${t.rb_pct.toFixed(1)}%</td>
+      <td><span class="status-chip" style="background:${resColor};color:#fff;font-weight:700">${t.resolution.toFixed(2)}%</span></td>
+    </tr>`;
+  });
+
+  // Grand total row
+  const g = data.grand_total;
+  const gColor = g.resolution >= 85 ? '#22c55e' : g.resolution >= 70 ? '#f59e0b' : g.resolution >= 50 ? '#f97316' : '#ef4444';
+  rows += `<tr style="font-weight:700;border-top:2px solid var(--border)">
+    <td>TOTAL</td>
+    <td class="mono">${formatIndian(g.flow)}</td>
+    <td class="mono green">${formatIndian(g.stable)}</td>
+    <td class="mono" style="color:#f59e0b">${formatIndian(g.rb)}</td>
+    <td class="mono">${formatIndian(g.grand_total)}</td>
+    <td class="mono">${g.stable_pct.toFixed(1)}%</td>
+    <td class="mono">${g.rb_pct.toFixed(1)}%</td>
+    <td><span class="status-chip" style="background:${gColor};color:#fff;font-weight:700">${g.resolution.toFixed(2)}%</span></td>
+  </tr>`;
+
+  el.innerHTML = `
+    <div class="summary-banner">
+      <div class="banner-left">
+        <span style="font-size:1.3rem">📈</span>
+        <div>
+          <div class="banner-label">PROJECTION BKT-${currentProjBkt}</div>
+          <div class="banner-value">${data.teams.length} Executives · Resolution ${g.resolution.toFixed(2)}%</div>
+        </div>
+      </div>
+      <div class="banner-right">
+        <span class="status-chip" style="background:${gColor};color:#fff;font-size:1.1rem;font-weight:700">${g.resolution.toFixed(1)}%</span>
+      </div>
+    </div>
+    <div class="rcc-table-wrap">
+      <table class="rcc-table">
+        <thead><tr><th>TEAM</th><th>FLOW</th><th>STABLE</th><th>RB</th><th>TOTAL</th><th>S%</th><th>RB%</th><th>RES%</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
