@@ -502,7 +502,29 @@ async def flowlist(user: str = "", bucket: int = 1, role: str = "executive", aut
             "projection": str(row.get("PROJECTION", "")),
         })
     
-    return {"total": len(result), "bucket": bucket, "cases": result}
+    # Inline projection calculation (avoids extra API call)
+    bkt_df = df[df["BUCKET"] == bucket]
+    proj_data = {"resolution": 0, "current_res": 0}
+    if username:
+        user_bkt = bkt_df[bkt_df["TEAM"] == username]
+    else:
+        user_bkt = bkt_df
+    if not user_bkt.empty:
+        proj_grp = user_bkt.groupby("PROJECTION")["POS"].sum()
+        p_flow = float(proj_grp.get("FLOW", 0))
+        p_stable = float(proj_grp.get("STABLE", 0))
+        p_rb = float(proj_grp.get("RB", 0))
+        p_total = p_flow + p_stable + p_rb
+        if p_total > 0:
+            proj_data["resolution"] = round((p_stable + p_rb) / p_total * 100, 2)
+        cur_grp = user_bkt.groupby("POS STATUS")["POS"].sum()
+        c_stable = float(cur_grp.get("STABLE", 0))
+        c_rb = float(cur_grp.get("RB", 0))
+        c_total = float(cur_grp.sum())
+        if c_total > 0:
+            proj_data["current_res"] = round((c_stable + c_rb) / c_total * 100, 2)
+    
+    return {"total": len(result), "bucket": bucket, "cases": result, "projection": proj_data}
 
 
 @app.get("/api/search")
