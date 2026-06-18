@@ -370,10 +370,10 @@
           const projRes = await fetch(`${API_BASE}/api/projection?bucket=${currentBucket}&user=${encodeURIComponent(exec)}`);
           const projData = await projRes.json();
           if (projData) {
-            if (projData.resolution !== undefined) {
+            if (projData.user && projData.resolution !== undefined) {
               projValue = projData.resolution.toFixed(1);
               curResValue = (projData.current_res || 0).toFixed(1);
-            } else if (projData.grand_total) {
+            } else if (projData.grand_total && typeof projData.grand_total === 'object') {
               projValue = projData.grand_total.resolution.toFixed(1);
               curResValue = (projData.grand_total.current_res || 0).toFixed(1);
             }

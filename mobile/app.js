@@ -683,12 +683,15 @@ async function loadFlowList(bucket = currentFlowBucket) {
     apiCall(projUrl).then(projData => {
       if (!projData) return;
       let projValue = '--', curResValue = '--';
-      if (projData.grand_total) {
-        projValue = projData.grand_total.resolution.toFixed(1);
-        curResValue = (projData.grand_total.current_res || 0).toFixed(1);
-      } else if (projData.resolution !== undefined) {
+      // User-specific response: resolution at top level
+      if (projData.user && projData.resolution !== undefined) {
         projValue = projData.resolution.toFixed(1);
         curResValue = (projData.current_res || 0).toFixed(1);
+      }
+      // ALL executives response: grand_total is an object with resolution
+      else if (projData.grand_total && typeof projData.grand_total === 'object') {
+        projValue = projData.grand_total.resolution.toFixed(1);
+        curResValue = (projData.grand_total.current_res || 0).toFixed(1);
       }
       const curEl = document.getElementById('curResVal');
       const projEl = document.getElementById('projResVal');
