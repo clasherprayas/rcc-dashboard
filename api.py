@@ -538,13 +538,38 @@ async def executives():
 
 
 @app.get("/api/projection")
-async def projection(bucket: int = 1):
+async def projection(bucket: int = 1, user: str = ""):
     """BKT-wise projection pivot — TEAM × PROJECTION(FLOW/STABLE/RB) with Resolution%."""
     df = load_data()
     if df is None:
         raise HTTPException(status_code=500, detail="Data file not found")
     
     bkt_df = df[df["BUCKET"] == bucket]
+    
+    # If specific user requested, filter for that user only
+    username = user.strip().upper()
+    if username:
+        user_df = bkt_df[bkt_df["TEAM"] == username]
+        if user_df.empty:
+            return {"bucket": bucket, "user": username, "resolution": 0, "stable_pct": 0, "rb_pct": 0, "current_res": 0, "teams": [], "grand_total": {}}
+        # Projection (from PROJECTION column)
+        proj_grp = user_df.groupby("PROJECTION")["POS"].sum()
+        flow_val = float(proj_grp.get("FLOW", 0))
+        stable_val = float(proj_grp.get("STABLE", 0))
+        rb_val = float(proj_grp.get("RB", 0))
+        total_val = flow_val + stable_val + rb_val
+        s_pct = round(stable_val / total_val * 100, 2) if total_val else 0
+        r_pct = round(rb_val / total_val * 100, 2) if total_val else 0
+        res = round(s_pct + r_pct, 2)
+        # Current Resolution (from POS STATUS column — actual real-time)
+        cur_grp = user_df.groupby("POS STATUS")["POS"].sum()
+        cur_stable = float(cur_grp.get("STABLE", 0))
+        cur_rb = float(cur_grp.get("RB", 0))
+        cur_total = float(cur_grp.sum())
+        cur_res = round((cur_stable + cur_rb) / cur_total * 100, 2) if cur_total else 0
+        return {"bucket": bucket, "user": username, "resolution": res, "stable_pct": s_pct, "rb_pct": r_pct,
+                "current_res": cur_res,
+                "flow": round(flow_val, 2), "stable": round(stable_val, 2), "rb": round(rb_val, 2), "grand_total": round(total_val, 2)}
     
     if bkt_df.empty:
         return {"bucket": bucket, "teams": [], "grand_total": {}}
@@ -592,6 +617,13 @@ async def projection(bucket: int = 1):
         "rb_pct": round(total_rb / total_all * 100, 2) if total_all else 0,
         "resolution": round((total_stable + total_rb) / total_all * 100, 2) if total_all else 0,
     }
+    
+    # Current Resolution from POS STATUS (actual real-time)
+    cur_grp = bkt_df.groupby("POS STATUS")["POS"].sum()
+    cur_stable = float(cur_grp.get("STABLE", 0))
+    cur_rb = float(cur_grp.get("RB", 0))
+    cur_total = float(cur_grp.sum())
+    grand["current_res"] = round((cur_stable + cur_rb) / cur_total * 100, 2) if cur_total else 0
     
     return {"bucket": bucket, "teams": teams, "grand_total": grand}
 

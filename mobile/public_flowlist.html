@@ -363,12 +363,21 @@
         const res = await fetch(`${API_BASE}/api/flowlist?user=${encodeURIComponent(exec)}&role=executive&bucket=${currentBucket}`);
         const data = await res.json();
 
-        // Fetch real projection
+        // Fetch real projection (executive-wise)
         let projValue = '--';
+        let curResValue = '--';
         try {
-          const projRes = await fetch(`${API_BASE}/api/projection?bucket=${currentBucket}`);
+          const projRes = await fetch(`${API_BASE}/api/projection?bucket=${currentBucket}&user=${encodeURIComponent(exec)}`);
           const projData = await projRes.json();
-          if (projData && projData.grand_total) projValue = projData.grand_total.resolution.toFixed(1);
+          if (projData) {
+            if (projData.resolution !== undefined) {
+              projValue = projData.resolution.toFixed(1);
+              curResValue = (projData.current_res || 0).toFixed(1);
+            } else if (projData.grand_total) {
+              projValue = projData.grand_total.resolution.toFixed(1);
+              curResValue = (projData.grand_total.current_res || 0).toFixed(1);
+            }
+          }
         } catch(e) {}
 
         if (data.total === 0) {
@@ -393,9 +402,15 @@
               <div style="font-size:10px;opacity:.8;font-weight:700;letter-spacing:.05em">BKT-${currentBucket} FLOW CASES</div>
               <div class="banner-count">${data.total}</div>
             </div>
-            <div class="banner-proj">
-              <div class="banner-proj-label">PROJECTION</div>
-              <div class="banner-proj-value">${projValue}%</div>
+            <div style="display:flex;gap:8px;position:relative;z-index:1">
+              <div class="banner-proj">
+                <div class="banner-proj-label">CURRENT</div>
+                <div class="banner-proj-value">${curResValue}%</div>
+              </div>
+              <div class="banner-proj">
+                <div class="banner-proj-label">PROJECTION</div>
+                <div class="banner-proj-value">${projValue}%</div>
+              </div>
             </div>
           </div>
           <div class="table-wrap">

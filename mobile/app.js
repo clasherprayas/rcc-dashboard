@@ -627,12 +627,22 @@ async function loadFlowList(bucket = currentFlowBucket) {
     return;
   }
 
-  // Fetch real projection Resolution% from API
+  // Fetch real projection Resolution% from API (executive-wise)
   let projValue = '--';
+  let curResValue = '--';
   if (showProjection) {
-    const projData = await apiCall(`/api/projection?bucket=${bucket}`);
-    if (projData && projData.grand_total) {
-      projValue = projData.grand_total.resolution.toFixed(1);
+    const execParam = (currentUser.role === 'admin' && selectedExec !== 'ALL') ? selectedExec : 
+                      (currentUser.role !== 'admin') ? currentUser.username : '';
+    const projUrl = execParam ? `/api/projection?bucket=${bucket}&user=${encodeURIComponent(execParam)}` : `/api/projection?bucket=${bucket}`;
+    const projData = await apiCall(projUrl);
+    if (projData) {
+      if (projData.grand_total) {
+        projValue = projData.grand_total.resolution.toFixed(1);
+        curResValue = (projData.grand_total.current_res || 0).toFixed(1);
+      } else if (projData.resolution !== undefined) {
+        projValue = projData.resolution.toFixed(1);
+        curResValue = (projData.current_res || 0).toFixed(1);
+      }
     }
   }
 
@@ -661,9 +671,16 @@ async function loadFlowList(bucket = currentFlowBucket) {
           <div class="banner-value">${data.total}</div>
         </div>
       </div>
-      ${showProjection ? `<div class="banner-projection">
-        <div class="proj-label">PROJECTION</div>
-        <div class="proj-value">${projValue}%</div>
+      ${showProjection ? `
+      <div style="display:flex;gap:8px;position:relative;z-index:1">
+        <div class="banner-projection">
+          <div class="proj-label">CURRENT</div>
+          <div class="proj-value">${curResValue}%</div>
+        </div>
+        <div class="banner-projection">
+          <div class="proj-label">PROJECTION</div>
+          <div class="proj-value">${projValue}%</div>
+        </div>
       </div>` : ''}
     </div>
     <div class="rcc-table-wrap flow-table-wrap">
