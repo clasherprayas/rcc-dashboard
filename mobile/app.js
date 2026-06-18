@@ -639,7 +639,7 @@ async function loadFlowList(bucket = currentFlowBucket) {
   } else {
     data.cases.forEach(c => {
       const posCls = c.projection === 'FLOW' ? 'orange' : 'green';
-      rows += `<tr><td>${c.customer_name}</td><td class="mono ${posCls} text-right">₹${fmtIndianFull(c.pos)}</td><td class="mono ${posCls} text-right">${c.dra_pct}%</td></tr>`;
+      rows += `<tr><td>${c.customer_name}</td><td class="mono ${posCls} text-center">₹${fmtIndianFull(c.pos)}</td><td class="mono ${posCls} text-center">${c.dra_pct}%</td></tr>`;
     });
   }
 
@@ -669,7 +669,7 @@ async function loadFlowList(bucket = currentFlowBucket) {
     <div class="rcc-table-wrap flow-table-wrap">
       <table class="rcc-table flow-table">
         <colgroup><col><col><col></colgroup>
-        <thead><tr><th>CUSTOMER NAME</th><th class="text-right">POS</th><th class="text-right">DRA CASE %</th></tr></thead>
+        <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">DRA CASE %</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>

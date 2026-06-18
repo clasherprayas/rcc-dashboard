@@ -211,6 +211,11 @@
       font-family: 'JetBrains Mono', monospace;
       font-weight: 600;
     }
+    td.text-center, th.text-center {
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+    }
     .pos-val { color: #059669; }
     .pos-warn { color: #f97316; font-weight: 700; }
     .dra-val { color: #d97706; }
@@ -396,8 +401,8 @@
           const posCls = c.projection === 'FLOW' ? 'pos-warn' : 'pos-val';
           rows += `<tr>
             <td>${c.customer_name}</td>
-            <td class="text-right ${posCls}">${fmtIndian(c.pos)}</td>
-            <td class="text-right ${posCls}">${c.dra_pct}%</td>
+            <td class="text-center ${posCls}">${fmtIndian(c.pos)}</td>
+            <td class="text-center ${posCls}">${c.dra_pct}%</td>
           </tr>`;
         });
 
@@ -421,7 +426,7 @@
           <div class="table-wrap">
             <table>
               <colgroup><col><col><col></colgroup>
-              <thead><tr><th>CUSTOMER NAME</th><th class="text-right">POS</th><th class="text-right">DRA CASE %</th></tr></thead>
+              <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">DRA CASE %</th></tr></thead>
               <tbody>${rows}</tbody>
             </table>
           </div>
