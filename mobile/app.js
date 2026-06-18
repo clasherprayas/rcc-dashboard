@@ -428,19 +428,9 @@ async function loadExecFilter() {
 
 function onExecFilterChange(val) {
   selectedExec = val;
-  // Reload only the currently active page
-  const activePage = document.querySelector('.page.active');
-  if (activePage) {
-    const id = activePage.id;
-    if (id === 'pageDashboard') loadDashboard();
-    else if (id === 'pageTrails') loadTrails();
-    else if (id === 'pageFlow') loadFlowList();
-    else if (id === 'pageSearch') loadSearchCases();
-    else if (id === 'pageRanking') loadRanking();
-    else loadDashboard();
-  } else {
-    loadDashboard();
-  }
+  loadDashboard();
+  loadTrails();
+  loadFlowList();
   loadFlowList();
   loadRanking();
 }
@@ -712,15 +702,15 @@ async function loadFlowList(bucket = currentFlowBucket) {
           <div class="banner-value">${data.total}</div>
         </div>
       </div>
-      ${showProjection && data.projection ? `
+      ${showProjection ? `
       <div style="display:flex;gap:6px;position:relative;z-index:1">
-        <div class="banner-projection">
+        <div class="banner-projection" id="curResBox">
           <div class="proj-label">CURRENT</div>
-          <div class="proj-value">${data.projection.current_res.toFixed(1)}%</div>
+          <div class="proj-value" id="curResVal">--%</div>
         </div>
-        <div class="banner-projection">
+        <div class="banner-projection" id="projResBox">
           <div class="proj-label">PROJECTION</div>
-          <div class="proj-value">${data.projection.resolution.toFixed(1)}%</div>
+          <div class="proj-value" id="projResVal">--%</div>
         </div>
       </div>` : ''}
     </div>
@@ -732,6 +722,31 @@ async function loadFlowList(bucket = currentFlowBucket) {
       </table>
     </div>
   `;
+
+  // Load projection in background (no blocking)
+  if (showProjection) {
+    const execParam = (currentUser.role === 'admin' && selectedExec !== 'ALL') ? selectedExec : 
+                      (currentUser.role !== 'admin') ? currentUser.username : '';
+    const projUrl = execParam ? `/api/projection?bucket=${bucket}&user=${encodeURIComponent(execParam)}` : `/api/projection?bucket=${bucket}`;
+    apiCall(projUrl).then(projData => {
+      if (!projData) return;
+      let projValue = '--', curResValue = '--';
+      // User-specific response: resolution at top level
+      if (projData.user && projData.resolution !== undefined) {
+        projValue = projData.resolution.toFixed(1);
+        curResValue = (projData.current_res || 0).toFixed(1);
+      }
+      // ALL executives response: grand_total is an object with resolution
+      else if (projData.grand_total && typeof projData.grand_total === 'object') {
+        projValue = projData.grand_total.resolution.toFixed(1);
+        curResValue = (projData.grand_total.current_res || 0).toFixed(1);
+      }
+      const curEl = document.getElementById('curResVal');
+      const projEl = document.getElementById('projResVal');
+      if (curEl) curEl.textContent = curResValue + '%';
+      if (projEl) projEl.textContent = projValue + '%';
+    });
+  }
 }
 
 // ── SEARCH (ACTION CENTER STYLE) ──

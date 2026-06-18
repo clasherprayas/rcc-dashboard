@@ -195,6 +195,20 @@ def wait_for_network(max_wait=120, check_interval=5):
     return False
 
 
+# ─── KEEP-ALIVE PING ───
+RENDER_URL = "https://app.rccapp.xyz/"
+PING_INTERVAL = 10  # Ping every 10 cycles (10 × 30s = 5 minutes)
+
+def ping_render():
+    """Ping Render server to prevent cold start/sleep."""
+    try:
+        import urllib.request
+        urllib.request.urlopen(RENDER_URL, timeout=10)
+        log("INFO", "Ping OK → Render awake")
+    except Exception:
+        pass  # Silent fail — not critical
+
+
 def main():
     """Main loop: poll every 30 seconds."""
     log("INFO", f"Sync worker started | PID: {os.getpid()}")
@@ -209,9 +223,13 @@ def main():
             sync()
         except Exception as e:
             log("ERROR", f"Unexpected in cycle {cycle}: {e}")
+        
+        # Keep-alive ping every 5 minutes
+        if cycle % PING_INTERVAL == 0:
+            ping_render()
+        
         log("INFO", f"Sleeping {POLL_INTERVAL}s (cycle {cycle} done)")
         time.sleep(POLL_INTERVAL)
-
 
 if __name__ == "__main__":
     main()
