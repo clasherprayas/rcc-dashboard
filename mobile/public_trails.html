@@ -234,14 +234,15 @@
     let refreshInterval = null;
 
     let loadTimer = null;
-    let loadSeconds = 0;
+    let loadSeconds = 30;
 
     async function loadExecutives(retries = 3) {
       const sel = document.getElementById('execFilter');
-      loadSeconds = 0;
-      sel.innerHTML = '<option value="">⏳ Loading... (0s)</option>';
+      loadSeconds = 30;
+      sel.innerHTML = '<option value="">⏳ Loading... (' + loadSeconds + 's)</option>';
       loadTimer = setInterval(() => {
-        loadSeconds++;
+        loadSeconds--;
+        if (loadSeconds < 0) loadSeconds = 0;
         sel.innerHTML = '<option value="">⏳ Loading... (' + loadSeconds + 's)</option>';
       }, 1000);
       for (let i = 0; i < retries; i++) {
@@ -250,7 +251,7 @@
           if (!res.ok) throw new Error('API error');
           const data = await res.json();
           clearInterval(loadTimer);
-          sel.innerHTML = '<option value="">-- निवडा --</option>';
+          sel.innerHTML = '<option value="">Select Your Name</option>';
           data.executives.forEach(name => {
             const opt = document.createElement('option');
             opt.value = name;
