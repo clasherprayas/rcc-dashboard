@@ -233,15 +233,24 @@
     const API_BASE = window.location.origin;
     let refreshInterval = null;
 
+    let loadTimer = null;
+    let loadSeconds = 0;
+
     async function loadExecutives(retries = 3) {
       const sel = document.getElementById('execFilter');
-      sel.innerHTML = '<option value="">⏳ Loading...</option>';
+      loadSeconds = 0;
+      sel.innerHTML = '<option value="">⏳ Loading... (0s)</option>';
+      loadTimer = setInterval(() => {
+        loadSeconds++;
+        sel.innerHTML = '<option value="">⏳ Loading... (' + loadSeconds + 's)</option>';
+      }, 1000);
       for (let i = 0; i < retries; i++) {
         try {
           const res = await fetch(`${API_BASE}/api/executives`);
           if (!res.ok) throw new Error('API error');
           const data = await res.json();
-          sel.innerHTML = '<option value="">-- Select --</option>';
+          clearInterval(loadTimer);
+          sel.innerHTML = '<option value="">-- निवडा --</option>';
           data.executives.forEach(name => {
             const opt = document.createElement('option');
             opt.value = name;
@@ -251,11 +260,11 @@
           return;
         } catch(e) {
           if (i < retries - 1) {
-            sel.innerHTML = '<option value="">⏳ Connecting... retry ' + (i+2) + '</option>';
             await new Promise(r => setTimeout(r, 3000));
           }
         }
       }
+      clearInterval(loadTimer);
       sel.innerHTML = '<option value="">❌ Server unavailable - refresh page</option>';
     }
 
