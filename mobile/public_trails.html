@@ -234,13 +234,13 @@
     let refreshInterval = null;
 
     let loadTimer = null;
-    let loadSeconds = 25;
+    let loadSeconds = 10;
     let loadResolved = false;
 
     async function loadExecutives(retries = 3) {
       const sel = document.getElementById('execFilter');
       loadResolved = false;
-      loadSeconds = 25;
+      loadSeconds = 10;
       const timerDelay = setTimeout(() => {
         if (!loadResolved) {
           sel.innerHTML = '<option value="">⏳ Loading... (' + loadSeconds + 's)</option>';
