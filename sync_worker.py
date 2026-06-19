@@ -169,8 +169,8 @@ def sync():
                 return
             log("SUCCESS", f"Synced | Source: {fmt_time(source_mtime)}")
             
-            # Auto git push to Render
-            _git_push()
+            # Git push disabled — Render reads from OneDrive directly (zero downtime)
+            # _git_push()
         else:
             log("INFO", "No changes detected")
     except PermissionError:
