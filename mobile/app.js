@@ -724,7 +724,7 @@ async function loadFlowList(bucket = currentFlowBucket) {
         <div class="banner-projection">
           <div class="proj-label">CURRENT</div>
           <div class="proj-value">${data.projection.current_res.toFixed(1)}%</div>
-          <div style="font-size:.45rem;color:rgba(255,255,255,.6);margin-top:1px">RB ${data.projection.current_rb.toFixed(1)}%</div>
+          <div style="font-size:.5rem;color:#fbbf24;font-weight:700;margin-top:2px">RB ${data.projection.current_rb.toFixed(1)}%</div>
         </div>
         <div class="banner-projection">
           <div class="proj-label">PROJECTION</div>
