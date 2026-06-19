@@ -388,6 +388,7 @@
       }
       // Track visit
       fetch(`${API_BASE}/api/track`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({page:'Flow List', executive:exec})}).catch(()=>{});
+      isFirstLoad = true;
       renderTabs();
       loadFlowList();
       document.getElementById('refreshNote').style.display = 'block';
@@ -403,8 +404,11 @@
       document.getElementById('tabs').innerHTML = `<div class="pill-tabs">${html}</div>`;
     }
 
+    let isFirstLoad = true;
+
     function switchBucket(b) {
       currentBucket = b;
+      isFirstLoad = true;
       renderTabs();
       loadFlowList();
     }
@@ -412,8 +416,10 @@
     async function loadFlowList() {
       const exec = document.getElementById('execFilter').value;
       if (!exec) return;
-      // Show spinner while loading
-      document.getElementById('content').innerHTML = '<div style="text-align:center;padding:40px"><div class="spinner"></div><div style="margin-top:12px;font-size:13px;color:#64748b">Loading cases...</div></div>';
+      // Show spinner only on first load / bucket switch (not on auto-refresh)
+      if (isFirstLoad) {
+        document.getElementById('content').innerHTML = '<div style="text-align:center;padding:40px"><div class="spinner"></div><div style="margin-top:12px;font-size:13px;color:#64748b">Loading cases...</div></div>';
+      }
       try {
         const res = await fetch(`${API_BASE}/api/flowlist?user=${encodeURIComponent(exec)}&role=executive&bucket=${currentBucket}`);
         const data = await res.json();
@@ -478,6 +484,7 @@
           </div>
         `;
         document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        isFirstLoad = false;
       } catch (e) {
         document.getElementById('content').innerHTML = '<div class="info-msg">❌ Error loading data</div>';
       }
