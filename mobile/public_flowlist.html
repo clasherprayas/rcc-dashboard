@@ -284,6 +284,32 @@
     @keyframes shimmerMove { 0% { left: -100%; } 100% { left: 100%; } }
     @keyframes celebratePulse { 0%,100% { box-shadow: 0 8px 32px rgba(5,150,105,.4); } 50% { box-shadow: 0 8px 40px rgba(5,150,105,.6), 0 0 20px rgba(52,211,153,.3); } }
     @keyframes fadeInUp { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+    
+    /* Sparkles inside banner */
+    .sparkles { position:absolute; top:0; left:0; right:0; bottom:0; pointer-events:none; overflow:hidden; border-radius:14px; }
+    .sparkles span { position:absolute; font-size:14px; animation: sparkleFloat 2s ease-in-out infinite; opacity:0; }
+    .sparkles span:nth-child(1) { top:10%; left:5%; animation-delay:0s; }
+    .sparkles span:nth-child(2) { top:60%; left:15%; animation-delay:0.4s; }
+    .sparkles span:nth-child(3) { top:20%; right:10%; animation-delay:0.8s; }
+    .sparkles span:nth-child(4) { top:70%; right:20%; animation-delay:1.2s; }
+    .sparkles span:nth-child(5) { top:40%; left:40%; animation-delay:1.6s; }
+    @keyframes sparkleFloat { 0%,100% { opacity:0; transform:scale(0.5) translateY(0); } 50% { opacity:1; transform:scale(1.2) translateY(-5px); } }
+    
+    /* Confetti particles */
+    .confetti-wrap { position:fixed; top:0; left:0; right:0; height:100vh; pointer-events:none; z-index:9999; overflow:hidden; animation: confettiFade 4s forwards; }
+    @keyframes confettiFade { 0%,80% { opacity:1; } 100% { opacity:0; } }
+    .confetti { position:absolute; width:8px; height:8px; border-radius:2px; top:-10px; animation: confettiFall 3s ease-in forwards; }
+    .confetti.c1 { left:10%; background:#f59e0b; animation-delay:0s; }
+    .confetti.c2 { left:20%; background:#ef4444; animation-delay:0.2s; width:6px; height:10px; }
+    .confetti.c3 { left:35%; background:#10b981; animation-delay:0.4s; }
+    .confetti.c4 { left:45%; background:#3b82f6; animation-delay:0.1s; width:10px; height:6px; }
+    .confetti.c5 { left:55%; background:#8b5cf6; animation-delay:0.6s; }
+    .confetti.c6 { left:65%; background:#f59e0b; animation-delay:0.3s; width:6px; height:10px; }
+    .confetti.c7 { left:75%; background:#ef4444; animation-delay:0.5s; }
+    .confetti.c8 { left:85%; background:#10b981; animation-delay:0.7s; width:10px; height:6px; }
+    .confetti.c9 { left:30%; background:#3b82f6; animation-delay:0.8s; }
+    .confetti.c10 { left:60%; background:#8b5cf6; animation-delay:0.15s; width:6px; height:10px; }
+    @keyframes confettiFall { 0% { top:-10px; transform:rotate(0deg) translateX(0); opacity:1; } 100% { top:100vh; transform:rotate(720deg) translateX(30px); opacity:0; } }
     .password-gate {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -540,8 +566,9 @@
                 <div class="banner-proj-value">${projValue}%</div>
               </div>
             </div>` : ''}
-            ${greetHtml ? '<div class="shimmer"></div>' : ''}
+            ${greetHtml ? '<div class="shimmer"></div><div class="sparkles"><span>✨</span><span>⭐</span><span>✨</span><span>⭐</span><span>✨</span></div>' : ''}
           </div>
+          ${greetHtml ? '<div class="confetti-wrap"><div class="confetti c1"></div><div class="confetti c2"></div><div class="confetti c3"></div><div class="confetti c4"></div><div class="confetti c5"></div><div class="confetti c6"></div><div class="confetti c7"></div><div class="confetti c8"></div><div class="confetti c9"></div><div class="confetti c10"></div></div>' : ''}
           <div class="table-wrap">
             <table>
               <colgroup><col><col><col></colgroup>
