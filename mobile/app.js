@@ -719,15 +719,16 @@ async function loadFlowList(bucket = currentFlowBucket) {
           <div class="banner-value">${data.total}</div>
         </div>
       </div>
-      ${showProjection ? `
-      <div style="display:flex;gap:6px;position:relative;z-index:1">
-        <div class="banner-projection" id="curResBox">
+      ${showProjection && data.projection ? `
+      <div style="display:flex;gap:5px;position:relative;z-index:1">
+        <div class="banner-projection">
           <div class="proj-label">CURRENT</div>
-          <div class="proj-value" id="curResVal">--%</div>
+          <div class="proj-value">${data.projection.current_res.toFixed(1)}%</div>
+          <div style="font-size:.45rem;color:rgba(255,255,255,.6);margin-top:1px">RB ${data.projection.current_rb.toFixed(1)}%</div>
         </div>
-        <div class="banner-projection" id="projResBox">
+        <div class="banner-projection">
           <div class="proj-label">PROJECTION</div>
-          <div class="proj-value" id="projResVal">--%</div>
+          <div class="proj-value">${data.projection.resolution.toFixed(1)}%</div>
         </div>
       </div>` : ''}
     </div>
@@ -740,30 +741,6 @@ async function loadFlowList(bucket = currentFlowBucket) {
     </div>
   `;
 
-  // Load projection in background (no blocking)
-  if (showProjection) {
-    const execParam = (currentUser.role === 'admin' && selectedExec !== 'ALL') ? selectedExec : 
-                      (currentUser.role !== 'admin') ? currentUser.username : '';
-    const projUrl = execParam ? `/api/projection?bucket=${bucket}&user=${encodeURIComponent(execParam)}` : `/api/projection?bucket=${bucket}`;
-    apiCall(projUrl).then(projData => {
-      if (!projData) return;
-      let projValue = '--', curResValue = '--';
-      // User-specific response: resolution at top level
-      if (projData.user && projData.resolution !== undefined) {
-        projValue = projData.resolution.toFixed(1);
-        curResValue = (projData.current_res || 0).toFixed(1);
-      }
-      // ALL executives response: grand_total is an object with resolution
-      else if (projData.grand_total && typeof projData.grand_total === 'object') {
-        projValue = projData.grand_total.resolution.toFixed(1);
-        curResValue = (projData.grand_total.current_res || 0).toFixed(1);
-      }
-      const curEl = document.getElementById('curResVal');
-      const projEl = document.getElementById('projResVal');
-      if (curEl) curEl.textContent = curResValue + '%';
-      if (projEl) projEl.textContent = projValue + '%';
-    });
-  }
 }
 
 // ── SEARCH (ACTION CENTER STYLE) ──

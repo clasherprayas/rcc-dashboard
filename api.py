@@ -502,7 +502,33 @@ async def flowlist(user: str = "", bucket: int = 1, role: str = "executive", aut
             "projection": str(row.get("PROJECTION", "")),
         })
     
-    return {"total": len(result), "bucket": bucket, "cases": result}
+    return {"total": len(result), "bucket": bucket, "cases": result,
+            "projection": _calc_projection(df, bucket, username)}
+
+
+def _calc_projection(df, bucket, username):
+    """Calculate inline projection + current res for flowlist banner."""
+    bkt_df = df[df["BUCKET"] == bucket]
+    if username:
+        user_bkt = bkt_df[bkt_df["TEAM"] == username]
+    else:
+        user_bkt = bkt_df
+    if user_bkt.empty:
+        return {"resolution": 0, "current_res": 0, "current_rb": 0}
+    # Projection from PROJECTION column
+    proj_grp = user_bkt.groupby("PROJECTION")["POS"].sum()
+    p_stable = float(proj_grp.get("STABLE", 0))
+    p_rb = float(proj_grp.get("RB", 0))
+    p_total = float(proj_grp.sum())
+    resolution = round((p_stable + p_rb) / p_total * 100, 2) if p_total else 0
+    # Current from POS STATUS
+    cur_grp = user_bkt.groupby("POS STATUS")["POS"].sum()
+    c_stable = float(cur_grp.get("STABLE", 0))
+    c_rb = float(cur_grp.get("RB", 0))
+    c_total = float(cur_grp.sum())
+    current_res = round((c_stable + c_rb) / c_total * 100, 2) if c_total else 0
+    current_rb = round(c_rb / c_total * 100, 2) if c_total else 0
+    return {"resolution": resolution, "current_res": current_res, "current_rb": current_rb}
 
 
 @app.get("/api/search")
