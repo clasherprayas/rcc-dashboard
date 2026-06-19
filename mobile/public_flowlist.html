@@ -245,6 +245,22 @@
       margin: 0 auto;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .greet-banner {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: white;
+      text-align: center;
+      padding: 14px 16px;
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 800;
+      box-shadow: 0 4px 20px rgba(5,150,105,.3);
+      animation: slideDown .4s ease;
+      transition: opacity .8s;
+    }
+    .greet-banner small { font-size: 12px; font-weight: 500; opacity: .85; }
+    .greet-banner.fade-out { opacity: 0; }
+    @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     .password-gate {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -497,6 +513,24 @@
         `;
         document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
         isFirstLoad = false;
+        
+        // Greeting for high Resolution% — only BKT-1 (90%) and BKT-2 (70%)
+        if (showProj && data.projection) {
+          const res = data.projection.resolution;
+          let threshold = 0;
+          if (currentBucket === 1) threshold = 90;
+          else if (currentBucket === 2) threshold = 70;
+          if (threshold > 0 && res >= threshold) {
+            const msg = res >= 95 ? '🏆 Champion!' : '🎉 Excellent!';
+            const sub = res >= 95 ? 'Outstanding performance!' : 'Keep it up!';
+            const greetEl = document.createElement('div');
+            greetEl.className = 'greet-banner';
+            greetEl.innerHTML = `<span>${msg} Resolution ${res.toFixed(1)}%</span><br><small>${sub}</small>`;
+            document.getElementById('content').prepend(greetEl);
+            setTimeout(() => greetEl.classList.add('fade-out'), 4000);
+            setTimeout(() => greetEl.remove(), 5000);
+          }
+        }
       } catch (e) {
         document.getElementById('content').innerHTML = '<div class="info-msg">❌ Error loading data</div>';
       }
