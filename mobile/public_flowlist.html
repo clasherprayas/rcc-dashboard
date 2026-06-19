@@ -516,7 +516,7 @@
         
         // Greeting for high Resolution% — only BKT-1 (90%) and BKT-2 (70%)
         if (showProj && data.projection) {
-          const res = data.projection.resolution;
+          const res = data.projection.current_res;
           let threshold = 0;
           if (currentBucket === 1) threshold = 90;
           else if (currentBucket === 2) threshold = 70;
