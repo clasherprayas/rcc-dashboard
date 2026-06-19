@@ -332,18 +332,30 @@
       return '₹' + formatted;
     }
 
-    async function loadExecutives() {
-      try {
-        const res = await fetch(`${API_BASE}/api/executives`);
-        const data = await res.json();
-        const sel = document.getElementById('execFilter');
-        data.executives.forEach(name => {
-          const opt = document.createElement('option');
-          opt.value = name;
-          opt.textContent = name;
-          sel.appendChild(opt);
-        });
-      } catch(e) {}
+    async function loadExecutives(retries = 3) {
+      const sel = document.getElementById('execFilter');
+      sel.innerHTML = '<option value="">⏳ Loading...</option>';
+      for (let i = 0; i < retries; i++) {
+        try {
+          const res = await fetch(`${API_BASE}/api/executives`);
+          if (!res.ok) throw new Error('API error');
+          const data = await res.json();
+          sel.innerHTML = '<option value="">-- Select --</option>';
+          data.executives.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.textContent = name;
+            sel.appendChild(opt);
+          });
+          return;
+        } catch(e) {
+          if (i < retries - 1) {
+            sel.innerHTML = '<option value="">⏳ Connecting... retry ' + (i+2) + '</option>';
+            await new Promise(r => setTimeout(r, 3000));
+          }
+        }
+      }
+      sel.innerHTML = '<option value="">❌ Server unavailable - refresh page</option>';
     }
 
     function onSelectChange() {
