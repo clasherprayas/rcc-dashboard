@@ -234,22 +234,31 @@
     let refreshInterval = null;
 
     let loadTimer = null;
-    let loadSeconds = 30;
+    let loadSeconds = 25;
+    let loadResolved = false;
 
     async function loadExecutives(retries = 3) {
       const sel = document.getElementById('execFilter');
-      loadSeconds = 30;
-      sel.innerHTML = '<option value="">⏳ Loading... (' + loadSeconds + 's)</option>';
-      loadTimer = setInterval(() => {
-        loadSeconds--;
-        if (loadSeconds < 0) loadSeconds = 0;
-        sel.innerHTML = '<option value="">⏳ Loading... (' + loadSeconds + 's)</option>';
-      }, 1000);
+      loadResolved = false;
+      loadSeconds = 25;
+      const timerDelay = setTimeout(() => {
+        if (!loadResolved) {
+          sel.innerHTML = '<option value="">⏳ Loading... (' + loadSeconds + 's)</option>';
+          loadTimer = setInterval(() => {
+            loadSeconds--;
+            if (loadSeconds < 0) loadSeconds = 0;
+            if (!loadResolved) sel.innerHTML = '<option value="">⏳ Loading... (' + loadSeconds + 's)</option>';
+          }, 1000);
+        }
+      }, 2000);
+      sel.innerHTML = '<option value="">Select Your Name</option>';
       for (let i = 0; i < retries; i++) {
         try {
           const res = await fetch(`${API_BASE}/api/executives`);
           if (!res.ok) throw new Error('API error');
           const data = await res.json();
+          loadResolved = true;
+          clearTimeout(timerDelay);
           clearInterval(loadTimer);
           sel.innerHTML = '<option value="">Select Your Name</option>';
           data.executives.forEach(name => {
@@ -265,6 +274,8 @@
           }
         }
       }
+      loadResolved = true;
+      clearTimeout(timerDelay);
       clearInterval(loadTimer);
       sel.innerHTML = '<option value="">❌ Server unavailable - refresh page</option>';
     }
