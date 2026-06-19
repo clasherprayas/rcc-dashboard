@@ -73,21 +73,22 @@ def log(level, msg):
 
 
 RCC_DIR = str(LOCAL_COPY.parent)
+_NO_WINDOW = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
 
 def _git_push():
     """Auto git push RCC_DATA.xlsx to GitHub → triggers Render redeploy."""
     try:
         subprocess.run(
             ["git", "add", "RCC_DATA.xlsx"],
-            cwd=RCC_DIR, capture_output=True, timeout=10
+            cwd=RCC_DIR, capture_output=True, timeout=10, creationflags=_NO_WINDOW
         )
         subprocess.run(
             ["git", "commit", "-m", "Auto sync: data updated"],
-            cwd=RCC_DIR, capture_output=True, timeout=10
+            cwd=RCC_DIR, capture_output=True, timeout=10, creationflags=_NO_WINDOW
         )
         result = subprocess.run(
             ["git", "push"],
-            cwd=RCC_DIR, capture_output=True, timeout=30
+            cwd=RCC_DIR, capture_output=True, timeout=30, creationflags=_NO_WINDOW
         )
         if result.returncode == 0:
             log("SUCCESS", "Git push done → Render will redeploy")
