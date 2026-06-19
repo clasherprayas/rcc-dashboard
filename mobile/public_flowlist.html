@@ -456,7 +456,7 @@
         return;
       }
       // Track visit
-      fetch(`${API_BASE}/api/track`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({page:'Flow List', executive:exec})}).catch(()=>{});
+      trackVisit('Flow List', exec);
       isFirstLoad = true;
       renderTabs();
       loadFlowList();
@@ -577,8 +577,13 @@
     }
 
     loadExecutives();
-    // Track page open
-    fetch(`${API_BASE}/api/track`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({page:'Flow List (opened)', executive:'--'})}).catch(()=>{});
+    // Track page open (with retry)
+    function trackVisit(page, exec) {
+      fetch(`${API_BASE}/api/track`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({page:page, executive:exec})}).catch(()=>{
+        setTimeout(() => fetch(`${API_BASE}/api/track`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({page:page, executive:exec})}).catch(()=>{}), 5000);
+      });
+    }
+    trackVisit('Flow List (opened)', '--');
 
     // ── PASSWORD GATE ──
     async function checkPasswordRequired() {
