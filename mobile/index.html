@@ -45,7 +45,7 @@
       </div>
       <div class="topbar-user">
         <span class="topbar-badge" id="userBadge">Admin</span>
-        <button class="btn-theme" id="themeBtn" onclick="toggleTheme()">☀️</button>
+        <button class="btn-theme" onclick="forceRefresh()" title="Refresh Data">🔄</button>
         <button class="btn-logout" id="logoutBtn">Logout</button>
       </div>
     </div>
@@ -112,12 +112,6 @@
             <input type="checkbox" id="projToggle" checked onchange="toggleProjection()">
             <span class="toggle-slider"></span>
           </label>
-        </div>
-        <div class="menu-item" onclick="toggleTheme();toggleMenu()">
-          <span id="menuThemeLabel">☀️ Light Mode</span>
-        </div>
-        <div class="menu-item" onclick="forceRefresh()">
-          <span>🔄 Refresh Data</span>
         </div>
         <div class="menu-item" onclick="installApp()">
           <span>📱 Install App</span>
@@ -206,6 +200,6 @@
 
   </div>
 
-  <script src="app.js?v=55"></script>
+  <script src="app.js?v=56"></script>
 </body>
 </html>
