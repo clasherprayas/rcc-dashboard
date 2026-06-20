@@ -354,14 +354,23 @@ function toggleProjection() {
 }
 
 async function forceRefresh() {
-  toggleMenu();
   showToast('🔄 Syncing data...');
   try {
     await fetch(`${API}/api/force-sync`, { method: 'POST' });
   } catch(e) {}
-  loadDashboard();
-  loadTrails();
-  loadRanking();
+  // Reload active page
+  const activePage = document.querySelector('.page.active');
+  if (activePage) {
+    const id = activePage.id;
+    if (id === 'pageDashboard') loadDashboard();
+    else if (id === 'pageTrails') loadTrails();
+    else if (id === 'pageFlow') loadFlowList();
+    else if (id === 'pageSearch') loadSearchCases();
+    else if (id === 'pageRanking') loadRanking();
+    else loadDashboard();
+  } else {
+    loadDashboard();
+  }
   showToast('✅ Data refreshed!');
 }
 
