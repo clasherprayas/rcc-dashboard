@@ -331,8 +331,6 @@
     }
 
     loadExecutives();
-    // Track page open
-    fetch(`${API_BASE}/api/track`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({page:'Trails (opened)', executive:'--'})}).catch(()=>{});
 
     // ── PASSWORD GATE ──
     async function checkPasswordRequired() {

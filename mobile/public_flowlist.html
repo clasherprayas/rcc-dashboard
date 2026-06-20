@@ -583,7 +583,6 @@
         setTimeout(() => fetch(`${API_BASE}/api/track`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({page:page, executive:exec})}).catch(()=>{}), 5000);
       });
     }
-    trackVisit('Flow List (opened)', '--');
 
     // ── PASSWORD GATE ──
     async function checkPasswordRequired() {
