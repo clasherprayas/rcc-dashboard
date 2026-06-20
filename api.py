@@ -110,8 +110,10 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 app.add_middleware(NoCacheMiddleware)
 
 # ── VISITOR TRACKING (file-based — persists across restarts) ──
-from datetime import datetime as _dt
+from datetime import datetime as _dt, timedelta as _td
 import json as _json
+
+_IST_OFFSET = _td(hours=5, minutes=30)  # UTC+5:30
 
 _VISITOR_LOG_FILE = Path(os.environ.get("VISITOR_LOG_PATH", "/tmp/visitor_logs.json" if CLOUD_MODE else str(APP_DIR / "visitor_logs.json")))
 
@@ -140,9 +142,10 @@ async def track_visit(request: Request):
         ip = ip.split(",")[0].strip()
     ua = request.headers.get("user-agent", "")
     device = "Mobile" if any(k in ua.lower() for k in ["android", "iphone", "mobile"]) else "Desktop"
+    ist_now = _dt.utcnow() + _IST_OFFSET
     entry = {
-        "time": _dt.now().strftime("%d %b, %I:%M %p"),
-        "timestamp": _dt.now().isoformat(),
+        "time": ist_now.strftime("%d %b, %I:%M %p"),
+        "timestamp": ist_now.isoformat(),
         "page": body.get("page", "--"),
         "executive": body.get("executive", "--"),
         "device": device,
