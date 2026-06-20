@@ -185,11 +185,21 @@ function toggleMenu() {
   } else {
     menu.classList.add('open');
     overlay.classList.add('open');
-    const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-    document.getElementById('menuThemeLabel').textContent = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
     const projToggle = document.getElementById('projToggle');
     if (projToggle) projToggle.checked = showProjection;
     loadPublicAccessStatus();
+  }
+}
+
+function toggleAccordion(el) {
+  const body = el.nextElementSibling;
+  const arrow = el.querySelector('.acc-arrow');
+  if (body.style.display === 'none') {
+    body.style.display = 'block';
+    arrow.classList.add('open');
+  } else {
+    body.style.display = 'none';
+    arrow.classList.remove('open');
   }
 }
 

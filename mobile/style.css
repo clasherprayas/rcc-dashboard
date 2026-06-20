@@ -142,6 +142,11 @@ body {
 .menu-section { padding: 14px 0; border-bottom: 1px solid var(--border); }
 .menu-section:last-of-type { border-bottom: none; }
 .menu-section-title { font-size: .6rem; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: .08em; padding: 0 20px 10px; }
+.menu-section-title.menu-accordion { cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; margin: 0; }
+.menu-section-title.menu-accordion:active { opacity: .7; }
+.acc-arrow { font-size: .6rem; transition: transform .3s; }
+.acc-arrow.open { transform: rotate(90deg); }
+.menu-accordion-body { overflow: hidden; transition: all .3s ease; }
 .menu-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; cursor: pointer; transition: all .2s; font-size: .85rem; font-weight: 600; color: var(--ink); border-radius: 0; margin: 0; }
 .menu-item:active { background: rgba(59,130,246,.1); transform: scale(.98); }
 .menu-hint { font-size: .65rem; color: #fff; font-weight: 700; background: linear-gradient(135deg, var(--accent), #1d4ed8); padding: 4px 10px; border-radius: 6px; box-shadow: 0 2px 8px rgba(59,130,246,.3); }

@@ -1,4 +1,5 @@
 __pycache__/
 *.pyc
 sync_log.txt
+visitor_logs.json
 .vscode/

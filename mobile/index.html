@@ -57,53 +57,60 @@
         <div class="menu-title">R<span>CC</span> Menu</div>
         <button class="menu-close" onclick="toggleMenu()">✕</button>
       </div>
+      <!-- SHARE LINKS — collapsible -->
       <div class="menu-section">
-        <div class="menu-section-title">📤 Share Links</div>
-        <div class="menu-item" onclick="copyLink('trails')">
-          <span>📌 Pending Trails Link</span>
-          <span class="menu-hint">Copy</span>
-        </div>
-        <div class="menu-item" onclick="copyLink('flowlist')">
-          <span>📋 Flow List Link</span>
-          <span class="menu-hint">Copy</span>
-        </div>
-        <div class="menu-item toggle-item">
-          <span>🔗 Links Access</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="linkToggle" checked onchange="togglePublicAccess()">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div class="menu-item toggle-item">
-          <span>🔑 Password Lock</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="pwdToggle" onchange="togglePasswordRequired()">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div class="menu-item" onclick="changePassword()">
-          <span>✏️ Change Password</span>
-          <span class="menu-hint" id="currentPwd">rcc123</span>
+        <div class="menu-section-title menu-accordion" onclick="toggleAccordion(this)">📤 Share Links <span class="acc-arrow">▶</span></div>
+        <div class="menu-accordion-body" style="display:none">
+          <div class="menu-item" onclick="copyLink('trails')">
+            <span>📌 Pending Trails Link</span>
+            <span class="menu-hint">Copy</span>
+          </div>
+          <div class="menu-item" onclick="copyLink('flowlist')">
+            <span>📋 Flow List Link</span>
+            <span class="menu-hint">Copy</span>
+          </div>
+          <div class="menu-item toggle-item">
+            <span>🔗 Links Access</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="linkToggle" checked onchange="togglePublicAccess()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="menu-item toggle-item">
+            <span>🔑 Password Lock</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="pwdToggle" onchange="togglePasswordRequired()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="menu-item" onclick="changePassword()">
+            <span>✏️ Change Password</span>
+            <span class="menu-hint" id="currentPwd">rcc123</span>
+          </div>
         </div>
       </div>
+      <!-- ACTION CENTER — collapsible -->
       <div class="menu-section">
-        <div class="menu-section-title">🔐 Action Center (Restricted)</div>
-        <div class="menu-item" onclick="copyLink('search')">
-          <span>🔍 Action Center Link</span>
-          <span class="menu-hint">Copy</span>
-        </div>
-        <div class="menu-item toggle-item">
-          <span>🔓 Search Access</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="searchToggle" onchange="toggleSearchAccess()">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div class="menu-item" onclick="changeSearchPassword()">
-          <span>🔑 Search Password</span>
-          <span class="menu-hint" id="searchPwd">rcc@admin</span>
+        <div class="menu-section-title menu-accordion" onclick="toggleAccordion(this)">🔐 Action Center <span class="acc-arrow">▶</span></div>
+        <div class="menu-accordion-body" style="display:none">
+          <div class="menu-item" onclick="copyLink('search')">
+            <span>🔍 Action Center Link</span>
+            <span class="menu-hint">Copy</span>
+          </div>
+          <div class="menu-item toggle-item">
+            <span>🔓 Search Access</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="searchToggle" onchange="toggleSearchAccess()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="menu-item" onclick="changeSearchPassword()">
+            <span>🔑 Search Password</span>
+            <span class="menu-hint" id="searchPwd">rcc@admin</span>
+          </div>
         </div>
       </div>
+      <!-- SETTINGS — always visible -->
       <div class="menu-section">
         <div class="menu-section-title">⚙️ Settings</div>
         <div class="menu-item toggle-item">
@@ -200,6 +207,6 @@
 
   </div>
 
-  <script src="app.js?v=56"></script>
+  <script src="app.js?v=57"></script>
 </body>
 </html>

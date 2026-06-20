@@ -109,9 +109,27 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(NoCacheMiddleware)
 
-# ── VISITOR TRACKING ──
+# ── VISITOR TRACKING (file-based — persists across restarts) ──
 from datetime import datetime as _dt
-_visitor_logs = []  # In-memory log (max 500 entries)
+import json as _json
+
+_VISITOR_LOG_FILE = Path(os.environ.get("VISITOR_LOG_PATH", str(APP_DIR / "visitor_logs.json")))
+
+def _load_visitor_logs():
+    try:
+        if _VISITOR_LOG_FILE.exists():
+            with open(_VISITOR_LOG_FILE, "r", encoding="utf-8") as f:
+                return _json.load(f)
+    except Exception:
+        pass
+    return []
+
+def _save_visitor_logs(logs):
+    try:
+        with open(_VISITOR_LOG_FILE, "w", encoding="utf-8") as f:
+            _json.dump(logs[:500], f, ensure_ascii=False)
+    except Exception:
+        pass
 
 @app.post("/api/track")
 async def track_visit(request: Request):
@@ -130,15 +148,16 @@ async def track_visit(request: Request):
         "device": device,
         "ip": ip[:20],
     }
-    _visitor_logs.insert(0, entry)
-    if len(_visitor_logs) > 500:
-        _visitor_logs.pop()
+    logs = _load_visitor_logs()
+    logs.insert(0, entry)
+    _save_visitor_logs(logs)
     return {"ok": True}
 
 @app.get("/api/visitor-logs")
 async def get_visitor_logs():
     """Admin endpoint — returns recent visitor logs."""
-    return {"logs": _visitor_logs[:100]}
+    logs = _load_visitor_logs()
+    return {"logs": logs[:100]}
 
 # ── PUBLIC LINKS ACCESS CONTROL ──
 _public_access = {"enabled": True, "password_required": False, "password": "rcc123", "show_projection": True}
