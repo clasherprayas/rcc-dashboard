@@ -113,7 +113,7 @@ app.add_middleware(NoCacheMiddleware)
 from datetime import datetime as _dt
 import json as _json
 
-_VISITOR_LOG_FILE = Path(os.environ.get("VISITOR_LOG_PATH", str(APP_DIR / "visitor_logs.json")))
+_VISITOR_LOG_FILE = Path(os.environ.get("VISITOR_LOG_PATH", "/tmp/visitor_logs.json" if CLOUD_MODE else str(APP_DIR / "visitor_logs.json")))
 
 def _load_visitor_logs():
     try:
@@ -128,8 +128,8 @@ def _save_visitor_logs(logs):
     try:
         with open(_VISITOR_LOG_FILE, "w", encoding="utf-8") as f:
             _json.dump(logs[:500], f, ensure_ascii=False)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"⚠️ Visitor log save failed: {e}")
 
 @app.post("/api/track")
 async def track_visit(request: Request):
