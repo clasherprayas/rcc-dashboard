@@ -141,7 +141,26 @@ async def track_visit(request: Request):
     if "," in ip:
         ip = ip.split(",")[0].strip()
     ua = request.headers.get("user-agent", "")
-    device = "Mobile" if any(k in ua.lower() for k in ["android", "iphone", "mobile"]) else "Desktop"
+    ua_lower = ua.lower()
+    # Detect device brand
+    if "iphone" in ua_lower or "ipad" in ua_lower:
+        device = "iPhone"
+    elif "samsung" in ua_lower:
+        device = "Samsung"
+    elif "xiaomi" in ua_lower or "redmi" in ua_lower or "poco" in ua_lower:
+        device = "Xiaomi"
+    elif "oppo" in ua_lower:
+        device = "Oppo"
+    elif "vivo" in ua_lower:
+        device = "Vivo"
+    elif "realme" in ua_lower:
+        device = "Realme"
+    elif "oneplus" in ua_lower:
+        device = "OnePlus"
+    elif "android" in ua_lower or "mobile" in ua_lower:
+        device = "Mobile"
+    else:
+        device = "Desktop"
     ist_now = _dt.utcnow() + _IST_OFFSET
     entry = {
         "time": ist_now.strftime("%d %b, %I:%M %p"),
