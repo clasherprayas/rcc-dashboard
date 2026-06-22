@@ -511,8 +511,34 @@
         }
 
         if (data.total === 0) {
-          document.getElementById('content').innerHTML = '<div class="info-msg">✅ No flow cases in BKT-' + currentBucket + '</div>';
+          // 0 flow cases = 100% resolution! Celebrate!
+          let greetHtml = '';
+          let showCelebrate = false;
+          if (data.projection && data.projection.current_res >= 90 && currentBucket === 1) { showCelebrate = true; }
+          if (data.projection && data.projection.current_res >= 70 && currentBucket === 2) { showCelebrate = true; }
+          // If no flow cases at all, it means 100% resolution
+          if (currentBucket <= 2) { showCelebrate = true; }
+          
+          if (showCelebrate) {
+            const res = data.projection ? data.projection.current_res : 100;
+            const msg = '🏆 Champion! Resolution ' + (res || 100).toFixed(1) + '%';
+            greetHtml = `<div class="greet-line">${msg}</div>`;
+          }
+          
+          document.getElementById('content').innerHTML = `
+            <div class="summary-banner ${showCelebrate ? 'celebrate' : ''}">
+              <div style="position:relative;z-index:1">
+                <div style="font-size:10px;opacity:.8;font-weight:700;letter-spacing:.05em">BKT-${currentBucket} FLOW CASES</div>
+                <div class="banner-count">0</div>
+                ${greetHtml}
+              </div>
+              ${showCelebrate ? '<div class="shimmer"></div><div class="sparkles"><span>✨</span><span>⭐</span><span>✨</span><span>⭐</span><span>✨</span></div>' : ''}
+            </div>
+            ${showCelebrate ? '<div class="confetti-wrap"><div class="confetti c1"></div><div class="confetti c2"></div><div class="confetti c3"></div><div class="confetti c4"></div><div class="confetti c5"></div><div class="confetti c6"></div><div class="confetti c7"></div><div class="confetti c8"></div><div class="confetti c9"></div><div class="confetti c10"></div></div>' : ''}
+            <div class="info-msg">✅ No flow cases in BKT-${currentBucket} — All resolved!</div>
+          `;
           document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+          isFirstLoad = false;
           return;
         }
 
