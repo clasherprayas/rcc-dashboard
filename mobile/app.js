@@ -483,10 +483,9 @@ async function generateReport() {
   let grandPosCells = buckets.map(b => `<td style="text-align:center;padding:8px 12px;color:#1e40af;font-weight:900;font-size:14px;font-family:'JetBrains Mono',monospace;border-right:1px solid #e2e8f0">${data.grand_pos[b] ? '₹' + fmtIndianFull(data.grand_pos[b]) : ''}</td>`).join('');
   posRows += `<tr style="background:#eff6ff"><td style="padding:8px 12px;color:#1e40af;font-weight:800;font-size:13px;border-right:1px solid #e2e8f0">GRAND TOTAL</td>${grandPosCells}</tr>`;
 
-  // Current time IST
+  // Current time (local device time — already IST in India)
   const now = new Date();
-  const istTime = new Date(now.getTime() + (5.5*60*60*1000 - now.getTimezoneOffset()*60*1000));
-  const timeStr = istTime.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true}).toUpperCase();
+  const timeStr = now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true}).toUpperCase();
 
   // Create report HTML — LIGHT MODE, HORIZONTAL
   const reportHtml = `
@@ -519,6 +518,9 @@ async function generateReport() {
         <thead><tr style="background:linear-gradient(180deg,#f1f5f9,#e8eef6)"><th style="text-align:left;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">TEAM</th>${buckets.map(b => `<th style="text-align:center;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">BKT ${b}</th>`).join('')}</tr></thead>
         <tbody>${posRows}</tbody>
       </table>
+      <div style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px solid #f1f5f9">
+        <div style="font-size:10px;color:#94a3b8;font-weight:600">📱 Till Time Payments · Generated at ${timeStr}</div>
+      </div>
     </div>
   `;
 
@@ -532,9 +534,20 @@ async function generateReport() {
     <div style="text-align:center;margin-bottom:12px">
       <button onclick="downloadReport()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">📥 Download Image</button>
       <button onclick="shareReport()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">📤 Share</button>
+      <button onclick="zoomReport(1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer;margin-left:8px">🔍+</button>
+      <button onclick="zoomReport(-1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer;margin-left:4px">🔍−</button>
     </div>
-    <div id="reportContainer" style="overflow:auto;padding:10px;touch-action:manipulation;-webkit-overflow-scrolling:touch">${reportHtml}</div>
+    <div id="reportContainer" style="overflow:auto;padding:10px;-webkit-overflow-scrolling:touch">${reportHtml}</div>
   `;
+}
+
+let reportZoom = 1;
+function zoomReport(dir) {
+  reportZoom += dir * 0.2;
+  reportZoom = Math.max(0.5, Math.min(2, reportZoom));
+  const card = document.getElementById('reportCard');
+  if (card) card.style.transform = 'scale(' + reportZoom + ')';
+  if (card) card.style.transformOrigin = 'top left';
 }
 
 function downloadReport() {
