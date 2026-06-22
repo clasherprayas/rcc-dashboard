@@ -655,7 +655,93 @@ function copyWinnersText() {
   navigator.clipboard.writeText(text).then(() => {
     showToast('✅ Copied! Paste in WhatsApp');
   }).catch(() => {
-    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✅ Copied! Paste in WhatsApp');
+  });
+}
+
+// ── TRAILS CSV UPLOAD ──
+function showTrailsUpload() {
+  toggleMenu();
+  const pages = document.querySelectorAll('.page');
+  const navItems = document.querySelectorAll('.nav-item');
+  pages.forEach(p => p.classList.remove('active'));
+  navItems.forEach(n => n.classList.remove('active'));
+  document.getElementById('pageFlow').classList.add('active');
+  document.getElementById('flowContent').innerHTML = `
+    <div class="summary-banner">
+      <div class="banner-left">
+        <span style="font-size:1.3rem">📤</span>
+        <div>
+          <div class="banner-label">UPLOAD TRAILS CSV</div>
+          <div class="banner-value">Vymo Report</div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;padding:24px">
+      <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px">Vymo se download ki hui CSV file upload karo</p>
+      <input type="file" id="trailsCsvFile" accept=".csv" style="display:none" onchange="uploadTrailsCsv()">
+      <button onclick="document.getElementById('trailsCsvFile').click()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:16px 32px;border-radius:10px;font-weight:700;font-size:16px;cursor:pointer;box-shadow:0 4px 15px rgba(37,99,235,.3)">📁 Select CSV File</button>
+    </div>
+  `;
+}
+
+async function uploadTrailsCsv() {
+  const fileInput = document.getElementById('trailsCsvFile');
+  if (!fileInput.files.length) return;
+  
+  const file = fileInput.files[0];
+  showToast('📤 Uploading...');
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  try {
+    const res = await fetch(`${API}/api/trails/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    
+    if (data.error) {
+      showToast('❌ ' + data.error);
+      return;
+    }
+    
+    // Show report
+    document.getElementById('flowContent').innerHTML = `
+      <div class="summary-banner">
+        <div class="banner-left">
+          <span style="font-size:1.3rem">✅</span>
+          <div>
+            <div class="banner-label">TRAILS UPLOADED</div>
+            <div class="banner-value">${data.matched} matched</div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-bottom:12px">
+        <button onclick="copyTrailsReport()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">📋 Copy for WhatsApp</button>
+        <button onclick="showTrailsUpload()" style="background:var(--surface2);border:1px solid var(--border);color:var(--ink);padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">📤 Upload Another</button>
+      </div>
+      ${data.unmatched > 0 ? `<div style="text-align:center;margin-bottom:10px;color:var(--amber);font-size:.8rem">⚠️ ${data.unmatched} loan nos not matched</div>` : ''}
+      <pre id="trailsReportText" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:.85rem;white-space:pre-wrap;word-wrap:break-word;line-height:1.6;color:var(--ink);font-family:var(--font)">${data.text}</pre>
+    `;
+    showToast('✅ Trails updated + report ready!');
+  } catch(e) {
+    showToast('❌ Upload failed');
+  }
+}
+
+function copyTrailsReport() {
+  const text = document.getElementById('trailsReportText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('✅ Copied! Paste in WhatsApp');
+  }).catch(() => {
     const ta = document.createElement('textarea');
     ta.value = text;
     document.body.appendChild(ta);

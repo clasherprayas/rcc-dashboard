@@ -425,6 +425,114 @@ async def daily_winners(date: str = ""):
     return {"text": "\n".join(lines)}
 
 
+# ── TRAILS CSV UPLOAD API ──
+from fastapi import UploadFile, File
+import csv
+import io
+
+@app.post("/api/trails/upload")
+async def upload_trails_csv(file: UploadFile = File(...)):
+    """Upload Vymo trails CSV → match loan nos → update TRAILS PENDING → return report."""
+    try:
+        content = await file.read()
+        text = content.decode("utf-8")
+        
+        # Parse CSV — extract loan nos from "Row Labels" column
+        loan_nos = []
+        reader = csv.reader(io.StringIO(text))
+        for row in reader:
+            if not row:
+                continue
+            val = row[0].strip()
+            # Skip headers and "Grand Total"
+            if val in ("Row Labels", "Contact Mode", "", "Grand Total") or not val.isdigit():
+                continue
+            loan_nos.append(val)
+        
+        if not loan_nos:
+            return {"error": "No loan numbers found in CSV", "matched": 0}
+        
+        # Load current data
+        df = load_data()
+        if df is None:
+            return {"error": "Data file not found"}
+        
+        # Match loan nos → get TEAM
+        matched = df[df["LOAN NO"].isin(loan_nos)]
+        team_count = matched.groupby("TEAM").size().sort_values(ascending=False).to_dict()
+        total_matched = len(matched)
+        total_csv = len(loan_nos)
+        unmatched = total_csv - total_matched
+        
+        # Pending count (TRAILS PENDING = 0 per team)
+        pending_df = df[df["TRAILS PENDING"] == 0]
+        pending_count = pending_df.groupby("TEAM").size().to_dict()
+        total_pending = len(pending_df)
+        
+        # Update TRAILS PENDING in Excel (increment by 1 for matched loan nos)
+        try:
+            import openpyxl
+            wb = openpyxl.load_workbook(str(DATA_FILE))
+            ws = wb["MAIN"]
+            
+            # Find LOAN NO and TRAILS PENDING column indices
+            headers = [str(cell.value).strip() if cell.value else "" for cell in ws[1]]
+            loan_col = headers.index("LOAN NO") + 1 if "LOAN NO" in headers else None
+            trail_col = headers.index("TRAILS PENDING") + 1 if "TRAILS PENDING" in headers else None
+            
+            if loan_col and trail_col:
+                updated = 0
+                for row_idx in range(2, ws.max_row + 1):
+                    cell_val = str(ws.cell(row=row_idx, column=loan_col).value or "").strip()
+                    if cell_val in loan_nos:
+                        current = ws.cell(row=row_idx, column=trail_col).value or 0
+                        try:
+                            current = int(current)
+                        except (ValueError, TypeError):
+                            current = 0
+                        ws.cell(row=row_idx, column=trail_col, value=current + 1)
+                        updated += 1
+                
+                wb.save(str(DATA_FILE))
+                wb.close()
+                
+                # Clear cache so next load picks up changes
+                _cache["df"] = None
+                _cache["mtime"] = 0
+                
+                # Also copy to OneDrive
+                import shutil
+                onedrive_path = Path(r"C:\Users\BAJAJ1\OneDrive\RCC\RCC_DATA.xlsx")
+                if onedrive_path.parent.exists():
+                    shutil.copy2(str(DATA_FILE), str(onedrive_path))
+        except Exception as e:
+            print(f"⚠️ Excel update failed: {e}")
+        
+        # Generate WhatsApp report text
+        today_str = _dt.now().strftime("%d %b")
+        lines = [f"📋 *TRAILS REPORT* — {today_str}\n"]
+        lines.append(f"*TODAY'S TRAILS DONE ({total_matched})*")
+        for team, count in sorted(team_count.items()):
+            lines.append(f"{team} — {count}")
+        lines.append(f"*TOTAL — {total_matched}*\n")
+        
+        lines.append(f"*PENDING TRAILS ({total_pending})*")
+        for team in sorted(pending_count.keys()):
+            lines.append(f"{team} — {pending_count[team]}")
+        lines.append(f"*TOTAL — {total_pending}*")
+        
+        return {
+            "text": "\n".join(lines),
+            "matched": total_matched,
+            "unmatched": unmatched,
+            "team_count": team_count,
+            "pending_count": pending_count,
+            "total_pending": total_pending,
+        }
+    except Exception as e:
+        return {"error": str(e), "matched": 0}
+
+
 app.mount("/mobile", StaticFiles(directory=str(APP_DIR / "mobile"), html=True), name="mobile")
 
 
