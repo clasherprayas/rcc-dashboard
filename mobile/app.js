@@ -443,8 +443,39 @@ async function showVisitorLogs() {
 // ── TILL TIME REPORT ──
 async function generateReport() {
   toggleMenu();
+  // Show date picker
+  const pages = document.querySelectorAll('.page');
+  const navItems = document.querySelectorAll('.nav-item');
+  pages.forEach(p => p.classList.remove('active'));
+  navItems.forEach(n => n.classList.remove('active'));
+  document.getElementById('pageFlow').classList.add('active');
+  
+  const now = new Date();
+  document.getElementById('flowContent').innerHTML = `
+    <div class="summary-banner">
+      <div class="banner-left">
+        <span style="font-size:1.3rem">📊</span>
+        <div>
+          <div class="banner-label">TILL TIME REPORT</div>
+          <div class="banner-value">Select Date</div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;padding:20px">
+      <input type="date" id="reportDatePicker" value="${now.toISOString().split('T')[0]}" style="padding:12px 16px;border:2px solid var(--accent);border-radius:8px;font-size:16px;font-weight:700;background:var(--surface);color:var(--ink);font-family:var(--font)">
+      <br><br>
+      <button onclick="fetchReport()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer">📊 Generate</button>
+    </div>
+  `;
+}
+
+async function fetchReport() {
+  const dateInput = document.getElementById('reportDatePicker').value;
+  const parts = dateInput.split('-');
+  const dateStr = parts[2] + '.' + parts[1] + '.' + parts[0].slice(-2);
+  
   showToast('📊 Generating report...');
-  const data = await apiCall('/api/report/tilltime');
+  const data = await apiCall(`/api/report/tilltime?date=${encodeURIComponent(dateStr)}`);
   if (!data || data.error) {
     showToast('❌ Report generation failed');
     return;
@@ -551,10 +582,47 @@ function zoomReport(dir) {
 }
 
 // ── DAILY WINNERS ──
+let winnersDate = '';
+
 async function generateWinners() {
   toggleMenu();
-  showToast('🏅 Generating winners...');
-  const data = await apiCall('/api/report/winners');
+  // Show date picker first
+  const pages = document.querySelectorAll('.page');
+  const navItems = document.querySelectorAll('.nav-item');
+  pages.forEach(p => p.classList.remove('active'));
+  navItems.forEach(n => n.classList.remove('active'));
+  document.getElementById('pageFlow').classList.add('active');
+  
+  // Default today in dd.mm.yy format
+  const now = new Date();
+  const defaultDate = ('0'+now.getDate()).slice(-2) + '.' + ('0'+(now.getMonth()+1)).slice(-2) + '.' + String(now.getFullYear()).slice(-2);
+  
+  document.getElementById('flowContent').innerHTML = `
+    <div class="summary-banner">
+      <div class="banner-left">
+        <span style="font-size:1.3rem">🏅</span>
+        <div>
+          <div class="banner-label">DAILY WINNERS</div>
+          <div class="banner-value">Select Date</div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;padding:20px">
+      <input type="date" id="winnersDatePicker" value="${now.toISOString().split('T')[0]}" style="padding:12px 16px;border:2px solid var(--accent);border-radius:8px;font-size:16px;font-weight:700;background:var(--surface);color:var(--ink);font-family:var(--font)">
+      <br><br>
+      <button onclick="fetchWinners()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer">🏅 Generate</button>
+    </div>
+  `;
+}
+
+async function fetchWinners() {
+  const dateInput = document.getElementById('winnersDatePicker').value;
+  // Convert yyyy-mm-dd to dd.mm.yy
+  const parts = dateInput.split('-');
+  const dateStr = parts[2] + '.' + parts[1] + '.' + parts[0].slice(-2);
+  
+  showToast('🏅 Generating...');
+  const data = await apiCall(`/api/report/winners?date=${encodeURIComponent(dateStr)}`);
   if (!data || !data.text) {
     showToast('❌ Failed to generate');
     return;

@@ -277,13 +277,16 @@ async def force_sync():
 
 # ── TILL TIME REPORT API ──
 @app.get("/api/report/tilltime")
-async def tilltime_report():
+async def tilltime_report(date: str = ""):
     """Generate till-time payment report data for today."""
     df = load_data()
     if df is None:
         return {"error": "Data not found"}
     
-    today = _dt.now().strftime("%d.%m.%y") if not CLOUD_MODE else (_dt.utcnow() + _IST_OFFSET).strftime("%d.%m.%y")
+    if date:
+        today = date.strip()
+    else:
+        today = _dt.now().strftime("%d.%m.%y") if not CLOUD_MODE else (_dt.utcnow() + _IST_OFFSET).strftime("%d.%m.%y")
     
     # Today's paid cases
     today_paid = df[(df["Payment Date"].astype(str).str.strip() == today) & 
@@ -342,13 +345,16 @@ async def tilltime_report():
 
 # ── DAILY WINNERS API ──
 @app.get("/api/report/winners")
-async def daily_winners():
+async def daily_winners(date: str = ""):
     """Generate daily winners text for WhatsApp."""
     df = load_data()
     if df is None:
         return {"text": "❌ Data not found"}
     
-    today = _dt.now().strftime("%d.%m.%y") if not CLOUD_MODE else (_dt.utcnow() + _IST_OFFSET).strftime("%d.%m.%y")
+    if date:
+        today = date.strip()
+    else:
+        today = _dt.now().strftime("%d.%m.%y") if not CLOUD_MODE else (_dt.utcnow() + _IST_OFFSET).strftime("%d.%m.%y")
     
     # Today's paid cases
     today_paid = df[(df["Payment Date"].astype(str).str.strip() == today) & 
