@@ -453,7 +453,7 @@ async function generateReport() {
   // Build report as HTML → render to image
   const buckets = data.buckets || [];
 
-  // Count table rows
+  // Count table rows — with vertical borders
   let countRows = '';
   let teams = Object.keys(data.team_count).sort();
   teams.forEach(team => {
@@ -461,34 +461,39 @@ async function generateReport() {
     let cells = buckets.map(b => {
       const v = data.team_count[team][b] || 0;
       total += v;
-      return `<td style="text-align:center;padding:8px 12px;color:#1e293b;font-size:14px;font-weight:600;border-bottom:1px solid #e2e8f0">${v || ''}</td>`;
+      return `<td style="text-align:center;padding:8px 12px;color:#1e293b;font-size:14px;font-weight:700;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${v || ''}</td>`;
     }).join('');
-    countRows += `<tr><td style="padding:8px 12px;color:#1e293b;font-size:13px;font-weight:700;border-bottom:1px solid #e2e8f0">${team}</td>${cells}<td style="text-align:center;padding:8px 12px;color:#1e40af;font-weight:800;font-size:14px;border-bottom:1px solid #e2e8f0">${total}</td></tr>`;
+    countRows += `<tr><td style="padding:8px 12px;color:#1e293b;font-size:13px;font-weight:700;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${team}</td>${cells}<td style="text-align:center;padding:8px 12px;color:#1e40af;font-weight:900;font-size:15px;border-bottom:1px solid #e2e8f0">${total}</td></tr>`;
   });
   // Grand total row
-  let grandCells = buckets.map(b => `<td style="text-align:center;padding:8px 12px;color:#059669;font-weight:800;font-size:14px">${data.grand_count[b] || 0}</td>`).join('');
+  let grandCells = buckets.map(b => `<td style="text-align:center;padding:8px 12px;color:#059669;font-weight:900;font-size:15px;border-right:1px solid #e2e8f0">${data.grand_count[b] || 0}</td>`).join('');
   let grandTotal = Object.values(data.grand_count).reduce((a,b)=>a+b, 0);
-  countRows += `<tr style="background:#f0fdf4"><td style="padding:8px 12px;color:#059669;font-weight:800;font-size:13px">TOTAL</td>${grandCells}<td style="text-align:center;padding:8px 12px;color:#1e40af;font-weight:900;font-size:15px">${grandTotal}</td></tr>`;
+  countRows += `<tr style="background:#f0fdf4"><td style="padding:8px 12px;color:#059669;font-weight:800;font-size:13px;border-right:1px solid #e2e8f0">TOTAL</td>${grandCells}<td style="text-align:center;padding:8px 12px;color:#1e40af;font-weight:900;font-size:16px">${grandTotal}</td></tr>`;
 
-  // POS table rows
+  // POS table rows — with vertical borders
   let posRows = '';
   teams.forEach(team => {
     let cells = buckets.map(b => {
       const v = data.team_pos[team][b] || 0;
-      return `<td style="text-align:center;padding:8px 12px;color:#059669;font-size:13px;font-weight:600;font-family:monospace;border-bottom:1px solid #e2e8f0">${v ? '₹' + fmtIndianFull(v) : ''}</td>`;
+      return `<td style="text-align:center;padding:8px 12px;color:#059669;font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${v ? '₹' + fmtIndianFull(v) : ''}</td>`;
     }).join('');
-    posRows += `<tr><td style="padding:8px 12px;color:#1e293b;font-size:13px;font-weight:700;border-bottom:1px solid #e2e8f0">${team}</td>${cells}</tr>`;
+    posRows += `<tr><td style="padding:8px 12px;color:#1e293b;font-size:13px;font-weight:700;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${team}</td>${cells}</tr>`;
   });
   // Grand total POS
-  let grandPosCells = buckets.map(b => `<td style="text-align:center;padding:8px 12px;color:#1e40af;font-weight:800;font-size:13px;font-family:monospace">${data.grand_pos[b] ? '₹' + fmtIndianFull(data.grand_pos[b]) : ''}</td>`).join('');
-  posRows += `<tr style="background:#eff6ff"><td style="padding:8px 12px;color:#1e40af;font-weight:800;font-size:13px">GRAND TOTAL</td>${grandPosCells}</tr>`;
+  let grandPosCells = buckets.map(b => `<td style="text-align:center;padding:8px 12px;color:#1e40af;font-weight:900;font-size:14px;font-family:'JetBrains Mono',monospace;border-right:1px solid #e2e8f0">${data.grand_pos[b] ? '₹' + fmtIndianFull(data.grand_pos[b]) : ''}</td>`).join('');
+  posRows += `<tr style="background:#eff6ff"><td style="padding:8px 12px;color:#1e40af;font-weight:800;font-size:13px;border-right:1px solid #e2e8f0">GRAND TOTAL</td>${grandPosCells}</tr>`;
+
+  // Current time IST
+  const now = new Date();
+  const istTime = new Date(now.getTime() + (5.5*60*60*1000 - now.getTimezoneOffset()*60*1000));
+  const timeStr = istTime.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true}).toUpperCase();
 
   // Create report HTML — LIGHT MODE, HORIZONTAL
   const reportHtml = `
     <div id="reportCard" style="width:640px;background:linear-gradient(180deg,#ffffff,#f8fafc);border-radius:16px;padding:28px 32px;font-family:'Inter',sans-serif;color:#0f172a;box-shadow:0 8px 40px rgba(0,0,0,.1),0 1px 3px rgba(0,0,0,.06);border:1.5px solid #e2e8f0">
       <div style="text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #f1f5f9">
         <div style="font-size:22px;font-weight:900;color:#0f172a;letter-spacing:-.02em">📊 TILL TIME PAYMENTS</div>
-        <div style="font-size:14px;color:#475569;margin-top:6px;font-weight:600">${data.date} · <span style="color:#2563eb;font-weight:800">${data.total_paid_today}</span> Payments</div>
+        <div style="font-size:14px;color:#475569;margin-top:6px;font-weight:600">${data.date} · ${timeStr} · <span style="color:#2563eb;font-weight:800">${data.total_paid_today}</span> Payments</div>
       </div>
       <div style="display:flex;gap:12px;margin-bottom:22px">
         <div style="flex:1;background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #93c5fd;border-radius:12px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(37,99,235,.08)">
@@ -506,12 +511,12 @@ async function generateReport() {
       </div>
       <div style="font-size:12px;color:#1e293b;font-weight:800;margin-bottom:8px;letter-spacing:.03em;padding-left:4px">▸ EXECUTIVE WISE (COUNT)</div>
       <table style="width:100%;border-collapse:separate;border-spacing:0;margin-bottom:20px;border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)">
-        <thead><tr style="background:linear-gradient(180deg,#f1f5f9,#e8eef6)"><th style="text-align:left;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1">TEAM</th>${buckets.map(b => `<th style="text-align:center;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1">BKT ${b}</th>`).join('')}<th style="text-align:center;padding:10px 14px;color:#1e40af;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1">TOTAL</th></tr></thead>
+        <thead><tr style="background:linear-gradient(180deg,#f1f5f9,#e8eef6)"><th style="text-align:left;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">TEAM</th>${buckets.map(b => `<th style="text-align:center;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">BKT ${b}</th>`).join('')}<th style="text-align:center;padding:10px 14px;color:#1e40af;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1">TOTAL</th></tr></thead>
         <tbody>${countRows}</tbody>
       </table>
       <div style="font-size:12px;color:#1e293b;font-weight:800;margin-bottom:8px;letter-spacing:.03em;padding-left:4px">▸ COLLECTION (POS AMOUNT)</div>
       <table style="width:100%;border-collapse:separate;border-spacing:0;border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)">
-        <thead><tr style="background:linear-gradient(180deg,#f1f5f9,#e8eef6)"><th style="text-align:left;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1">TEAM</th>${buckets.map(b => `<th style="text-align:center;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1">BKT ${b}</th>`).join('')}</tr></thead>
+        <thead><tr style="background:linear-gradient(180deg,#f1f5f9,#e8eef6)"><th style="text-align:left;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">TEAM</th>${buckets.map(b => `<th style="text-align:center;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">BKT ${b}</th>`).join('')}</tr></thead>
         <tbody>${posRows}</tbody>
       </table>
     </div>
@@ -528,7 +533,7 @@ async function generateReport() {
       <button onclick="downloadReport()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">📥 Download Image</button>
       <button onclick="shareReport()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">📤 Share</button>
     </div>
-    <div id="reportContainer" style="overflow-x:auto;padding:10px">${reportHtml}</div>
+    <div id="reportContainer" style="overflow:auto;padding:10px;touch-action:manipulation;-webkit-overflow-scrolling:touch">${reportHtml}</div>
   `;
 }
 
@@ -543,7 +548,7 @@ function downloadReport() {
   // Fallback: screenshot via browser
   import('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js').then(() => {}).catch(() => {});
   if (typeof html2canvas !== 'undefined') {
-    html2canvas(el, {scale: 2, backgroundColor: null}).then(c => {
+    html2canvas(el, {scale: 3, backgroundColor: null}).then(c => {
       const link = document.createElement('a');
       link.download = 'TillTime_Report.png';
       link.href = c.toDataURL();
@@ -554,7 +559,7 @@ function downloadReport() {
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
     script.onload = () => {
-      html2canvas(el, {scale: 2, backgroundColor: null}).then(c => {
+      html2canvas(el, {scale: 3, backgroundColor: null}).then(c => {
         const link = document.createElement('a');
         link.download = 'TillTime_Report.png';
         link.href = c.toDataURL();
@@ -571,7 +576,7 @@ function shareReport() {
   const script = document.createElement('script');
   script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
   script.onload = () => {
-    html2canvas(el, {scale: 2, backgroundColor: null}).then(c => {
+    html2canvas(el, {scale: 3, backgroundColor: null}).then(c => {
       c.toBlob(blob => {
         const file = new File([blob], 'TillTime_Report.png', {type: 'image/png'});
         if (navigator.share && navigator.canShare({files: [file]})) {
