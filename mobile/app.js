@@ -563,7 +563,7 @@ async function fetchReport() {
   document.getElementById('pageFlow').classList.add('active');
   document.getElementById('flowContent').innerHTML = `
     <div style="text-align:center;margin-bottom:12px">
-      <button onclick="downloadReport()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">📥 Download Image</button>
+      <button onclick="copyReportImage()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">📋 Copy Image</button>
       <button onclick="shareReport()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">📤 Share</button>
       <button onclick="zoomReport(1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer;margin-left:8px">🔍+</button>
       <button onclick="zoomReport(-1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer;margin-left:4px">🔍−</button>
@@ -791,35 +791,40 @@ function shareTrailsImg() {
   document.head.appendChild(script);
 }
 
-function downloadReport() {
+function copyReportImage() {
   const el = document.getElementById('reportCard');
   if (!el) return;
-  // Use html2canvas-like approach with canvas
-  const canvas = document.createElement('canvas');
-  const scale = 2;
-  canvas.width = el.offsetWidth * scale;
-  canvas.height = el.offsetHeight * scale;
-  // Fallback: screenshot via browser
-  import('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js').then(() => {}).catch(() => {});
-  if (typeof html2canvas !== 'undefined') {
-    html2canvas(el, {scale: 3, backgroundColor: null}).then(c => {
-      const link = document.createElement('a');
-      link.download = 'TillTime_Report.png';
-      link.href = c.toDataURL();
-      link.click();
+  showToast('📋 Copying image...');
+  const loadAndCopy = () => {
+    html2canvas(el, {scale: 3, backgroundColor: '#ffffff'}).then(c => {
+      c.toBlob(blob => {
+        try {
+          navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(() => {
+            showToast('✅ Image copied! Paste in WhatsApp');
+          }).catch(() => {
+            // Fallback: download
+            const link = document.createElement('a');
+            link.download = 'TillTime_Report.png';
+            link.href = c.toDataURL();
+            link.click();
+            showToast('📥 Downloaded (copy not supported on this device)');
+          });
+        } catch(e) {
+          const link = document.createElement('a');
+          link.download = 'TillTime_Report.png';
+          link.href = c.toDataURL();
+          link.click();
+          showToast('📥 Downloaded (copy not supported)');
+        }
+      });
     });
+  };
+  if (typeof html2canvas !== 'undefined') {
+    loadAndCopy();
   } else {
-    // Load html2canvas dynamically
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-    script.onload = () => {
-      html2canvas(el, {scale: 3, backgroundColor: null}).then(c => {
-        const link = document.createElement('a');
-        link.download = 'TillTime_Report.png';
-        link.href = c.toDataURL();
-        link.click();
-      });
-    };
+    script.onload = loadAndCopy;
     document.head.appendChild(script);
   }
 }
@@ -827,25 +832,36 @@ function downloadReport() {
 function shareReport() {
   const el = document.getElementById('reportCard');
   if (!el) return;
-  const script = document.createElement('script');
-  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
-  script.onload = () => {
-    html2canvas(el, {scale: 3, backgroundColor: null}).then(c => {
+  showToast('📤 Preparing...');
+  const loadAndShare = () => {
+    html2canvas(el, {scale: 3, backgroundColor: '#ffffff'}).then(c => {
       c.toBlob(blob => {
         const file = new File([blob], 'TillTime_Report.png', {type: 'image/png'});
         if (navigator.share && navigator.canShare({files: [file]})) {
-          navigator.share({files: [file], title: 'Till Time Report'});
+          navigator.share({
+            files: [file],
+            title: '📊 Till Time Payments',
+            text: '📊 Till Time Payments\n📋 FLOW CASES\n🔗 https://app.rccapp.xyz/public/flowlist'
+          });
         } else {
           // Fallback: download
           const link = document.createElement('a');
           link.download = 'TillTime_Report.png';
           link.href = c.toDataURL();
           link.click();
+          showToast('📥 Downloaded');
         }
       });
     });
   };
-  document.head.appendChild(script);
+  if (typeof html2canvas !== 'undefined') {
+    loadAndShare();
+  } else {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    script.onload = loadAndShare;
+    document.head.appendChild(script);
+  }
 }
 
 // ── ADMIN EXECUTIVE FILTER ──
