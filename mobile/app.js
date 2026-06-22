@@ -550,6 +550,54 @@ function zoomReport(dir) {
   if (card) card.style.transformOrigin = 'top left';
 }
 
+// ── DAILY WINNERS ──
+async function generateWinners() {
+  toggleMenu();
+  showToast('🏅 Generating winners...');
+  const data = await apiCall('/api/report/winners');
+  if (!data || !data.text) {
+    showToast('❌ Failed to generate');
+    return;
+  }
+  // Show text + copy button
+  const pages = document.querySelectorAll('.page');
+  const navItems = document.querySelectorAll('.nav-item');
+  pages.forEach(p => p.classList.remove('active'));
+  navItems.forEach(n => n.classList.remove('active'));
+  document.getElementById('pageFlow').classList.add('active');
+  document.getElementById('flowContent').innerHTML = `
+    <div class="summary-banner">
+      <div class="banner-left">
+        <span style="font-size:1.3rem">🏅</span>
+        <div>
+          <div class="banner-label">DAILY WINNERS</div>
+          <div class="banner-value">Today</div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-bottom:12px">
+      <button onclick="copyWinnersText()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">📋 Copy for WhatsApp</button>
+    </div>
+    <pre id="winnersText" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:.85rem;white-space:pre-wrap;word-wrap:break-word;line-height:1.6;color:var(--ink);font-family:var(--font)">${data.text}</pre>
+  `;
+}
+
+function copyWinnersText() {
+  const text = document.getElementById('winnersText').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('✅ Copied! Paste in WhatsApp');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('✅ Copied! Paste in WhatsApp');
+  });
+}
+
 function downloadReport() {
   const el = document.getElementById('reportCard');
   if (!el) return;

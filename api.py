@@ -340,6 +340,85 @@ async def tilltime_report():
     }
 
 
+# ── DAILY WINNERS API ──
+@app.get("/api/report/winners")
+async def daily_winners():
+    """Generate daily winners text for WhatsApp."""
+    df = load_data()
+    if df is None:
+        return {"text": "❌ Data not found"}
+    
+    today = _dt.now().strftime("%d.%m.%y") if not CLOUD_MODE else (_dt.utcnow() + _IST_OFFSET).strftime("%d.%m.%y")
+    
+    # Today's paid cases
+    today_paid = df[(df["Payment Date"].astype(str).str.strip() == today) & 
+                    (df["RECEIPT CUT"].astype(str).str.upper() == "PAID")]
+    
+    if today_paid.empty:
+        return {"text": "⭐ *TODAY'S WINNERS* 🏅\n\nNo payments yet today."}
+    
+    lines = ["⭐ *TODAY'S WINNERS* 🏅\n"]
+    
+    # BKT 1-2 Receipt Cut (2+ receipts = ₹150 per receipt)
+    bkt12 = today_paid[today_paid["BUCKET"].isin([1, 2])]
+    if not bkt12.empty:
+        rc_by_team = bkt12.groupby("TEAM").size()
+        rc_winners = rc_by_team[rc_by_team >= 2]
+        if not rc_winners.empty:
+            lines.append("*DAILY (BKT 1-2) RECEIPTS*")
+            for team, count in rc_winners.sort_values(ascending=False).items():
+                incentive = count * 150
+                lines.append(f"{team} - {count} 💵 {incentive}")
+            lines.append("")
+    
+    # BKT 1 — ₹50K+ POS (₹100 per 50K)
+    bkt1_paid = today_paid[today_paid["BUCKET"] == 1]
+    if not bkt1_paid.empty:
+        pos_by_team_b1 = bkt1_paid.groupby("TEAM")["POS"].sum()
+        pos_winners_b1 = pos_by_team_b1[pos_by_team_b1 >= 50000]
+        if not pos_winners_b1.empty:
+            lines.append("*BUCKET 1 | ₹50K+ POS* 💰")
+            for team, pos in pos_winners_b1.sort_values(ascending=False).items():
+                slabs = int(pos // 50000)
+                incentive = slabs * 100
+                if pos >= 100000:
+                    label = f">{int(pos/100000)}L"
+                else:
+                    label = f">50k"
+                lines.append(f"{team} {label} 💸{incentive}")
+            lines.append("")
+    
+    # BKT 2 — ₹50K+ POS (₹100 per 50K)
+    bkt2_paid = today_paid[today_paid["BUCKET"] == 2]
+    if not bkt2_paid.empty:
+        pos_by_team_b2 = bkt2_paid.groupby("TEAM")["POS"].sum()
+        pos_winners_b2 = pos_by_team_b2[pos_by_team_b2 >= 50000]
+        if not pos_winners_b2.empty:
+            lines.append("*BUCKET 2 | ₹50K+ POS* 💰")
+            for team, pos in pos_winners_b2.sort_values(ascending=False).items():
+                slabs = int(pos // 50000)
+                incentive = slabs * 100
+                if pos >= 100000:
+                    label = f">{int(pos/100000)}L"
+                else:
+                    label = f">50k"
+                lines.append(f"{team} {label} 💸{incentive}")
+            lines.append("")
+    
+    # BKT 3-6 Receipt Cut (₹100 per receipt, no minimum)
+    bkt36 = today_paid[today_paid["BUCKET"].isin([3, 4, 5, 6])]
+    if not bkt36.empty:
+        rc_by_team_36 = bkt36.groupby("TEAM").size()
+        if not rc_by_team_36.empty:
+            lines.append("*DAILY (BKT 3-6) RECEIPTS*")
+            for team, count in rc_by_team_36.sort_values(ascending=False).items():
+                incentive = count * 100
+                lines.append(f"{team} - {count} 💵 {incentive}")
+            lines.append("")
+    
+    return {"text": "\n".join(lines)}
+
+
 app.mount("/mobile", StaticFiles(directory=str(APP_DIR / "mobile"), html=True), name="mobile")
 
 
