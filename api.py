@@ -536,13 +536,13 @@ async def flowlist(user: str = "", bucket: int = 1, role: str = "executive", aut
         for _, row in flow_df.iterrows():
             try:
                 result.append({
-                    "customer_name": str(row.get("CUSTOMER NAME", "")),
-                    "team": str(row.get("TEAM", "")),
-                    "pos": float(row.get("POS", 0) or 0),
-                    "dra_pct": round(float(row.get("DRA CASE%", 0) or 0) * 100, 1),
+                    "customer_name": str(row["CUSTOMER NAME"]) if "CUSTOMER NAME" in row.index else "",
+                    "team": str(row["TEAM"]) if "TEAM" in row.index else "",
+                    "pos": float(row["POS"]) if pd.notna(row.get("POS")) else 0,
+                    "dra_pct": round(float(row["DRA CASE%"]) * 100, 1) if pd.notna(row.get("DRA CASE%")) else 0,
                     "mobile": str(row.get("MOBILE", "")),
                     "area": str(row.get("AREA", "")),
-                    "projection": str(row.get("PROJECTION", "")) if "PROJECTION" in df.columns else "",
+                    "projection": str(row["PROJECTION"]) if "PROJECTION" in row.index else "",
                 })
             except Exception:
                 continue
