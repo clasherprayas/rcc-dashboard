@@ -440,6 +440,158 @@ async function showVisitorLogs() {
   `;
 }
 
+// ── TILL TIME REPORT ──
+async function generateReport() {
+  toggleMenu();
+  showToast('📊 Generating report...');
+  const data = await apiCall('/api/report/tilltime');
+  if (!data || data.error) {
+    showToast('❌ Report generation failed');
+    return;
+  }
+
+  // Build report as HTML → render to image
+  const buckets = data.buckets || [];
+  const bktHeaders = buckets.map(b => `<th style="text-align:center;padding:6px 10px;color:#94a3b8;font-size:11px">BKT ${b}</th>`).join('');
+  const bktHeadersWithTotal = bktHeaders + '<th style="text-align:center;padding:6px 10px;color:#fbbf24;font-size:11px">TOTAL</th>';
+
+  // Count table rows
+  let countRows = '';
+  let teams = Object.keys(data.team_count).sort();
+  teams.forEach(team => {
+    let total = 0;
+    let cells = buckets.map(b => {
+      const v = data.team_count[team][b] || 0;
+      total += v;
+      return `<td style="text-align:center;padding:6px 10px;color:#e2e8f0;font-size:12px">${v || '-'}</td>`;
+    }).join('');
+    countRows += `<tr><td style="padding:6px 10px;color:#e2e8f0;font-size:12px;font-weight:600">${team}</td>${cells}<td style="text-align:center;padding:6px 10px;color:#fbbf24;font-weight:700;font-size:12px">${total}</td></tr>`;
+  });
+  // Grand total row
+  let grandCells = buckets.map(b => `<td style="text-align:center;padding:6px 10px;color:#4ade80;font-weight:700;font-size:12px">${data.grand_count[b] || 0}</td>`).join('');
+  let grandTotal = Object.values(data.grand_count).reduce((a,b)=>a+b, 0);
+  countRows += `<tr style="border-top:1px solid #334155"><td style="padding:6px 10px;color:#4ade80;font-weight:700;font-size:12px">TOTAL</td>${grandCells}<td style="text-align:center;padding:6px 10px;color:#fbbf24;font-weight:800;font-size:13px">${grandTotal}</td></tr>`;
+
+  // POS table rows
+  let posRows = '';
+  teams.forEach(team => {
+    let cells = buckets.map(b => {
+      const v = data.team_pos[team][b] || 0;
+      return `<td style="text-align:center;padding:6px 10px;color:#4ade80;font-size:11px;font-family:monospace">${v ? '₹' + fmtIndianFull(v) : '-'}</td>`;
+    }).join('');
+    posRows += `<tr><td style="padding:6px 10px;color:#e2e8f0;font-size:12px;font-weight:600">${team}</td>${cells}</tr>`;
+  });
+  // Grand total POS
+  let grandPosCells = buckets.map(b => `<td style="text-align:center;padding:6px 10px;color:#fbbf24;font-weight:700;font-size:11px;font-family:monospace">₹${fmtIndianFull(data.grand_pos[b] || 0)}</td>`).join('');
+  posRows += `<tr style="border-top:1px solid #334155"><td style="padding:6px 10px;color:#fbbf24;font-weight:700;font-size:12px">GRAND TOTAL</td>${grandPosCells}</tr>`;
+
+  // Create report HTML
+  const reportHtml = `
+    <div id="reportCard" style="width:380px;background:linear-gradient(180deg,#0f172a,#1e293b);border-radius:16px;padding:24px;font-family:'Inter',sans-serif;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:10px;color:#64748b;font-weight:700;letter-spacing:.1em;text-transform:uppercase">TILL TIME REPORT</div>
+        <div style="font-size:18px;font-weight:900;margin-top:4px">📊 ${data.date}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px">${data.total_paid_today} Payments Today</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <div style="flex:1;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:#94a3b8;font-weight:700">RC MOVEMENT</div>
+          <div style="font-size:18px;font-weight:900;color:#60a5fa">${data.rc_movement}%</div>
+        </div>
+        <div style="flex:1;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:#94a3b8;font-weight:700">BKT-1 RES</div>
+          <div style="font-size:18px;font-weight:900;color:#4ade80">${data.bkt1_movement}%</div>
+        </div>
+        <div style="flex:1;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:#94a3b8;font-weight:700">BKT-2 RES</div>
+          <div style="font-size:18px;font-weight:900;color:#c4b5fd">${data.bkt2_movement}%</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#64748b;font-weight:700;margin-bottom:6px;letter-spacing:.05em">EXECUTIVE WISE (COUNT)</div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:14px;background:rgba(0,0,0,.2);border-radius:8px;overflow:hidden">
+        <thead><tr style="border-bottom:1px solid #334155"><th style="text-align:left;padding:6px 10px;color:#94a3b8;font-size:11px">TEAM</th>${bktHeadersWithTotal}</tr></thead>
+        <tbody>${countRows}</tbody>
+      </table>
+      <div style="font-size:10px;color:#64748b;font-weight:700;margin-bottom:6px;letter-spacing:.05em">COLLECTION (POS AMOUNT)</div>
+      <table style="width:100%;border-collapse:collapse;background:rgba(0,0,0,.2);border-radius:8px;overflow:hidden">
+        <thead><tr style="border-bottom:1px solid #334155"><th style="text-align:left;padding:6px 10px;color:#94a3b8;font-size:11px">TEAM</th>${bktHeaders}</tr></thead>
+        <tbody>${posRows}</tbody>
+      </table>
+    </div>
+  `;
+
+  // Show in page + allow download
+  const pages = document.querySelectorAll('.page');
+  const navItems = document.querySelectorAll('.nav-item');
+  pages.forEach(p => p.classList.remove('active'));
+  navItems.forEach(n => n.classList.remove('active'));
+  document.getElementById('pageFlow').classList.add('active');
+  document.getElementById('flowContent').innerHTML = `
+    <div style="text-align:center;margin-bottom:12px">
+      <button onclick="downloadReport()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">📥 Download Image</button>
+      <button onclick="shareReport()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">📤 Share</button>
+    </div>
+    <div id="reportContainer" style="display:flex;justify-content:center">${reportHtml}</div>
+  `;
+}
+
+function downloadReport() {
+  const el = document.getElementById('reportCard');
+  if (!el) return;
+  // Use html2canvas-like approach with canvas
+  const canvas = document.createElement('canvas');
+  const scale = 2;
+  canvas.width = el.offsetWidth * scale;
+  canvas.height = el.offsetHeight * scale;
+  // Fallback: screenshot via browser
+  import('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js').then(() => {}).catch(() => {});
+  if (typeof html2canvas !== 'undefined') {
+    html2canvas(el, {scale: 2, backgroundColor: null}).then(c => {
+      const link = document.createElement('a');
+      link.download = 'TillTime_Report.png';
+      link.href = c.toDataURL();
+      link.click();
+    });
+  } else {
+    // Load html2canvas dynamically
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    script.onload = () => {
+      html2canvas(el, {scale: 2, backgroundColor: null}).then(c => {
+        const link = document.createElement('a');
+        link.download = 'TillTime_Report.png';
+        link.href = c.toDataURL();
+        link.click();
+      });
+    };
+    document.head.appendChild(script);
+  }
+}
+
+function shareReport() {
+  const el = document.getElementById('reportCard');
+  if (!el) return;
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  script.onload = () => {
+    html2canvas(el, {scale: 2, backgroundColor: null}).then(c => {
+      c.toBlob(blob => {
+        const file = new File([blob], 'TillTime_Report.png', {type: 'image/png'});
+        if (navigator.share && navigator.canShare({files: [file]})) {
+          navigator.share({files: [file], title: 'Till Time Report'});
+        } else {
+          // Fallback: download
+          const link = document.createElement('a');
+          link.download = 'TillTime_Report.png';
+          link.href = c.toDataURL();
+          link.click();
+        }
+      });
+    });
+  };
+  document.head.appendChild(script);
+}
+
 // ── ADMIN EXECUTIVE FILTER ──
 async function loadExecFilter() {
   const data = await apiCall('/api/executives');

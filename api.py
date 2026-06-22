@@ -274,6 +274,72 @@ async def force_sync():
         load_data()
         return {"status": "ok", "message": "Data reloaded from file"}
 
+
+# ── TILL TIME REPORT API ──
+@app.get("/api/report/tilltime")
+async def tilltime_report():
+    """Generate till-time payment report data for today."""
+    df = load_data()
+    if df is None:
+        return {"error": "Data not found"}
+    
+    today = _dt.now().strftime("%d.%m.%y") if not CLOUD_MODE else (_dt.utcnow() + _IST_OFFSET).strftime("%d.%m.%y")
+    
+    # Today's paid cases
+    today_paid = df[(df["Payment Date"].astype(str).str.strip() == today) & 
+                    (df["RECEIPT CUT"].astype(str).str.upper() == "PAID")]
+    
+    # Overall totals
+    total_pos = float(df["POS"].sum())
+    today_pos = float(today_paid["POS"].sum())
+    
+    # Receipt Cut Movement (today's paid / total cases %)
+    rc_movement = round(len(today_paid) / len(df) * 100, 2) if len(df) else 0
+    
+    # BKT-1 Resolution Movement
+    bkt1_total_pos = float(df[df["BUCKET"] == 1]["POS"].sum())
+    bkt1_today_pos = float(today_paid[today_paid["BUCKET"] == 1]["POS"].sum())
+    bkt1_movement = round(bkt1_today_pos / bkt1_total_pos * 100, 2) if bkt1_total_pos else 0
+    
+    # BKT-2 Resolution Movement
+    bkt2_total_pos = float(df[df["BUCKET"] == 2]["POS"].sum())
+    bkt2_today_pos = float(today_paid[today_paid["BUCKET"] == 2]["POS"].sum())
+    bkt2_movement = round(bkt2_today_pos / bkt2_total_pos * 100, 2) if bkt2_total_pos else 0
+    
+    # Team wise count (BKT wise)
+    team_count = {}
+    team_pos = {}
+    buckets_used = sorted(today_paid["BUCKET"].unique().tolist())
+    
+    for team, grp in today_paid.groupby("TEAM"):
+        team_count[team] = {}
+        team_pos[team] = {}
+        for bkt, bgrp in grp.groupby("BUCKET"):
+            team_count[team][int(bkt)] = len(bgrp)
+            team_pos[team][int(bkt)] = round(float(bgrp["POS"].sum()), 2)
+    
+    # Grand totals per bucket
+    grand_count = {}
+    grand_pos = {}
+    for bkt in buckets_used:
+        bkt_data = today_paid[today_paid["BUCKET"] == bkt]
+        grand_count[int(bkt)] = len(bkt_data)
+        grand_pos[int(bkt)] = round(float(bkt_data["POS"].sum()), 2)
+    
+    return {
+        "date": today,
+        "total_paid_today": len(today_paid),
+        "rc_movement": rc_movement,
+        "bkt1_movement": bkt1_movement,
+        "bkt2_movement": bkt2_movement,
+        "buckets": [int(b) for b in buckets_used],
+        "team_count": team_count,
+        "team_pos": team_pos,
+        "grand_count": grand_count,
+        "grand_pos": grand_pos,
+    }
+
+
 app.mount("/mobile", StaticFiles(directory=str(APP_DIR / "mobile"), html=True), name="mobile")
 
 
