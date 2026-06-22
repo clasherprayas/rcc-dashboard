@@ -469,44 +469,45 @@ async def upload_trails_csv(file: UploadFile = File(...)):
         pending_count = pending_df.groupby("TEAM").size().to_dict()
         total_pending = len(pending_df)
         
-        # Update TRAILS PENDING in Excel (increment by 1 for matched loan nos)
-        try:
-            import openpyxl
-            wb = openpyxl.load_workbook(str(DATA_FILE))
-            ws = wb["MAIN"]
-            
-            # Find LOAN NO and TRAILS PENDING column indices
-            headers = [str(cell.value).strip() if cell.value else "" for cell in ws[1]]
-            loan_col = headers.index("LOAN NO") + 1 if "LOAN NO" in headers else None
-            trail_col = headers.index("TRAILS PENDING") + 1 if "TRAILS PENDING" in headers else None
-            
-            if loan_col and trail_col:
-                updated = 0
-                for row_idx in range(2, ws.max_row + 1):
-                    cell_val = str(ws.cell(row=row_idx, column=loan_col).value or "").strip()
-                    if cell_val in loan_nos:
-                        current = ws.cell(row=row_idx, column=trail_col).value or 0
-                        try:
-                            current = int(current)
-                        except (ValueError, TypeError):
-                            current = 0
-                        ws.cell(row=row_idx, column=trail_col, value=current + 1)
-                        updated += 1
+        # Update TRAILS PENDING in Excel (only on local PC, not cloud/Render)
+        if not CLOUD_MODE:
+            try:
+                import openpyxl
+                wb = openpyxl.load_workbook(str(DATA_FILE))
+                ws = wb["MAIN"]
                 
-                wb.save(str(DATA_FILE))
-                wb.close()
+                # Find LOAN NO and TRAILS PENDING column indices
+                headers = [str(cell.value).strip() if cell.value else "" for cell in ws[1]]
+                loan_col = headers.index("LOAN NO") + 1 if "LOAN NO" in headers else None
+                trail_col = headers.index("TRAILS PENDING") + 1 if "TRAILS PENDING" in headers else None
                 
-                # Clear cache so next load picks up changes
-                _cache["df"] = None
-                _cache["mtime"] = 0
-                
-                # Also copy to OneDrive
-                import shutil
-                onedrive_path = Path(r"C:\Users\BAJAJ1\OneDrive\RCC\RCC_DATA.xlsx")
-                if onedrive_path.parent.exists():
-                    shutil.copy2(str(DATA_FILE), str(onedrive_path))
-        except Exception as e:
-            print(f"⚠️ Excel update failed: {e}")
+                if loan_col and trail_col:
+                    updated = 0
+                    for row_idx in range(2, ws.max_row + 1):
+                        cell_val = str(ws.cell(row=row_idx, column=loan_col).value or "").strip()
+                        if cell_val in loan_nos:
+                            current = ws.cell(row=row_idx, column=trail_col).value or 0
+                            try:
+                                current = int(current)
+                            except (ValueError, TypeError):
+                                current = 0
+                            ws.cell(row=row_idx, column=trail_col, value=current + 1)
+                            updated += 1
+                    
+                    wb.save(str(DATA_FILE))
+                    wb.close()
+                    
+                    # Clear cache so next load picks up changes
+                    _cache["df"] = None
+                    _cache["mtime"] = 0
+                    
+                    # Also copy to OneDrive
+                    import shutil
+                    onedrive_path = Path(r"C:\Users\BAJAJ1\OneDrive\RCC\RCC_DATA.xlsx")
+                    if onedrive_path.parent.exists():
+                        shutil.copy2(str(DATA_FILE), str(onedrive_path))
+            except Exception as e:
+                print(f"⚠️ Excel update failed: {e}")
         
         # Generate WhatsApp report text
         today_str = _dt.now().strftime("%d %b")
