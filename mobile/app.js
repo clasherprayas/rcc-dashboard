@@ -485,33 +485,33 @@ async function generateReport() {
 
   // Create report HTML — LIGHT MODE, HORIZONTAL
   const reportHtml = `
-    <div id="reportCard" style="width:620px;background:#ffffff;border-radius:14px;padding:24px 28px;font-family:'Inter',sans-serif;color:#0f172a;box-shadow:0 4px 20px rgba(0,0,0,.08);border:1px solid #e2e8f0">
-      <div style="text-align:center;margin-bottom:18px">
-        <div style="font-size:20px;font-weight:900;color:#1e293b">📊 TILL TIME PAYMENTS</div>
-        <div style="font-size:13px;color:#64748b;margin-top:4px;font-weight:600">${data.date} · ${data.total_paid_today} Payments</div>
+    <div id="reportCard" style="width:640px;background:linear-gradient(180deg,#ffffff,#f8fafc);border-radius:16px;padding:28px 32px;font-family:'Inter',sans-serif;color:#0f172a;box-shadow:0 8px 40px rgba(0,0,0,.1),0 1px 3px rgba(0,0,0,.06);border:1.5px solid #e2e8f0">
+      <div style="text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #f1f5f9">
+        <div style="font-size:22px;font-weight:900;color:#0f172a;letter-spacing:-.02em">📊 TILL TIME PAYMENTS</div>
+        <div style="font-size:14px;color:#475569;margin-top:6px;font-weight:600">${data.date} · <span style="color:#2563eb;font-weight:800">${data.total_paid_today}</span> Payments</div>
       </div>
-      <div style="display:flex;gap:10px;margin-bottom:18px">
-        <div style="flex:1;background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1.5px solid #bfdbfe;border-radius:10px;padding:12px;text-align:center">
-          <div style="font-size:10px;color:#64748b;font-weight:700;letter-spacing:.05em">RECEIPT CUT</div>
-          <div style="font-size:22px;font-weight:900;color:#2563eb">${data.rc_movement}%</div>
+      <div style="display:flex;gap:12px;margin-bottom:22px">
+        <div style="flex:1;background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #93c5fd;border-radius:12px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(37,99,235,.08)">
+          <div style="font-size:10px;color:#475569;font-weight:800;letter-spacing:.06em;margin-bottom:4px">RECEIPT CUT</div>
+          <div style="font-size:26px;font-weight:900;color:#1d4ed8">${data.rc_movement}%</div>
         </div>
-        <div style="flex:1;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #bbf7d0;border-radius:10px;padding:12px;text-align:center">
-          <div style="font-size:10px;color:#64748b;font-weight:700;letter-spacing:.05em">BKT-1 RES</div>
-          <div style="font-size:22px;font-weight:900;color:#059669">${data.bkt1_movement}%</div>
+        <div style="flex:1;background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:2px solid #6ee7b7;border-radius:12px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(5,150,105,.08)">
+          <div style="font-size:10px;color:#475569;font-weight:800;letter-spacing:.06em;margin-bottom:4px">BKT-1 RES</div>
+          <div style="font-size:26px;font-weight:900;color:#047857">${data.bkt1_movement}%</div>
         </div>
-        <div style="flex:1;background:linear-gradient(135deg,#faf5ff,#f3e8ff);border:1.5px solid #e9d5ff;border-radius:10px;padding:12px;text-align:center">
-          <div style="font-size:10px;color:#64748b;font-weight:700;letter-spacing:.05em">BKT-2 RES</div>
-          <div style="font-size:22px;font-weight:900;color:#7c3aed">${data.bkt2_movement}%</div>
+        <div style="flex:1;background:linear-gradient(135deg,#faf5ff,#ede9fe);border:2px solid #c4b5fd;border-radius:12px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(124,58,237,.08)">
+          <div style="font-size:10px;color:#475569;font-weight:800;letter-spacing:.06em;margin-bottom:4px">BKT-2 RES</div>
+          <div style="font-size:26px;font-weight:900;color:#6d28d9">${data.bkt2_movement}%</div>
         </div>
       </div>
-      <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:6px;letter-spacing:.05em">EXECUTIVE WISE (COUNT)</div>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:16px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
-        <thead><tr style="background:#f8fafc"><th style="text-align:left;padding:8px 12px;color:#64748b;font-size:12px;font-weight:700;border-bottom:2px solid #e2e8f0">TEAM</th>${buckets.map(b => `<th style="text-align:center;padding:8px 12px;color:#64748b;font-size:12px;font-weight:700;border-bottom:2px solid #e2e8f0">BKT ${b}</th>`).join('')}<th style="text-align:center;padding:8px 12px;color:#1e40af;font-size:12px;font-weight:700;border-bottom:2px solid #e2e8f0">TOTAL</th></tr></thead>
+      <div style="font-size:12px;color:#1e293b;font-weight:800;margin-bottom:8px;letter-spacing:.03em;padding-left:4px">▸ EXECUTIVE WISE (COUNT)</div>
+      <table style="width:100%;border-collapse:separate;border-spacing:0;margin-bottom:20px;border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)">
+        <thead><tr style="background:linear-gradient(180deg,#f1f5f9,#e8eef6)"><th style="text-align:left;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1">TEAM</th>${buckets.map(b => `<th style="text-align:center;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1">BKT ${b}</th>`).join('')}<th style="text-align:center;padding:10px 14px;color:#1e40af;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1">TOTAL</th></tr></thead>
         <tbody>${countRows}</tbody>
       </table>
-      <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:6px;letter-spacing:.05em">COLLECTION (POS AMOUNT)</div>
-      <table style="width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
-        <thead><tr style="background:#f8fafc"><th style="text-align:left;padding:8px 12px;color:#64748b;font-size:12px;font-weight:700;border-bottom:2px solid #e2e8f0">TEAM</th>${buckets.map(b => `<th style="text-align:center;padding:8px 12px;color:#64748b;font-size:12px;font-weight:700;border-bottom:2px solid #e2e8f0">BKT ${b}</th>`).join('')}</tr></thead>
+      <div style="font-size:12px;color:#1e293b;font-weight:800;margin-bottom:8px;letter-spacing:.03em;padding-left:4px">▸ COLLECTION (POS AMOUNT)</div>
+      <table style="width:100%;border-collapse:separate;border-spacing:0;border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)">
+        <thead><tr style="background:linear-gradient(180deg,#f1f5f9,#e8eef6)"><th style="text-align:left;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1">TEAM</th>${buckets.map(b => `<th style="text-align:center;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1">BKT ${b}</th>`).join('')}</tr></thead>
         <tbody>${posRows}</tbody>
       </table>
     </div>
