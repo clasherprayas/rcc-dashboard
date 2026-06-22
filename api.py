@@ -422,6 +422,23 @@ async def daily_winners(date: str = ""):
                 lines.append(f"{team} - {count} 💵 {incentive}")
             lines.append("")
     
+    # SUNDAY SPECIAL — ₹200 per receipt (any bucket)
+    try:
+        day_parts = today.split(".")
+        check_date = _dt(2000 + int(day_parts[2]), int(day_parts[1]), int(day_parts[0]))
+        is_sunday = check_date.weekday() == 6  # 6 = Sunday
+    except Exception:
+        is_sunday = False
+    
+    if is_sunday and not today_paid.empty:
+        sunday_by_team = today_paid.groupby("TEAM").size()
+        if not sunday_by_team.empty:
+            lines.append("*🔴 SUNDAY SPECIAL (₹200/receipt)*")
+            for team, count in sunday_by_team.sort_values(ascending=False).items():
+                incentive = count * 200
+                lines.append(f"{team} - {count} 💵 {incentive}")
+            lines.append("")
+    
     return {"text": "\n".join(lines)}
 
 
