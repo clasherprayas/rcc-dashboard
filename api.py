@@ -371,7 +371,7 @@ async def daily_winners():
                 lines.append(f"{team} - {count} 💵 {incentive}")
             lines.append("")
     
-    # BKT 1 — ₹50K+ POS (₹100 per 50K)
+    # BKT 1 — ₹50K+ POS (₹100 for 50K-1.99L, ₹200 for 2L-2.99L, ₹300 for 3L+ etc.)
     bkt1_paid = today_paid[today_paid["BUCKET"] == 1]
     if not bkt1_paid.empty:
         pos_by_team_b1 = bkt1_paid.groupby("TEAM")["POS"].sum()
@@ -379,16 +379,16 @@ async def daily_winners():
         if not pos_winners_b1.empty:
             lines.append("*BUCKET 1 | ₹50K+ POS* 💰")
             for team, pos in pos_winners_b1.sort_values(ascending=False).items():
-                slabs = int(pos // 50000)
-                incentive = slabs * 100
-                if pos >= 100000:
+                if pos >= 200000:
+                    incentive = int(pos // 100000) * 100
                     label = f">{int(pos/100000)}L"
                 else:
-                    label = f">50k"
+                    incentive = 100
+                    label = ">50k"
                 lines.append(f"{team} {label} 💸{incentive}")
             lines.append("")
     
-    # BKT 2 — ₹50K+ POS (₹100 per 50K)
+    # BKT 2 — ₹50K+ POS (same logic)
     bkt2_paid = today_paid[today_paid["BUCKET"] == 2]
     if not bkt2_paid.empty:
         pos_by_team_b2 = bkt2_paid.groupby("TEAM")["POS"].sum()
@@ -396,12 +396,12 @@ async def daily_winners():
         if not pos_winners_b2.empty:
             lines.append("*BUCKET 2 | ₹50K+ POS* 💰")
             for team, pos in pos_winners_b2.sort_values(ascending=False).items():
-                slabs = int(pos // 50000)
-                incentive = slabs * 100
-                if pos >= 100000:
+                if pos >= 200000:
+                    incentive = int(pos // 100000) * 100
                     label = f">{int(pos/100000)}L"
                 else:
-                    label = f">50k"
+                    incentive = 100
+                    label = ">50k"
                 lines.append(f"{team} {label} 💸{incentive}")
             lines.append("")
     
