@@ -452,8 +452,6 @@ async function generateReport() {
 
   // Build report as HTML → render to image
   const buckets = data.buckets || [];
-  const bktHeaders = buckets.map(b => `<th style="text-align:center;padding:6px 10px;color:#94a3b8;font-size:11px">BKT ${b}</th>`).join('');
-  const bktHeadersWithTotal = bktHeaders + '<th style="text-align:center;padding:6px 10px;color:#fbbf24;font-size:11px">TOTAL</th>';
 
   // Count table rows
   let countRows = '';
@@ -463,58 +461,57 @@ async function generateReport() {
     let cells = buckets.map(b => {
       const v = data.team_count[team][b] || 0;
       total += v;
-      return `<td style="text-align:center;padding:6px 10px;color:#e2e8f0;font-size:12px">${v || '-'}</td>`;
+      return `<td style="text-align:center;padding:8px 12px;color:#1e293b;font-size:14px;font-weight:600;border-bottom:1px solid #e2e8f0">${v || ''}</td>`;
     }).join('');
-    countRows += `<tr><td style="padding:6px 10px;color:#e2e8f0;font-size:12px;font-weight:600">${team}</td>${cells}<td style="text-align:center;padding:6px 10px;color:#fbbf24;font-weight:700;font-size:12px">${total}</td></tr>`;
+    countRows += `<tr><td style="padding:8px 12px;color:#1e293b;font-size:13px;font-weight:700;border-bottom:1px solid #e2e8f0">${team}</td>${cells}<td style="text-align:center;padding:8px 12px;color:#1e40af;font-weight:800;font-size:14px;border-bottom:1px solid #e2e8f0">${total}</td></tr>`;
   });
   // Grand total row
-  let grandCells = buckets.map(b => `<td style="text-align:center;padding:6px 10px;color:#4ade80;font-weight:700;font-size:12px">${data.grand_count[b] || 0}</td>`).join('');
+  let grandCells = buckets.map(b => `<td style="text-align:center;padding:8px 12px;color:#059669;font-weight:800;font-size:14px">${data.grand_count[b] || 0}</td>`).join('');
   let grandTotal = Object.values(data.grand_count).reduce((a,b)=>a+b, 0);
-  countRows += `<tr style="border-top:1px solid #334155"><td style="padding:6px 10px;color:#4ade80;font-weight:700;font-size:12px">TOTAL</td>${grandCells}<td style="text-align:center;padding:6px 10px;color:#fbbf24;font-weight:800;font-size:13px">${grandTotal}</td></tr>`;
+  countRows += `<tr style="background:#f0fdf4"><td style="padding:8px 12px;color:#059669;font-weight:800;font-size:13px">TOTAL</td>${grandCells}<td style="text-align:center;padding:8px 12px;color:#1e40af;font-weight:900;font-size:15px">${grandTotal}</td></tr>`;
 
   // POS table rows
   let posRows = '';
   teams.forEach(team => {
     let cells = buckets.map(b => {
       const v = data.team_pos[team][b] || 0;
-      return `<td style="text-align:center;padding:6px 10px;color:#4ade80;font-size:11px;font-family:monospace">${v ? '₹' + fmtIndianFull(v) : '-'}</td>`;
+      return `<td style="text-align:center;padding:8px 12px;color:#059669;font-size:13px;font-weight:600;font-family:monospace;border-bottom:1px solid #e2e8f0">${v ? '₹' + fmtIndianFull(v) : ''}</td>`;
     }).join('');
-    posRows += `<tr><td style="padding:6px 10px;color:#e2e8f0;font-size:12px;font-weight:600">${team}</td>${cells}</tr>`;
+    posRows += `<tr><td style="padding:8px 12px;color:#1e293b;font-size:13px;font-weight:700;border-bottom:1px solid #e2e8f0">${team}</td>${cells}</tr>`;
   });
   // Grand total POS
-  let grandPosCells = buckets.map(b => `<td style="text-align:center;padding:6px 10px;color:#fbbf24;font-weight:700;font-size:11px;font-family:monospace">₹${fmtIndianFull(data.grand_pos[b] || 0)}</td>`).join('');
-  posRows += `<tr style="border-top:1px solid #334155"><td style="padding:6px 10px;color:#fbbf24;font-weight:700;font-size:12px">GRAND TOTAL</td>${grandPosCells}</tr>`;
+  let grandPosCells = buckets.map(b => `<td style="text-align:center;padding:8px 12px;color:#1e40af;font-weight:800;font-size:13px;font-family:monospace">${data.grand_pos[b] ? '₹' + fmtIndianFull(data.grand_pos[b]) : ''}</td>`).join('');
+  posRows += `<tr style="background:#eff6ff"><td style="padding:8px 12px;color:#1e40af;font-weight:800;font-size:13px">GRAND TOTAL</td>${grandPosCells}</tr>`;
 
-  // Create report HTML
+  // Create report HTML — LIGHT MODE, HORIZONTAL
   const reportHtml = `
-    <div id="reportCard" style="width:380px;background:linear-gradient(180deg,#0f172a,#1e293b);border-radius:16px;padding:24px;font-family:'Inter',sans-serif;color:#fff;box-shadow:0 20px 60px rgba(0,0,0,.5)">
-      <div style="text-align:center;margin-bottom:16px">
-        <div style="font-size:10px;color:#64748b;font-weight:700;letter-spacing:.1em;text-transform:uppercase">TILL TIME REPORT</div>
-        <div style="font-size:18px;font-weight:900;margin-top:4px">📊 ${data.date}</div>
-        <div style="font-size:11px;color:#94a3b8;margin-top:2px">${data.total_paid_today} Payments Today</div>
+    <div id="reportCard" style="width:620px;background:#ffffff;border-radius:14px;padding:24px 28px;font-family:'Inter',sans-serif;color:#0f172a;box-shadow:0 4px 20px rgba(0,0,0,.08);border:1px solid #e2e8f0">
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-size:20px;font-weight:900;color:#1e293b">📊 TILL TIME PAYMENTS</div>
+        <div style="font-size:13px;color:#64748b;margin-top:4px;font-weight:600">${data.date} · ${data.total_paid_today} Payments</div>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        <div style="flex:1;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:9px;color:#94a3b8;font-weight:700">RC MOVEMENT</div>
-          <div style="font-size:18px;font-weight:900;color:#60a5fa">${data.rc_movement}%</div>
+      <div style="display:flex;gap:10px;margin-bottom:18px">
+        <div style="flex:1;background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1.5px solid #bfdbfe;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:10px;color:#64748b;font-weight:700;letter-spacing:.05em">RECEIPT CUT</div>
+          <div style="font-size:22px;font-weight:900;color:#2563eb">${data.rc_movement}%</div>
         </div>
-        <div style="flex:1;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:9px;color:#94a3b8;font-weight:700">BKT-1 RES</div>
-          <div style="font-size:18px;font-weight:900;color:#4ade80">${data.bkt1_movement}%</div>
+        <div style="flex:1;background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #bbf7d0;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:10px;color:#64748b;font-weight:700;letter-spacing:.05em">BKT-1 RES</div>
+          <div style="font-size:22px;font-weight:900;color:#059669">${data.bkt1_movement}%</div>
         </div>
-        <div style="flex:1;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:9px;color:#94a3b8;font-weight:700">BKT-2 RES</div>
-          <div style="font-size:18px;font-weight:900;color:#c4b5fd">${data.bkt2_movement}%</div>
+        <div style="flex:1;background:linear-gradient(135deg,#faf5ff,#f3e8ff);border:1.5px solid #e9d5ff;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:10px;color:#64748b;font-weight:700;letter-spacing:.05em">BKT-2 RES</div>
+          <div style="font-size:22px;font-weight:900;color:#7c3aed">${data.bkt2_movement}%</div>
         </div>
       </div>
-      <div style="font-size:10px;color:#64748b;font-weight:700;margin-bottom:6px;letter-spacing:.05em">EXECUTIVE WISE (COUNT)</div>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:14px;background:rgba(0,0,0,.2);border-radius:8px;overflow:hidden">
-        <thead><tr style="border-bottom:1px solid #334155"><th style="text-align:left;padding:6px 10px;color:#94a3b8;font-size:11px">TEAM</th>${bktHeadersWithTotal}</tr></thead>
+      <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:6px;letter-spacing:.05em">EXECUTIVE WISE (COUNT)</div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:16px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
+        <thead><tr style="background:#f8fafc"><th style="text-align:left;padding:8px 12px;color:#64748b;font-size:12px;font-weight:700;border-bottom:2px solid #e2e8f0">TEAM</th>${buckets.map(b => `<th style="text-align:center;padding:8px 12px;color:#64748b;font-size:12px;font-weight:700;border-bottom:2px solid #e2e8f0">BKT ${b}</th>`).join('')}<th style="text-align:center;padding:8px 12px;color:#1e40af;font-size:12px;font-weight:700;border-bottom:2px solid #e2e8f0">TOTAL</th></tr></thead>
         <tbody>${countRows}</tbody>
       </table>
-      <div style="font-size:10px;color:#64748b;font-weight:700;margin-bottom:6px;letter-spacing:.05em">COLLECTION (POS AMOUNT)</div>
-      <table style="width:100%;border-collapse:collapse;background:rgba(0,0,0,.2);border-radius:8px;overflow:hidden">
-        <thead><tr style="border-bottom:1px solid #334155"><th style="text-align:left;padding:6px 10px;color:#94a3b8;font-size:11px">TEAM</th>${bktHeaders}</tr></thead>
+      <div style="font-size:11px;color:#64748b;font-weight:700;margin-bottom:6px;letter-spacing:.05em">COLLECTION (POS AMOUNT)</div>
+      <table style="width:100%;border-collapse:collapse;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
+        <thead><tr style="background:#f8fafc"><th style="text-align:left;padding:8px 12px;color:#64748b;font-size:12px;font-weight:700;border-bottom:2px solid #e2e8f0">TEAM</th>${buckets.map(b => `<th style="text-align:center;padding:8px 12px;color:#64748b;font-size:12px;font-weight:700;border-bottom:2px solid #e2e8f0">BKT ${b}</th>`).join('')}</tr></thead>
         <tbody>${posRows}</tbody>
       </table>
     </div>
@@ -531,7 +528,7 @@ async function generateReport() {
       <button onclick="downloadReport()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">📥 Download Image</button>
       <button onclick="shareReport()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">📤 Share</button>
     </div>
-    <div id="reportContainer" style="display:flex;justify-content:center">${reportHtml}</div>
+    <div id="reportContainer" style="overflow-x:auto;padding:10px">${reportHtml}</div>
   `;
 }
 
