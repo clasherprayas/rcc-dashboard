@@ -713,23 +713,54 @@ async function uploadTrailsCsv() {
       return;
     }
     
-    // Show report
-    document.getElementById('flowContent').innerHTML = `
-      <div class="summary-banner">
-        <div class="banner-left">
-          <span style="font-size:1.3rem">✅</span>
-          <div>
-            <div class="banner-label">TRAILS UPLOADED</div>
-            <div class="banner-value">${data.matched} matched</div>
+    // Build image report table
+    let tableRows = '';
+    const teams = Object.keys(data.team_count).sort();
+    teams.forEach(team => {
+      const today = data.team_count[team] || 0;
+      const pending = data.pending_count[team] || 0;
+      tableRows += `<tr><td style="padding:8px 14px;font-size:13px;font-weight:700;color:#1e293b;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${team}</td><td style="text-align:center;padding:8px 14px;font-size:14px;font-weight:800;color:#059669;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${today}</td><td style="text-align:center;padding:8px 14px;font-size:14px;font-weight:800;color:#dc2626;border-bottom:1px solid #e2e8f0">${pending}</td></tr>`;
+    });
+    tableRows += `<tr style="background:#f0fdf4"><td style="padding:8px 14px;font-size:13px;font-weight:800;color:#059669;border-right:1px solid #e2e8f0">TOTAL</td><td style="text-align:center;padding:8px 14px;font-size:15px;font-weight:900;color:#059669;border-right:1px solid #e2e8f0">${data.matched}</td><td style="text-align:center;padding:8px 14px;font-size:15px;font-weight:900;color:#dc2626">${data.total_pending}</td></tr>`;
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true}).toUpperCase();
+    const dateStr = now.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+
+    const reportHtml = `
+      <div id="trailsReportCard" style="width:420px;background:linear-gradient(180deg,#ffffff,#f8fafc);border-radius:14px;padding:24px;font-family:'Inter',sans-serif;color:#0f172a;box-shadow:0 8px 40px rgba(0,0,0,.1);border:1.5px solid #e2e8f0">
+        <div style="text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #f1f5f9">
+          <div style="font-size:20px;font-weight:900;color:#0f172a">📋 TRAILS REPORT</div>
+          <div style="font-size:13px;color:#475569;margin-top:4px;font-weight:600">${dateStr} · ${timeStr}</div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <div style="flex:1;background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:2px solid #6ee7b7;border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:10px;color:#475569;font-weight:800">TODAY DONE</div>
+            <div style="font-size:24px;font-weight:900;color:#047857">${data.matched}</div>
+          </div>
+          <div style="flex:1;background:linear-gradient(135deg,#fef2f2,#fecaca);border:2px solid #fca5a5;border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:10px;color:#475569;font-weight:800">PENDING</div>
+            <div style="font-size:24px;font-weight:900;color:#dc2626">${data.total_pending}</div>
           </div>
         </div>
+        <table style="width:100%;border-collapse:separate;border-spacing:0;border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden">
+          <thead><tr style="background:linear-gradient(180deg,#f1f5f9,#e8eef6)"><th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:800;color:#475569;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">TEAM</th><th style="text-align:center;padding:10px 14px;font-size:12px;font-weight:800;color:#059669;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">TODAY</th><th style="text-align:center;padding:10px 14px;font-size:12px;font-weight:800;color:#dc2626;border-bottom:2px solid #cbd5e1">PENDING</th></tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+        <div style="text-align:center;margin-top:12px;font-size:10px;color:#94a3b8;font-weight:600">📱 Generated at ${timeStr}</div>
       </div>
+    `;
+
+    // Show report
+    document.getElementById('flowContent').innerHTML = `
       <div style="text-align:center;margin-bottom:12px">
-        <button onclick="copyTrailsReport()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">📋 Copy for WhatsApp</button>
+        <button onclick="shareTrailsImg()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">📤 Share</button>
+        <button onclick="copyTrailsReport()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">📋 Copy Text</button>
         <button onclick="showTrailsUpload()" style="background:var(--surface2);border:1px solid var(--border);color:var(--ink);padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">📤 Upload Another</button>
       </div>
-      ${data.unmatched > 0 ? `<div style="text-align:center;margin-bottom:10px;color:var(--amber);font-size:.8rem">⚠️ ${data.unmatched} loan nos not matched</div>` : ''}
-      <pre id="trailsReportText" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:.85rem;white-space:pre-wrap;word-wrap:break-word;line-height:1.6;color:var(--ink);font-family:var(--font)">${data.text}</pre>
+      ${data.unmatched > 0 ? '<div style="text-align:center;margin-bottom:10px;color:var(--amber);font-size:.8rem">⚠️ ' + data.unmatched + ' loan nos not matched</div>' : ''}
+      <div id="trailsImgContainer" style="overflow:auto;padding:10px">${reportHtml}</div>
+      <pre id="trailsReportText" style="display:none">${data.text}</pre>
     `;
     showToast('✅ Trails updated + report ready!');
   } catch(e) {
@@ -737,19 +768,27 @@ async function uploadTrailsCsv() {
   }
 }
 
-function copyTrailsReport() {
-  const text = document.getElementById('trailsReportText').textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    showToast('✅ Copied! Paste in WhatsApp');
-  }).catch(() => {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    showToast('✅ Copied! Paste in WhatsApp');
-  });
+function shareTrailsImg() {
+  const el = document.getElementById('trailsReportCard');
+  if (!el) return;
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  script.onload = () => {
+    html2canvas(el, {scale: 3, backgroundColor: null}).then(c => {
+      c.toBlob(blob => {
+        const file = new File([blob], 'Trails_Report.png', {type: 'image/png'});
+        if (navigator.share && navigator.canShare({files: [file]})) {
+          navigator.share({files: [file], title: 'Trails Report'});
+        } else {
+          const link = document.createElement('a');
+          link.download = 'Trails_Report.png';
+          link.href = c.toDataURL();
+          link.click();
+        }
+      });
+    });
+  };
+  document.head.appendChild(script);
 }
 
 function downloadReport() {
