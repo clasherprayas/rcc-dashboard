@@ -310,6 +310,34 @@
     .confetti.c9 { left:30%; background:#3b82f6; animation-delay:0.8s; }
     .confetti.c10 { left:60%; background:#8b5cf6; animation-delay:0.15s; width:6px; height:10px; }
     @keyframes confettiFall { 0% { top:-10px; transform:rotate(0deg) translateX(0); opacity:1; } 100% { top:100vh; transform:rotate(720deg) translateX(30px); opacity:0; } }
+    
+    /* Achievement card — gold premium */
+    .achieve-card {
+      margin: 20px 12px;
+      background: linear-gradient(135deg, #92400e, #d97706, #f59e0b, #fbbf24);
+      border-radius: 16px;
+      padding: 32px 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(217,119,6,.4), 0 0 20px rgba(251,191,36,.2);
+      animation: achievePulse 2.5s ease-in-out infinite;
+    }
+    .achieve-content { position: relative; z-index: 2; }
+    .achieve-icon { font-size: 48px; margin-bottom: 12px; animation: achieveBounce 1s ease; }
+    .achieve-title { font-size: 20px; font-weight: 900; color: #fff; letter-spacing: .05em; text-shadow: 0 2px 4px rgba(0,0,0,.2); }
+    .achieve-sub { font-size: 14px; font-weight: 600; color: rgba(255,255,255,.85); margin-top: 6px; }
+    .achieve-shine {
+      position: absolute;
+      top: 0; left: -100%; width: 60%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.3), transparent);
+      transform: skewX(-20deg);
+      animation: achieveShine 3s ease-in-out infinite;
+      z-index: 1;
+    }
+    @keyframes achieveShine { 0%,100% { left: -100%; } 50% { left: 150%; } }
+    @keyframes achievePulse { 0%,100% { box-shadow: 0 8px 32px rgba(217,119,6,.4), 0 0 20px rgba(251,191,36,.2); } 50% { box-shadow: 0 8px 40px rgba(217,119,6,.6), 0 0 40px rgba(251,191,36,.35); } }
+    @keyframes achieveBounce { 0% { transform: scale(0); } 50% { transform: scale(1.2); } 70% { transform: scale(0.9); } 100% { transform: scale(1); } }
     .password-gate {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -512,31 +540,22 @@
 
         if (data.total === 0) {
           // 0 flow cases = 100% resolution! Celebrate!
-          let greetHtml = '';
-          let showCelebrate = false;
-          if (data.projection && data.projection.current_res >= 90 && currentBucket === 1) { showCelebrate = true; }
-          if (data.projection && data.projection.current_res >= 70 && currentBucket === 2) { showCelebrate = true; }
-          // If no flow cases at all, it means 100% resolution
-          if (currentBucket <= 2) { showCelebrate = true; }
+          let showCelebrate = (currentBucket <= 2);
           
           if (showCelebrate) {
-            const res = data.projection ? data.projection.current_res : 100;
-            const msg = '🏆 Champion! Resolution ' + (res || 100).toFixed(1) + '%';
-            greetHtml = `<div class="greet-line">${msg}</div>`;
-          }
-          
-          document.getElementById('content').innerHTML = `
-            <div class="summary-banner ${showCelebrate ? 'celebrate' : ''}">
-              <div style="position:relative;z-index:1">
-                <div style="font-size:10px;opacity:.8;font-weight:700;letter-spacing:.05em">BKT-${currentBucket} FLOW CASES</div>
-                <div class="banner-count">0</div>
-                ${greetHtml}
+            document.getElementById('content').innerHTML = `
+              <div class="achieve-card">
+                <div class="achieve-shine"></div>
+                <div class="achieve-content">
+                  <div class="achieve-icon">🏆</div>
+                  <div class="achieve-title">BKT-${currentBucket} CLEARED</div>
+                  <div class="achieve-sub">0 Flow Cases — All Resolved!</div>
+                </div>
               </div>
-              ${showCelebrate ? '<div class="shimmer"></div><div class="sparkles"><span>✨</span><span>⭐</span><span>✨</span><span>⭐</span><span>✨</span></div>' : ''}
-            </div>
-            ${showCelebrate ? '<div class="confetti-wrap"><div class="confetti c1"></div><div class="confetti c2"></div><div class="confetti c3"></div><div class="confetti c4"></div><div class="confetti c5"></div><div class="confetti c6"></div><div class="confetti c7"></div><div class="confetti c8"></div><div class="confetti c9"></div><div class="confetti c10"></div></div>' : ''}
-            <div class="info-msg">✅ No flow cases in BKT-${currentBucket} — All resolved!</div>
-          `;
+            `;
+          } else {
+            document.getElementById('content').innerHTML = '<div class="info-msg">✅ No flow cases in BKT-' + currentBucket + '</div>';
+          }
           document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
           isFirstLoad = false;
           return;
