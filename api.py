@@ -517,38 +517,46 @@ async def flowlist(user: str = "", bucket: int = 1, role: str = "executive", aut
     # Block if public access is disabled and no auth token
     if not _public_access["enabled"] and auth != "rcc-admin-token":
         raise HTTPException(status_code=403, detail="Access disabled")
-    df = load_data()
-    if df is None:
-        raise HTTPException(status_code=500, detail="Data file not found")
-    
-    username = user.strip().upper()
-    
-    # Admin sees all flow cases, executive sees only their own
-    if role == "admin":
-        flow_df = df[(df["POS STATUS"] == "FLOW") & (df["BUCKET"] == bucket)]
-    else:
-        flow_df = df[(df["TEAM"] == username) & (df["POS STATUS"] == "FLOW") & (df["BUCKET"] == bucket)]
-    
-    flow_df = flow_df.sort_values("POS", ascending=False)
-    
-    result = []
-    for _, row in flow_df.iterrows():
-        result.append({
-            "customer_name": str(row["CUSTOMER NAME"]),
-            "team": str(row["TEAM"]),
-            "pos": float(row["POS"]),
-            "dra_pct": round(float(row["DRA CASE%"]) * 100, 1),
-            "mobile": str(row.get("MOBILE", "")),
-            "area": str(row.get("AREA", "")),
-            "projection": str(row.get("PROJECTION", "")) if "PROJECTION" in df.columns else "",
-        })
-    
     try:
-        proj = _calc_projection(df, bucket, username)
-    except Exception:
-        proj = {"resolution": 0, "current_res": 0, "current_rb": 0}
-    
-    return {"total": len(result), "bucket": bucket, "cases": result, "projection": proj}
+        df = load_data()
+        if df is None:
+            raise HTTPException(status_code=500, detail="Data file not found")
+        
+        username = user.strip().upper()
+        
+        # Admin sees all flow cases, executive sees only their own
+        if role == "admin":
+            flow_df = df[(df["POS STATUS"] == "FLOW") & (df["BUCKET"] == bucket)]
+        else:
+            flow_df = df[(df["TEAM"] == username) & (df["POS STATUS"] == "FLOW") & (df["BUCKET"] == bucket)]
+        
+        flow_df = flow_df.sort_values("POS", ascending=False)
+        
+        result = []
+        for _, row in flow_df.iterrows():
+            try:
+                result.append({
+                    "customer_name": str(row.get("CUSTOMER NAME", "")),
+                    "team": str(row.get("TEAM", "")),
+                    "pos": float(row.get("POS", 0) or 0),
+                    "dra_pct": round(float(row.get("DRA CASE%", 0) or 0) * 100, 1),
+                    "mobile": str(row.get("MOBILE", "")),
+                    "area": str(row.get("AREA", "")),
+                    "projection": str(row.get("PROJECTION", "")) if "PROJECTION" in df.columns else "",
+                })
+            except Exception:
+                continue
+        
+        try:
+            proj = _calc_projection(df, bucket, username)
+        except Exception:
+            proj = {"resolution": 0, "current_res": 0, "current_rb": 0}
+        
+        return {"total": len(result), "bucket": bucket, "cases": result, "projection": proj}
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {"total": 0, "bucket": bucket, "cases": [], "projection": {"resolution": 0, "current_res": 0, "current_rb": 0}, "error": str(e)}
 
 
 def _calc_projection(df, bucket, username):
