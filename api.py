@@ -364,7 +364,16 @@ def load_data():
         return _cache["df"]
     
     print(f"📂 Loading Excel (file changed)...")
-    df = pd.read_excel(DATA_FILE, sheet_name=SHEET_NAME, engine="openpyxl")
+    # Load only required columns to save memory (512MB limit on Render)
+    needed_cols = ["LOAN NO", "CUSTOMER NAME", "Mode Of Payment", "Payment Date", 
+                   "Paid Amount", "EMI", "TOTAL EMI DUE", "STAB AMOUNTWITH DPIC", 
+                   "RB AMOUNTWITH DPIC", "BUCKET", "POS STATUS", "RECEIPT CUT", 
+                   "TEAM", "POS", "DPIC CHARGES", "DRA CASE%", "AGENCY CASE%", 
+                   "AREA", "MOBILE", "DPD", "TRAILS PENDING", "PROJECTION"]
+    try:
+        df = pd.read_excel(DATA_FILE, sheet_name=SHEET_NAME, engine="openpyxl", usecols=lambda c: str(c).strip() in needed_cols)
+    except Exception:
+        df = pd.read_excel(DATA_FILE, sheet_name=SHEET_NAME, engine="openpyxl")
     df.columns = [str(col).strip() for col in df.columns]
     
     num_cols = ["BUCKET", "POS", "EMI", "TOTAL EMI DUE", "DPIC CHARGES",
@@ -399,6 +408,10 @@ def load_data():
     _cache["df"] = df
     _cache["mtime"] = current_mtime
     print(f"✅ Cached! {len(df)} rows loaded.")
+    
+    # Free memory
+    import gc
+    gc.collect()
     
     return df
 
