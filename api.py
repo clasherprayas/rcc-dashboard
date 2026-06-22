@@ -540,11 +540,15 @@ async def flowlist(user: str = "", bucket: int = 1, role: str = "executive", aut
             "dra_pct": round(float(row["DRA CASE%"]) * 100, 1),
             "mobile": str(row.get("MOBILE", "")),
             "area": str(row.get("AREA", "")),
-            "projection": str(row.get("PROJECTION", "")),
+            "projection": str(row.get("PROJECTION", "")) if "PROJECTION" in df.columns else "",
         })
     
-    return {"total": len(result), "bucket": bucket, "cases": result,
-            "projection": _calc_projection(df, bucket, username)}
+    try:
+        proj = _calc_projection(df, bucket, username)
+    except Exception:
+        proj = {"resolution": 0, "current_res": 0, "current_rb": 0}
+    
+    return {"total": len(result), "bucket": bucket, "cases": result, "projection": proj}
 
 
 def _calc_projection(df, bucket, username):
