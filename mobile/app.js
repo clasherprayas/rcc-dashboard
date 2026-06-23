@@ -615,59 +615,71 @@ async function fetchResTable(bucket) {
   }
 
   function fmtInd(v) { if (!v) return ''; v=Math.round(v); let s=v.toString(); if(s.length<=3) return s; let r=s.slice(-3); s=s.slice(0,-3); while(s.length>0){r=s.slice(-2)+','+r; s=s.slice(0,-2);} return r; }
-  function reslColor(r) { if(r>=80) return '#059669'; if(r>=50) return '#d97706'; if(r>=30) return '#f97316'; return '#dc2626'; }
-  function reslBg(r) { if(r>=80) return '#ecfdf5'; if(r>=50) return '#fffbeb'; if(r>=30) return '#fff7ed'; return '#fef2f2'; }
+  function reslColor(r) { if(r>=80) return '#10b981'; if(r>=50) return '#f59e0b'; if(r>=30) return '#f97316'; return '#ef4444'; }
+  function reslBg(r) { if(r>=80) return 'rgba(16,185,129,.12)'; if(r>=50) return 'rgba(245,158,11,.1)'; if(r>=30) return 'rgba(249,115,22,.1)'; return 'rgba(239,68,68,.1)'; }
+  function barWidth(r) { return Math.min(r, 100); }
 
   let rows = '';
-  data.teams.forEach(t => {
+  data.teams.forEach((t, i) => {
     const c = reslColor(t.resl);
     const bg = reslBg(t.resl);
-    rows += `<tr>
-      <td style="padding:7px 10px;font-size:12px;font-weight:700;color:#1e293b;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${t.team}</td>
-      <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;color:#64748b;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${fmtInd(t.flow)}</td>
-      <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;color:#059669;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${fmtInd(t.stable)}</td>
-      <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;color:#d97706;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${fmtInd(t.rb)}</td>
-      <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;font-weight:700;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${fmtInd(t.grand_total)}</td>
-      <td style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:#059669;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${t.stable_pct.toFixed(2)}</td>
-      <td style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:#d97706;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${t.rb_pct.toFixed(2)}</td>
-      <td style="text-align:center;padding:7px 8px;font-size:12px;font-weight:900;color:${c};background:${bg};border-bottom:1px solid #e2e8f0">${t.resl.toFixed(2)}</td>
+    const rank = i + 1;
+    const rankIcon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `<span style="color:#94a3b8;font-size:11px">${rank}</span>`;
+    rows += `<tr style="background:${i%2===0?'#ffffff':'#f8fafc'}">
+      <td style="padding:9px 8px;text-align:center;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9;font-size:14px">${rankIcon}</td>
+      <td style="padding:9px 10px;font-size:12px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9;white-space:nowrap">${t.team}</td>
+      <td style="text-align:right;padding:9px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;color:#ef4444;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9;font-weight:600">${fmtInd(t.flow)}</td>
+      <td style="text-align:right;padding:9px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;color:#059669;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9;font-weight:600">${fmtInd(t.stable)}</td>
+      <td style="text-align:right;padding:9px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;color:#d97706;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9;font-weight:600">${fmtInd(t.rb)}</td>
+      <td style="text-align:right;padding:9px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;font-weight:800;color:#0f172a;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${fmtInd(t.grand_total)}</td>
+      <td style="padding:9px 10px;border-bottom:1px solid #f1f5f9;min-width:100px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden"><div style="height:100%;width:${barWidth(t.resl)}%;background:linear-gradient(90deg,${c},${c}88);border-radius:4px"></div></div>
+          <span style="font-size:13px;font-weight:900;color:${c};min-width:45px;text-align:right">${t.resl.toFixed(1)}%</span>
+        </div>
+      </td>
     </tr>`;
   });
   // Grand total
   const g = data.grand;
-  rows += `<tr style="background:#f8fafc">
-    <td style="padding:7px 10px;font-size:12px;font-weight:800;color:#1e293b;border-right:1px solid #e2e8f0">Grand Total</td>
-    <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;font-weight:700;border-right:1px solid #e2e8f0">${fmtInd(g.flow)}</td>
-    <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;font-weight:700;color:#059669;border-right:1px solid #e2e8f0">${fmtInd(g.stable)}</td>
-    <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;font-weight:700;color:#d97706;border-right:1px solid #e2e8f0">${fmtInd(g.rb)}</td>
-    <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;font-weight:800;border-right:1px solid #e2e8f0">${fmtInd(g.grand_total)}</td>
-    <td style="text-align:center;padding:7px 8px;font-size:11px;font-weight:800;color:#059669;border-right:1px solid #e2e8f0">${g.stable_pct.toFixed(2)}</td>
-    <td style="text-align:center;padding:7px 8px;font-size:11px;font-weight:800;color:#d97706;border-right:1px solid #e2e8f0">${g.rb_pct.toFixed(2)}</td>
-    <td style="text-align:center;padding:7px 8px;font-size:12px;font-weight:900;color:${reslColor(g.resl)};background:${reslBg(g.resl)}">${g.resl.toFixed(2)}</td>
+  rows += `<tr style="background:linear-gradient(135deg,#0f172a,#1e293b)">
+    <td style="padding:10px 8px;text-align:center;color:#fbbf24;font-size:12px;font-weight:800" colspan="2">GRAND TOTAL</td>
+    <td style="text-align:right;padding:10px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;font-weight:700;color:#f87171">${fmtInd(g.flow)}</td>
+    <td style="text-align:right;padding:10px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;font-weight:700;color:#4ade80">${fmtInd(g.stable)}</td>
+    <td style="text-align:right;padding:10px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;font-weight:700;color:#fbbf24">${fmtInd(g.rb)}</td>
+    <td style="text-align:right;padding:10px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;font-weight:900;color:#fff">${fmtInd(g.grand_total)}</td>
+    <td style="padding:10px 10px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="flex:1;height:8px;background:rgba(255,255,255,.2);border-radius:4px;overflow:hidden"><div style="height:100%;width:${barWidth(g.resl)}%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:4px"></div></div>
+        <span style="font-size:14px;font-weight:900;color:#fbbf24;min-width:45px;text-align:right">${g.resl.toFixed(1)}%</span>
+      </div>
+    </td>
   </tr>`;
 
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}).toUpperCase();
+
   const reportHtml = `
-    <div id="resTableCard" style="width:700px;background:#fff;border-radius:14px;padding:20px 24px;font-family:'Inter',sans-serif;color:#0f172a;box-shadow:0 4px 20px rgba(0,0,0,.08);border:1.5px solid #e2e8f0">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #f1f5f9">
+    <div id="resTableCard" style="width:680px;background:linear-gradient(180deg,#ffffff,#f8fafc);border-radius:16px;padding:24px;font-family:'Inter',sans-serif;color:#0f172a;box-shadow:0 12px 40px rgba(0,0,0,.12);border:1px solid #e2e8f0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
         <div>
-          <div style="font-size:18px;font-weight:900">📋 BKT-${bucket} RESOLUTION</div>
-          <div style="font-size:12px;color:#64748b;font-weight:600;margin-top:2px">POS STATUS wise</div>
+          <div style="font-size:11px;color:#64748b;font-weight:700;letter-spacing:.08em">RESOLUTION TABLE</div>
+          <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:2px">BKT-${bucket} · ${timeStr}</div>
         </div>
-        <div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:2px solid #6ee7b7;border-radius:10px;padding:10px 16px;text-align:center">
-          <div style="font-size:9px;color:#475569;font-weight:800">TODAY'S MOVEMENT</div>
-          <div style="font-size:20px;font-weight:900;color:#047857">${data.movement}%</div>
+        <div style="background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:12px;padding:12px 18px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.15)">
+          <div style="font-size:9px;color:#94a3b8;font-weight:800;letter-spacing:.06em">TODAY'S MOVEMENT</div>
+          <div style="font-size:24px;font-weight:900;color:#4ade80">${data.movement}%</div>
         </div>
       </div>
-      <table style="width:100%;border-collapse:separate;border-spacing:0;border:1.5px solid #e2e8f0;border-radius:8px;overflow:hidden">
-        <thead><tr style="background:linear-gradient(180deg,#f1f5f9,#e8eef6)">
-          <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:800;color:#475569;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">TEAM</th>
-          <th style="text-align:right;padding:8px 8px;font-size:11px;font-weight:800;color:#475569;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">FLOW</th>
-          <th style="text-align:right;padding:8px 8px;font-size:11px;font-weight:800;color:#059669;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">STABLE</th>
-          <th style="text-align:right;padding:8px 8px;font-size:11px;font-weight:800;color:#d97706;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">RB</th>
-          <th style="text-align:right;padding:8px 8px;font-size:11px;font-weight:800;color:#475569;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">TOTAL</th>
-          <th style="text-align:center;padding:8px 8px;font-size:11px;font-weight:800;color:#059669;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">S%</th>
-          <th style="text-align:center;padding:8px 8px;font-size:11px;font-weight:800;color:#d97706;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">RB%</th>
-          <th style="text-align:center;padding:8px 8px;font-size:11px;font-weight:800;color:#1e40af;border-bottom:2px solid #cbd5e1">RESL</th>
+      <table style="width:100%;border-collapse:separate;border-spacing:0;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.04)">
+        <thead><tr style="background:linear-gradient(135deg,#1e293b,#334155)">
+          <th style="padding:10px 8px;font-size:10px;font-weight:800;color:#94a3b8;border-right:1px solid #475569;text-align:center">#</th>
+          <th style="text-align:left;padding:10px 10px;font-size:10px;font-weight:800;color:#94a3b8;border-right:1px solid #475569;letter-spacing:.05em">EXECUTIVE</th>
+          <th style="text-align:right;padding:10px 10px;font-size:10px;font-weight:800;color:#f87171;border-right:1px solid #475569">FLOW</th>
+          <th style="text-align:right;padding:10px 10px;font-size:10px;font-weight:800;color:#4ade80;border-right:1px solid #475569">STABLE</th>
+          <th style="text-align:right;padding:10px 10px;font-size:10px;font-weight:800;color:#fbbf24;border-right:1px solid #475569">RB</th>
+          <th style="text-align:right;padding:10px 10px;font-size:10px;font-weight:800;color:#e2e8f0;border-right:1px solid #475569">TOTAL</th>
+          <th style="text-align:center;padding:10px 10px;font-size:10px;font-weight:800;color:#e2e8f0">RESOLUTION %</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
