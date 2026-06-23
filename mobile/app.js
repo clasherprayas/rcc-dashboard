@@ -632,6 +632,8 @@ async function fetchResTable(bucket) {
       <td style="text-align:right;padding:9px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;color:#059669;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9;font-weight:600">${fmtInd(t.stable)}</td>
       <td style="text-align:right;padding:9px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;color:#d97706;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9;font-weight:600">${fmtInd(t.rb)}</td>
       <td style="text-align:right;padding:9px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;font-weight:800;color:#0f172a;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${fmtInd(t.grand_total)}</td>
+      <td style="text-align:center;padding:9px 8px;font-size:12px;font-weight:700;color:#059669;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.stable_pct.toFixed(1)}</td>
+      <td style="text-align:center;padding:9px 8px;font-size:12px;font-weight:700;color:#d97706;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.rb_pct.toFixed(1)}</td>
       <td style="padding:9px 10px;border-bottom:1px solid #f1f5f9;min-width:100px">
         <div style="display:flex;align-items:center;gap:6px">
           <div style="flex:1;height:8px;background:#f1f5f9;border-radius:4px;overflow:hidden"><div style="height:100%;width:${barWidth(t.resl)}%;background:linear-gradient(90deg,${c},${c}88);border-radius:4px"></div></div>
@@ -648,6 +650,8 @@ async function fetchResTable(bucket) {
     <td style="text-align:right;padding:10px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;font-weight:700;color:#4ade80">${fmtInd(g.stable)}</td>
     <td style="text-align:right;padding:10px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;font-weight:700;color:#fbbf24">${fmtInd(g.rb)}</td>
     <td style="text-align:right;padding:10px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;font-weight:900;color:#fff">${fmtInd(g.grand_total)}</td>
+    <td style="text-align:center;padding:10px 8px;font-size:12px;font-weight:800;color:#4ade80">${g.stable_pct.toFixed(1)}</td>
+    <td style="text-align:center;padding:10px 8px;font-size:12px;font-weight:800;color:#fbbf24">${g.rb_pct.toFixed(1)}</td>
     <td style="padding:10px 10px">
       <div style="display:flex;align-items:center;gap:6px">
         <div style="flex:1;height:8px;background:rgba(255,255,255,.2);border-radius:4px;overflow:hidden"><div style="height:100%;width:${barWidth(g.resl)}%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:4px"></div></div>
@@ -661,15 +665,13 @@ async function fetchResTable(bucket) {
 
   const reportHtml = `
     <div id="resTableCard" style="width:680px;background:linear-gradient(180deg,#ffffff,#f8fafc);border-radius:16px;padding:24px;font-family:'Inter',sans-serif;color:#0f172a;box-shadow:0 12px 40px rgba(0,0,0,.12);border:1px solid #e2e8f0">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-        <div>
+      <div style="text-align:center;margin-bottom:18px">
           <div style="font-size:11px;color:#64748b;font-weight:700;letter-spacing:.08em">RESOLUTION TABLE</div>
-          <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:2px">BKT-${bucket} · ${timeStr}</div>
-        </div>
-        <div style="background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:12px;padding:12px 18px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.15)">
-          <div style="font-size:9px;color:#94a3b8;font-weight:800;letter-spacing:.06em">TODAY'S MOVEMENT</div>
-          <div style="font-size:24px;font-weight:900;color:#4ade80">${data.movement}%</div>
-        </div>
+          <div style="font-size:22px;font-weight:900;color:#0f172a;margin-top:2px">BKT-${bucket}</div>
+          <div style="display:inline-block;margin-top:8px;background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:10px;padding:10px 20px;box-shadow:0 4px 12px rgba(0,0,0,.15)">
+            <span style="font-size:9px;color:#94a3b8;font-weight:800;letter-spacing:.06em">TODAY'S MOVEMENT</span>
+            <span style="font-size:20px;font-weight:900;color:#4ade80;margin-left:10px">${data.movement}%</span>
+          </div>
       </div>
       <table style="width:100%;border-collapse:separate;border-spacing:0;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.04)">
         <thead><tr style="background:linear-gradient(135deg,#1e293b,#334155)">
@@ -679,6 +681,8 @@ async function fetchResTable(bucket) {
           <th style="text-align:right;padding:10px 10px;font-size:10px;font-weight:800;color:#4ade80;border-right:1px solid #475569">STABLE</th>
           <th style="text-align:right;padding:10px 10px;font-size:10px;font-weight:800;color:#fbbf24;border-right:1px solid #475569">RB</th>
           <th style="text-align:right;padding:10px 10px;font-size:10px;font-weight:800;color:#e2e8f0;border-right:1px solid #475569">TOTAL</th>
+          <th style="text-align:center;padding:10px 10px;font-size:10px;font-weight:800;color:#4ade80;border-right:1px solid #475569">S%</th>
+          <th style="text-align:center;padding:10px 10px;font-size:10px;font-weight:800;color:#fbbf24;border-right:1px solid #475569">RB%</th>
           <th style="text-align:center;padding:10px 10px;font-size:10px;font-weight:800;color:#e2e8f0">RESOLUTION %</th>
         </tr></thead>
         <tbody>${rows}</tbody>
@@ -691,9 +695,38 @@ async function fetchResTable(bucket) {
       <button onclick="shareResTable()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">📤 Share</button>
       <button onclick="copyResTableImage()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">📋 Copy Image</button>
       <button onclick="fetchResTable(${bucket===1?2:1})" style="background:var(--surface2);border:1px solid var(--border);color:var(--ink);padding:12px 20px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">BKT-${bucket===1?2:1}</button>
+      <button onclick="zoomResTable(1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer;margin-left:8px">🔍+</button>
+      <button onclick="zoomResTable(-1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer;margin-left:4px">🔍−</button>
+      <button onclick="toggleResSort(${bucket})" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:13px;cursor:pointer;margin-left:4px;font-weight:700">↕ Sort</button>
     </div>
     <div id="resTableContainer" style="overflow:auto;padding:10px">${reportHtml}</div>
   `;
+}
+
+let resTableZoom = 1;
+let resTableSortAsc = false;
+
+function zoomResTable(dir) {
+  resTableZoom += dir * 0.2;
+  resTableZoom = Math.max(0.5, Math.min(2, resTableZoom));
+  const card = document.getElementById('resTableCard');
+  if (card) { card.style.transform = 'scale(' + resTableZoom + ')'; card.style.transformOrigin = 'top left'; }
+}
+
+function toggleResSort(bucket) {
+  resTableSortAsc = !resTableSortAsc;
+  showToast(resTableSortAsc ? '↑ Low to High' : '↓ High to Low');
+  // Re-fetch will default to high-low, so we reverse in frontend
+  fetchResTableSorted(bucket);
+}
+
+async function fetchResTableSorted(bucket) {
+  const data = await apiCall(`/api/report/resolution?bucket=${bucket}`);
+  if (!data || !data.teams) return;
+  if (resTableSortAsc) data.teams.reverse();
+  // Re-render by calling fetchResTable logic with sorted data
+  resTableZoom = 1;
+  fetchResTable(bucket);
 }
 
 function shareResTable() {
@@ -721,6 +754,124 @@ function copyResTableImage() {
       c.toBlob(blob => {
         try { navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(() => showToast('✅ Image copied!')).catch(() => { const l=document.createElement('a'); l.download='Resolution_Table.png'; l.href=c.toDataURL(); l.click(); showToast('📥 Downloaded'); }); }
         catch(e) { const l=document.createElement('a'); l.download='Resolution_Table.png'; l.href=c.toDataURL(); l.click(); showToast('📥 Downloaded'); }
+      });
+    });
+  };
+  if (typeof html2canvas !== 'undefined') { load(); } else { const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; s.onload=load; document.head.appendChild(s); }
+}
+
+// ── RECEIPT CUT REPORT ──
+async function generateReceiptCut() {
+  toggleMenu();
+  showToast('Loading...');
+  const data = await apiCall('/api/report/receiptcut');
+  if (!data || data.error || !data.teams.length) {
+    showToast('No data');
+    return;
+  }
+
+  function rColor(r) { if(r>=50) return '#059669'; if(r>=30) return '#d97706'; if(r>=20) return '#f97316'; return '#ef4444'; }
+  function rBg(r) { if(r>=50) return '#ecfdf5'; if(r>=30) return '#fffbeb'; if(r>=20) return '#fff7ed'; return '#fef2f2'; }
+
+  let rows = '';
+  data.teams.forEach((t, i) => {
+    const c = rColor(t.pct_achi);
+    rows += `<tr style="background:${i%2===0?'#ffffff':'#f8fafc'}">
+      <td style="padding:7px 8px;font-size:11px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9;white-space:nowrap">${t.team}</td>
+      <td style="text-align:center;padding:7px 6px;font-size:12px;font-weight:700;color:#059669;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.paid}</td>
+      <td style="text-align:center;padding:7px 6px;font-size:12px;font-weight:700;color:#ef4444;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.unpaid}</td>
+      <td style="text-align:center;padding:7px 6px;font-size:12px;font-weight:800;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.total}</td>
+      <td style="text-align:center;padding:7px 6px;font-size:11px;color:#64748b;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.target}</td>
+      <td style="text-align:center;padding:7px 6px;font-size:11px;font-weight:700;color:${t.shortfall>0?'#ef4444':'#059669'};border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.shortfall>0?t.shortfall:0}</td>
+      <td style="text-align:center;padding:7px 6px;font-size:11px;color:#64748b;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.drr||0}</td>
+      <td style="text-align:center;padding:7px 6px;font-size:12px;font-weight:900;color:${c};background:${rBg(t.pct_achi)};border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.pct_achi.toFixed(1)}</td>
+      <td style="text-align:center;padding:7px 6px;font-size:12px;font-weight:700;color:#2563eb;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.payment||''}</td>
+      <td style="text-align:center;padding:7px 6px;font-size:12px;font-weight:700;color:${t.pending_trails>0?'#ef4444':'#059669'};border-bottom:1px solid #f1f5f9">${t.pending_trails}</td>
+    </tr>`;
+  });
+  const g = data.grand;
+  rows += `<tr style="background:linear-gradient(135deg,#0f172a,#1e293b)">
+    <td style="padding:8px;font-size:11px;font-weight:800;color:#fbbf24">TOTAL</td>
+    <td style="text-align:center;padding:8px;font-weight:800;color:#4ade80;font-size:12px">${g.paid}</td>
+    <td style="text-align:center;padding:8px;font-weight:800;color:#f87171;font-size:12px">${g.unpaid}</td>
+    <td style="text-align:center;padding:8px;font-weight:900;color:#fff;font-size:12px">${g.total}</td>
+    <td style="text-align:center;padding:8px;color:#94a3b8;font-size:11px">${g.target}</td>
+    <td style="text-align:center;padding:8px;font-weight:700;color:#f87171;font-size:11px">${g.shortfall||0}</td>
+    <td style="text-align:center;padding:8px;color:#94a3b8;font-size:11px">${g.drr||0}</td>
+    <td style="text-align:center;padding:8px;font-weight:900;color:#fbbf24;font-size:13px">${g.pct_achi.toFixed(1)}%</td>
+    <td style="text-align:center;padding:8px;font-weight:700;color:#60a5fa;font-size:12px">${g.payment}</td>
+    <td style="text-align:center;padding:8px;font-weight:700;color:#f87171;font-size:12px">${g.pending_trails}</td>
+  </tr>`;
+
+  const reportHtml = `
+    <div id="rcReportCard" style="width:750px;background:linear-gradient(180deg,#ffffff,#f8fafc);border-radius:16px;padding:20px;font-family:'Inter',sans-serif;color:#0f172a;box-shadow:0 12px 40px rgba(0,0,0,.12);border:1px solid #e2e8f0">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:11px;color:#64748b;font-weight:700;letter-spacing:.08em">RECEIPT CUT REPORT</div>
+        <div style="font-size:20px;font-weight:900;margin-top:2px">Target ${data.target_pct}%</div>
+        <div style="display:inline-block;margin-top:8px;background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:10px;padding:8px 18px;box-shadow:0 4px 12px rgba(0,0,0,.15)">
+          <span style="font-size:9px;color:#94a3b8;font-weight:800">TODAY'S MOVEMENT</span>
+          <span style="font-size:18px;font-weight:900;color:#4ade80;margin-left:8px">${data.movement}%</span>
+          <span style="font-size:9px;color:#94a3b8;font-weight:800;margin-left:12px">REMAINING</span>
+          <span style="font-size:18px;font-weight:900;color:#fbbf24;margin-left:8px">${data.remaining_days}d</span>
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:separate;border-spacing:0;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.04)">
+        <thead><tr style="background:linear-gradient(135deg,#1e293b,#334155)">
+          <th style="text-align:left;padding:10px 8px;font-size:10px;font-weight:800;color:#94a3b8;border-right:1px solid #475569">TEAM</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#4ade80;border-right:1px solid #475569">PAID</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#f87171;border-right:1px solid #475569">UNPAID</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#e2e8f0;border-right:1px solid #475569">TOTAL</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#94a3b8;border-right:1px solid #475569">${data.target_pct}%</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#f87171;border-right:1px solid #475569">SHORT FALL</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#94a3b8;border-right:1px solid #475569">DRR</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#fbbf24;border-right:1px solid #475569">% ACHI</th>
+          <th style="text-align:center;padding:10px 6px;font-size:9px;font-weight:800;color:#60a5fa;border-right:1px solid #475569;line-height:1.2">TODAY'S PAYMENTS</th>
+          <th style="text-align:center;padding:10px 6px;font-size:9px;font-weight:800;color:#f87171;line-height:1.2">PENDING TRAILS</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+
+  const pages = document.querySelectorAll('.page');
+  const navItems = document.querySelectorAll('.nav-item');
+  pages.forEach(p => p.classList.remove('active'));
+  navItems.forEach(n => n.classList.remove('active'));
+  document.getElementById('pageFlow').classList.add('active');
+  document.getElementById('flowContent').innerHTML = `
+    <div style="text-align:center;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
+      <button onclick="shareRcReport()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">Share</button>
+      <button onclick="copyRcReport()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">Copy Image</button>
+    </div>
+    <div style="overflow:auto;padding:10px">${reportHtml}</div>
+  `;
+}
+
+function shareRcReport() {
+  const el = document.getElementById('rcReportCard');
+  if (!el) return;
+  const load = () => {
+    html2canvas(el, {scale: 3, backgroundColor: '#ffffff'}).then(c => {
+      c.toBlob(blob => {
+        const file = new File([blob], 'ReceiptCut_Report.png', {type: 'image/png'});
+        if (navigator.share && navigator.canShare({files: [file]})) {
+          navigator.share({files: [file], title: 'Receipt Cut Report', text: 'Receipt Cut Report'});
+        } else { const l=document.createElement('a'); l.download='ReceiptCut_Report.png'; l.href=c.toDataURL(); l.click(); }
+      });
+    });
+  };
+  if (typeof html2canvas !== 'undefined') { load(); } else { const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; s.onload=load; document.head.appendChild(s); }
+}
+
+function copyRcReport() {
+  const el = document.getElementById('rcReportCard');
+  if (!el) return;
+  showToast('Copying...');
+  const load = () => {
+    html2canvas(el, {scale: 3, backgroundColor: '#ffffff'}).then(c => {
+      c.toBlob(blob => {
+        try { navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(() => showToast('Image copied!')).catch(() => { const l=document.createElement('a'); l.download='ReceiptCut_Report.png'; l.href=c.toDataURL(); l.click(); showToast('Downloaded'); }); }
+        catch(e) { const l=document.createElement('a'); l.download='ReceiptCut_Report.png'; l.href=c.toDataURL(); l.click(); showToast('Downloaded'); }
       });
     });
   };

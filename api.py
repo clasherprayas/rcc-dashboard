@@ -471,6 +471,18 @@ async def resolution_table(bucket: int = 1):
         stable_pct = round(stable_pos / grand_total * 100, 2) if grand_total else 0
         rb_pct = round(rb_pos / grand_total * 100, 2) if grand_total else 0
         resl = round(stable_pct + rb_pct, 2)
+        flow_pct = round(flow_pos / grand_total * 100, 2) if grand_total else 0
+        flow_cases = int((grp["POS STATUS"] == "FLOW").sum())
+        # Current resolution from POS STATUS
+        current_res = round((stable_pos + rb_pos) / grand_total * 100, 2) if grand_total else 0
+        # Projection resolution from PROJECTION column
+        proj_resl = 0
+        if "PROJECTION" in grp.columns:
+            proj_grp = grp.groupby("PROJECTION")["POS"].sum()
+            p_stable = float(proj_grp.get("STABLE", 0))
+            p_rb = float(proj_grp.get("RB", 0))
+            p_total = float(proj_grp.sum())
+            proj_resl = round((p_stable + p_rb) / p_total * 100, 2) if p_total else 0
         teams.append({
             "team": str(team),
             "flow": round(flow_pos, 1),
@@ -480,6 +492,10 @@ async def resolution_table(bucket: int = 1):
             "stable_pct": stable_pct,
             "rb_pct": rb_pct,
             "resl": resl,
+            "flow_pct": flow_pct,
+            "flow_cases": flow_cases,
+            "current_res": current_res,
+            "proj_resl": proj_resl,
         })
     
     teams.sort(key=lambda x: x["resl"], reverse=True)
@@ -500,6 +516,184 @@ async def resolution_table(bucket: int = 1):
     }
     
     return {"bucket": bucket, "movement": movement, "teams": teams, "grand": grand}
+
+
+# ── RECEIPT CUT REPORT API ──
+@app.get("/api/report/receiptcut")
+async def receiptcut_report():
+    """Generate Receipt Cut report — PAID/UNPAID/Target/Shortfall per executive."""
+    df = load_data()
+    if df is None:
+        return {"error": "Data not found"}
+    
+    # Determine target based on current date
+    ist_now = _dt.now() if not CLOUD_MODE else _dt.utcnow() + _IST_OFFSET
+    day = ist_now.day
+    if day <= 10:
+        target_pct = 25
+    elif day <= 20:
+        target_pct = 45
+    else:
+        target_pct = 65
+    
+    # Days remaining in current range
+    if day <= 10:
+        days_remaining = 10 - day + 1
+    elif day <= 20:
+        days_remaining = 20 - day + 1
+    else:
+        import calendar
+        last_day = calendar.monthrange(ist_now.year, ist_now.month)[1]
+        days_remaining = last_day - day + 1
+    
+    # Today's data
+    today = ist_now.strftime("%d.%m.%y")
+    today_paid = df[(df["Payment Date"].astype(str).str.strip() == today) & (df["RECEIPT CUT"].astype(str).str.upper() == "PAID")]
+    total_pos = float(df["POS"].sum())
+    today_pos = float(today_paid["POS"].sum())
+    movement = round(today_pos / total_pos * 100, 2) if total_pos else 0
+    
+    # Team wise stats
+    teams = []
+    for team, grp in df.groupby("TEAM"):
+        total = len(grp)
+        paid = int((grp["RECEIPT CUT"].astype(str).str.upper() == "PAID").sum())
+        unpaid = total - paid
+        target = int(round(total * target_pct / 100))
+        shortfall = max(0, target - paid)
+        drr = round(shortfall / days_remaining, 0) if days_remaining > 0 else 0
+        pct_achi = round(paid / total * 100, 2) if total else 0
+        # Today's payment count for this team
+        today_payment = int(today_paid[today_paid["TEAM"] == team].shape[0]) if not today_paid.empty else 0
+        # Today's trails
+        today_trails = 0  # Would need CSV data — skip for now
+        # Pending trails
+        pending_trails = int((grp["TRAILS PENDING"] == 0).sum())
+        
+        teams.append({
+            "team": str(team),
+            "paid": paid,
+            "unpaid": unpaid,
+            "total": total,
+            "target": target,
+            "shortfall": shortfall,
+            "drr": int(drr),
+            "pct_achi": pct_achi,
+            "payment": today_payment,
+            "today_trails": today_trails,
+            "pending_trails": pending_trails,
+        })
+    
+    teams.sort(key=lambda x: x["pct_achi"], reverse=True)
+    
+    # Grand total
+    g_paid = sum(t["paid"] for t in teams)
+    g_unpaid = sum(t["unpaid"] for t in teams)
+    g_total = sum(t["total"] for t in teams)
+    g_target = int(round(g_total * target_pct / 100))
+    g_shortfall = max(0, g_target - g_paid)
+    g_drr = int(round(g_shortfall / days_remaining)) if days_remaining > 0 else 0
+    g_pct = round(g_paid / g_total * 100, 2) if g_total else 0
+    g_payment = sum(t["payment"] for t in teams)
+    g_pending = sum(t["pending_trails"] for t in teams)
+    
+    grand = {
+        "paid": g_paid, "unpaid": g_unpaid, "total": g_total,
+        "target": g_target, "shortfall": g_shortfall, "drr": g_drr,
+        "pct_achi": g_pct, "payment": g_payment, "pending_trails": g_pending,
+    }
+    
+    return {
+        "movement": movement,
+        "target_pct": target_pct,
+        "days_remaining": days_remaining,
+        "day": day,
+        "teams": teams,
+        "grand": grand,
+    }
+
+
+# ── RECEIPT CUT REPORT API ──
+@app.get("/api/report/receiptcut")
+async def receipt_cut_report():
+    """Generate receipt cut report with date-based targets."""
+    df = load_data()
+    if df is None:
+        return {"error": "Data not found"}
+    
+    # Determine target based on current date
+    today_dt = _dt.now() if not CLOUD_MODE else _dt.utcnow() + _IST_OFFSET
+    day = today_dt.day
+    if day <= 10:
+        target_pct = 25
+        remaining_days = 10 - day + 1
+    elif day <= 20:
+        target_pct = 45
+        remaining_days = 20 - day + 1
+    else:
+        target_pct = 65
+        last_day = 30  # approximate
+        remaining_days = max(last_day - day + 1, 1)
+    
+    # Today's movement
+    today = today_dt.strftime("%d.%m.%y")
+    today_paid = df[(df["Payment Date"].astype(str).str.strip() == today) & (df["RECEIPT CUT"].astype(str).str.upper() == "PAID")]
+    total_cases = len(df)
+    movement = round(len(today_paid) / total_cases * 100, 2) if total_cases else 0
+    
+    # Team wise data
+    teams = []
+    for team, grp in df.groupby("TEAM"):
+        total = len(grp)
+        paid = int((grp["RECEIPT CUT"].astype(str).str.upper() == "PAID").sum())
+        unpaid = total - paid
+        target_cases = int(round(total * target_pct / 100))
+        shortfall = target_cases - paid
+        drr = int(round(shortfall / remaining_days)) if remaining_days > 0 and shortfall > 0 else 0
+        pct_achi = round(paid / total * 100, 2) if total else 0
+        # Today's payment count for this team
+        today_payment = int(today_paid[today_paid["TEAM"] == team].shape[0]) if not today_paid.empty else 0
+        # Today's trails
+        today_trails = 0  # Would need trails data
+        # Pending trails
+        pending_trails = int((grp["TRAILS PENDING"] == 0).sum())
+        
+        teams.append({
+            "team": str(team),
+            "paid": paid,
+            "unpaid": unpaid,
+            "total": total,
+            "target": target_cases,
+            "shortfall": shortfall,
+            "drr": int(drr),
+            "pct_achi": pct_achi,
+            "payment": today_payment,
+            "pending_trails": pending_trails,
+        })
+    
+    teams.sort(key=lambda x: x["pct_achi"], reverse=True)
+    
+    # Grand total
+    grand = {
+        "paid": sum(t["paid"] for t in teams),
+        "unpaid": sum(t["unpaid"] for t in teams),
+        "total": sum(t["total"] for t in teams),
+        "target": round(sum(t["target"] for t in teams), 2),
+        "shortfall": round(sum(t["shortfall"] for t in teams), 2),
+        "drr": round(sum(t["drr"] for t in teams), 2),
+        "pct_achi": round(sum(t["paid"] for t in teams) / sum(t["total"] for t in teams) * 100, 2) if sum(t["total"] for t in teams) else 0,
+        "payment": sum(t["payment"] for t in teams),
+        "pending_trails": sum(t["pending_trails"] for t in teams),
+    }
+    
+    return {
+        "movement": movement,
+        "target_pct": target_pct,
+        "remaining_days": remaining_days,
+        "day": day,
+        "teams": teams,
+        "grand": grand,
+    }
 
 
 # ── TRAILS CSV UPLOAD API ──
