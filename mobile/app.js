@@ -581,6 +581,140 @@ function zoomReport(dir) {
   if (card) card.style.transformOrigin = 'top left';
 }
 
+// ── RESOLUTION TABLE ──
+async function generateResolutionTable() {
+  toggleMenu();
+  const pages = document.querySelectorAll('.page');
+  const navItems = document.querySelectorAll('.nav-item');
+  pages.forEach(p => p.classList.remove('active'));
+  navItems.forEach(n => n.classList.remove('active'));
+  document.getElementById('pageFlow').classList.add('active');
+  document.getElementById('flowContent').innerHTML = `
+    <div class="summary-banner">
+      <div class="banner-left">
+        <span style="font-size:1.3rem">📋</span>
+        <div>
+          <div class="banner-label">RESOLUTION TABLE</div>
+          <div class="banner-value">Select BKT</div>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;padding:20px">
+      <button onclick="fetchResTable(1)" style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;padding:14px 28px;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;margin:6px">BKT-1</button>
+      <button onclick="fetchResTable(2)" style="background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;border:none;padding:14px 28px;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;margin:6px">BKT-2</button>
+    </div>
+  `;
+}
+
+async function fetchResTable(bucket) {
+  showToast('📋 Loading...');
+  const data = await apiCall(`/api/report/resolution?bucket=${bucket}`);
+  if (!data || data.error || !data.teams.length) {
+    showToast('❌ No data');
+    return;
+  }
+
+  function fmtInd(v) { if (!v) return ''; v=Math.round(v); let s=v.toString(); if(s.length<=3) return s; let r=s.slice(-3); s=s.slice(0,-3); while(s.length>0){r=s.slice(-2)+','+r; s=s.slice(0,-2);} return r; }
+  function reslColor(r) { if(r>=80) return '#059669'; if(r>=50) return '#d97706'; if(r>=30) return '#f97316'; return '#dc2626'; }
+  function reslBg(r) { if(r>=80) return '#ecfdf5'; if(r>=50) return '#fffbeb'; if(r>=30) return '#fff7ed'; return '#fef2f2'; }
+
+  let rows = '';
+  data.teams.forEach(t => {
+    const c = reslColor(t.resl);
+    const bg = reslBg(t.resl);
+    rows += `<tr>
+      <td style="padding:7px 10px;font-size:12px;font-weight:700;color:#1e293b;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${t.team}</td>
+      <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;color:#64748b;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${fmtInd(t.flow)}</td>
+      <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;color:#059669;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${fmtInd(t.stable)}</td>
+      <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;color:#d97706;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${fmtInd(t.rb)}</td>
+      <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;font-weight:700;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${fmtInd(t.grand_total)}</td>
+      <td style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:#059669;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${t.stable_pct.toFixed(2)}</td>
+      <td style="text-align:center;padding:7px 8px;font-size:11px;font-weight:700;color:#d97706;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${t.rb_pct.toFixed(2)}</td>
+      <td style="text-align:center;padding:7px 8px;font-size:12px;font-weight:900;color:${c};background:${bg};border-bottom:1px solid #e2e8f0">${t.resl.toFixed(2)}</td>
+    </tr>`;
+  });
+  // Grand total
+  const g = data.grand;
+  rows += `<tr style="background:#f8fafc">
+    <td style="padding:7px 10px;font-size:12px;font-weight:800;color:#1e293b;border-right:1px solid #e2e8f0">Grand Total</td>
+    <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;font-weight:700;border-right:1px solid #e2e8f0">${fmtInd(g.flow)}</td>
+    <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;font-weight:700;color:#059669;border-right:1px solid #e2e8f0">${fmtInd(g.stable)}</td>
+    <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;font-weight:700;color:#d97706;border-right:1px solid #e2e8f0">${fmtInd(g.rb)}</td>
+    <td style="text-align:right;padding:7px 8px;font-size:11px;font-family:monospace;font-weight:800;border-right:1px solid #e2e8f0">${fmtInd(g.grand_total)}</td>
+    <td style="text-align:center;padding:7px 8px;font-size:11px;font-weight:800;color:#059669;border-right:1px solid #e2e8f0">${g.stable_pct.toFixed(2)}</td>
+    <td style="text-align:center;padding:7px 8px;font-size:11px;font-weight:800;color:#d97706;border-right:1px solid #e2e8f0">${g.rb_pct.toFixed(2)}</td>
+    <td style="text-align:center;padding:7px 8px;font-size:12px;font-weight:900;color:${reslColor(g.resl)};background:${reslBg(g.resl)}">${g.resl.toFixed(2)}</td>
+  </tr>`;
+
+  const reportHtml = `
+    <div id="resTableCard" style="width:700px;background:#fff;border-radius:14px;padding:20px 24px;font-family:'Inter',sans-serif;color:#0f172a;box-shadow:0 4px 20px rgba(0,0,0,.08);border:1.5px solid #e2e8f0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #f1f5f9">
+        <div>
+          <div style="font-size:18px;font-weight:900">📋 BKT-${bucket} RESOLUTION</div>
+          <div style="font-size:12px;color:#64748b;font-weight:600;margin-top:2px">POS STATUS wise</div>
+        </div>
+        <div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:2px solid #6ee7b7;border-radius:10px;padding:10px 16px;text-align:center">
+          <div style="font-size:9px;color:#475569;font-weight:800">TODAY'S MOVEMENT</div>
+          <div style="font-size:20px;font-weight:900;color:#047857">${data.movement}%</div>
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:separate;border-spacing:0;border:1.5px solid #e2e8f0;border-radius:8px;overflow:hidden">
+        <thead><tr style="background:linear-gradient(180deg,#f1f5f9,#e8eef6)">
+          <th style="text-align:left;padding:8px 10px;font-size:11px;font-weight:800;color:#475569;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">TEAM</th>
+          <th style="text-align:right;padding:8px 8px;font-size:11px;font-weight:800;color:#475569;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">FLOW</th>
+          <th style="text-align:right;padding:8px 8px;font-size:11px;font-weight:800;color:#059669;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">STABLE</th>
+          <th style="text-align:right;padding:8px 8px;font-size:11px;font-weight:800;color:#d97706;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">RB</th>
+          <th style="text-align:right;padding:8px 8px;font-size:11px;font-weight:800;color:#475569;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">TOTAL</th>
+          <th style="text-align:center;padding:8px 8px;font-size:11px;font-weight:800;color:#059669;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">S%</th>
+          <th style="text-align:center;padding:8px 8px;font-size:11px;font-weight:800;color:#d97706;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">RB%</th>
+          <th style="text-align:center;padding:8px 8px;font-size:11px;font-weight:800;color:#1e40af;border-bottom:2px solid #cbd5e1">RESL</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+
+  document.getElementById('flowContent').innerHTML = `
+    <div style="text-align:center;margin-bottom:12px">
+      <button onclick="shareResTable()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">📤 Share</button>
+      <button onclick="copyResTableImage()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">📋 Copy Image</button>
+      <button onclick="fetchResTable(${bucket===1?2:1})" style="background:var(--surface2);border:1px solid var(--border);color:var(--ink);padding:12px 20px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">BKT-${bucket===1?2:1}</button>
+    </div>
+    <div id="resTableContainer" style="overflow:auto;padding:10px">${reportHtml}</div>
+  `;
+}
+
+function shareResTable() {
+  const el = document.getElementById('resTableCard');
+  if (!el) return;
+  const load = () => {
+    html2canvas(el, {scale: 3, backgroundColor: '#ffffff'}).then(c => {
+      c.toBlob(blob => {
+        const file = new File([blob], 'Resolution_Table.png', {type: 'image/png'});
+        if (navigator.share && navigator.canShare({files: [file]})) {
+          navigator.share({files: [file], title: '📋 Resolution Table', text: '📋 Resolution Table\n🔗 https://app.rccapp.xyz/public/flowlist'});
+        } else { const link=document.createElement('a'); link.download='Resolution_Table.png'; link.href=c.toDataURL(); link.click(); }
+      });
+    });
+  };
+  if (typeof html2canvas !== 'undefined') { load(); } else { const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; s.onload=load; document.head.appendChild(s); }
+}
+
+function copyResTableImage() {
+  const el = document.getElementById('resTableCard');
+  if (!el) return;
+  showToast('📋 Copying...');
+  const load = () => {
+    html2canvas(el, {scale: 3, backgroundColor: '#ffffff'}).then(c => {
+      c.toBlob(blob => {
+        try { navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(() => showToast('✅ Image copied!')).catch(() => { const l=document.createElement('a'); l.download='Resolution_Table.png'; l.href=c.toDataURL(); l.click(); showToast('📥 Downloaded'); }); }
+        catch(e) { const l=document.createElement('a'); l.download='Resolution_Table.png'; l.href=c.toDataURL(); l.click(); showToast('📥 Downloaded'); }
+      });
+    });
+  };
+  if (typeof html2canvas !== 'undefined') { load(); } else { const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; s.onload=load; document.head.appendChild(s); }
+}
+
 // ── DAILY WINNERS ──
 let winnersDate = '';
 

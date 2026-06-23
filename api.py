@@ -442,6 +442,66 @@ async def daily_winners(date: str = ""):
     return {"text": "\n".join(lines)}
 
 
+# ── RESOLUTION TABLE API ──
+@app.get("/api/report/resolution")
+async def resolution_table(bucket: int = 1):
+    """Generate resolution table data for specified bucket — POS STATUS wise."""
+    df = load_data()
+    if df is None:
+        return {"error": "Data not found"}
+    
+    bkt_df = df[df["BUCKET"] == bucket]
+    if bkt_df.empty:
+        return {"bucket": bucket, "teams": [], "grand": {}, "movement": 0}
+    
+    # Today's movement (today's paid POS / total POS for this bucket)
+    today = _dt.now().strftime("%d.%m.%y") if not CLOUD_MODE else (_dt.utcnow() + _IST_OFFSET).strftime("%d.%m.%y")
+    today_paid_bkt = bkt_df[(bkt_df["Payment Date"].astype(str).str.strip() == today) & (bkt_df["RECEIPT CUT"].astype(str).str.upper() == "PAID")]
+    total_pos = float(bkt_df["POS"].sum())
+    today_pos = float(today_paid_bkt["POS"].sum())
+    movement = round(today_pos / total_pos * 100, 2) if total_pos else 0
+    
+    # Team wise POS by POS STATUS
+    teams = []
+    for team, grp in bkt_df.groupby("TEAM"):
+        flow_pos = float(grp[grp["POS STATUS"] == "FLOW"]["POS"].sum())
+        stable_pos = float(grp[grp["POS STATUS"] == "STABLE"]["POS"].sum())
+        rb_pos = float(grp[grp["POS STATUS"] == "RB"]["POS"].sum())
+        grand_total = flow_pos + stable_pos + rb_pos
+        stable_pct = round(stable_pos / grand_total * 100, 2) if grand_total else 0
+        rb_pct = round(rb_pos / grand_total * 100, 2) if grand_total else 0
+        resl = round(stable_pct + rb_pct, 2)
+        teams.append({
+            "team": str(team),
+            "flow": round(flow_pos, 1),
+            "stable": round(stable_pos, 1),
+            "rb": round(rb_pos, 1),
+            "grand_total": round(grand_total, 1),
+            "stable_pct": stable_pct,
+            "rb_pct": rb_pct,
+            "resl": resl,
+        })
+    
+    teams.sort(key=lambda x: x["resl"], reverse=True)
+    
+    # Grand total
+    total_flow = sum(t["flow"] for t in teams)
+    total_stable = sum(t["stable"] for t in teams)
+    total_rb = sum(t["rb"] for t in teams)
+    total_all = total_flow + total_stable + total_rb
+    grand = {
+        "flow": round(total_flow, 1),
+        "stable": round(total_stable, 1),
+        "rb": round(total_rb, 1),
+        "grand_total": round(total_all, 1),
+        "stable_pct": round(total_stable / total_all * 100, 2) if total_all else 0,
+        "rb_pct": round(total_rb / total_all * 100, 2) if total_all else 0,
+        "resl": round((total_stable + total_rb) / total_all * 100, 2) if total_all else 0,
+    }
+    
+    return {"bucket": bucket, "movement": movement, "teams": teams, "grand": grand}
+
+
 # ── TRAILS CSV UPLOAD API ──
 from fastapi import UploadFile, File
 import csv
