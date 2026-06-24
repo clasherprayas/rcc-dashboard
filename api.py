@@ -471,10 +471,16 @@ async def resolution_table(bucket: int = 1):
         stable_pct = round(stable_pos / grand_total * 100, 2) if grand_total else 0
         rb_pct = round(rb_pos / grand_total * 100, 2) if grand_total else 0
         resl = round(stable_pct + rb_pct, 2)
-        flow_pct = round(flow_pos / grand_total * 100, 2) if grand_total else 0
+        flow_pct = round(flow_pos / total_pos * 100, 2) if total_pos else 0
         flow_cases = int((grp["POS STATUS"] == "FLOW").sum())
         # Current resolution from POS STATUS
         current_res = round((stable_pos + rb_pos) / grand_total * 100, 2) if grand_total else 0
+        # Agency % — average of AGENCY CASE% for this team (stored as decimal)
+        agency_pct = 0
+        if "AGENCY CASE%" in grp.columns:
+            agency_vals = grp["AGENCY CASE%"].dropna()
+            if len(agency_vals) > 0:
+                agency_pct = round(float(agency_vals.mean()) * 100, 2)
         # Projection resolution from PROJECTION column
         proj_resl = 0
         if "PROJECTION" in grp.columns:
@@ -494,6 +500,7 @@ async def resolution_table(bucket: int = 1):
             "resl": resl,
             "flow_pct": flow_pct,
             "flow_cases": flow_cases,
+            "agency_pct": agency_pct,
             "current_res": current_res,
             "proj_resl": proj_resl,
         })
@@ -505,6 +512,10 @@ async def resolution_table(bucket: int = 1):
     total_stable = sum(t["stable"] for t in teams)
     total_rb = sum(t["rb"] for t in teams)
     total_all = total_flow + total_stable + total_rb
+    # Grand agency average
+    grand_agency = round(sum(t["agency_pct"] for t in teams) / len(teams), 2) if teams else 0
+    grand_flow_cases = sum(t["flow_cases"] for t in teams)
+    grand_flow_pct = round(total_flow / total_all * 100, 2) if total_all else 0
     grand = {
         "flow": round(total_flow, 1),
         "stable": round(total_stable, 1),
@@ -513,6 +524,9 @@ async def resolution_table(bucket: int = 1):
         "stable_pct": round(total_stable / total_all * 100, 2) if total_all else 0,
         "rb_pct": round(total_rb / total_all * 100, 2) if total_all else 0,
         "resl": round((total_stable + total_rb) / total_all * 100, 2) if total_all else 0,
+        "flow_cases": grand_flow_cases,
+        "flow_pct": grand_flow_pct,
+        "agency_pct": grand_agency,
     }
     
     return {"bucket": bucket, "movement": movement, "teams": teams, "grand": grand}

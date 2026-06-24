@@ -389,6 +389,7 @@ function installApp() {
 // ── VISITOR LOGS ──
 async function showVisitorLogs() {
   toggleMenu();
+  hideExecFilter();
   const data = await apiCall('/api/visitor-logs');
   if (!data || !data.logs || !data.logs.length) {
     // Show empty state in page instead of just toast
@@ -443,6 +444,7 @@ async function showVisitorLogs() {
 // ── TILL TIME REPORT ──
 async function generateReport() {
   toggleMenu();
+  hideExecFilter();
   // Show date picker
   const pages = document.querySelectorAll('.page');
   const navItems = document.querySelectorAll('.nav-item');
@@ -481,10 +483,22 @@ async function fetchReport() {
     return;
   }
 
-  // Build report as HTML → render to image
-  const buckets = data.buckets || [];
+  // Also fetch resolution for overall RESL %
+  const res1 = await apiCall('/api/report/resolution?bucket=1');
+  const res2 = await apiCall('/api/report/resolution?bucket=2');
+  const totalResl = res1 && res1.grand ? res1.grand.resl : 0;
+  const totalRes2 = res2 && res2.grand ? res2.grand.resl : 0;
+  const todayMovement = res1 ? res1.movement : 0;
 
-  // Count table rows — with vertical borders
+  // Fetch total receipt cut %
+  const rcData = await apiCall('/api/report/receiptcut');
+  const totalRcPct = rcData && rcData.grand ? rcData.grand.pct_achi : 0;
+
+  const buckets = data.buckets || [];
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true}).toUpperCase();
+
+  // Count table rows
   let countRows = '';
   let teams = Object.keys(data.team_count).sort();
   teams.forEach(team => {
@@ -492,70 +506,63 @@ async function fetchReport() {
     let cells = buckets.map(b => {
       const v = data.team_count[team][b] || 0;
       total += v;
-      return `<td style="text-align:center;padding:8px 12px;color:#1e293b;font-size:14px;font-weight:700;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${v || ''}</td>`;
+      return `<td style="text-align:center;padding:10px 12px;font-size:13px;font-weight:700;color:#1e293b;border:1px solid #e2e8f0">${v || ''}</td>`;
     }).join('');
-    countRows += `<tr><td style="padding:8px 12px;color:#1e293b;font-size:13px;font-weight:700;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${team}</td>${cells}<td style="text-align:center;padding:8px 12px;color:#1e40af;font-weight:900;font-size:15px;border-bottom:1px solid #e2e8f0">${total}</td></tr>`;
+    countRows += `<tr><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#1e293b;border:1px solid #e2e8f0">👤 ${team}</td>${cells}<td style="text-align:center;padding:10px 12px;color:#1e40af;font-weight:900;font-size:14px;border:1px solid #e2e8f0">${total}</td></tr>`;
   });
-  // Grand total row
-  let grandCells = buckets.map(b => `<td style="text-align:center;padding:8px 12px;color:#059669;font-weight:900;font-size:15px;border-right:1px solid #e2e8f0">${data.grand_count[b] || 0}</td>`).join('');
   let grandTotal = Object.values(data.grand_count).reduce((a,b)=>a+b, 0);
-  countRows += `<tr style="background:#f0fdf4"><td style="padding:8px 12px;color:#059669;font-weight:800;font-size:13px;border-right:1px solid #e2e8f0">TOTAL</td>${grandCells}<td style="text-align:center;padding:8px 12px;color:#1e40af;font-weight:900;font-size:16px">${grandTotal}</td></tr>`;
+  let grandCells = buckets.map(b => `<td style="text-align:center;padding:10px 12px;color:#059669;font-weight:900;font-size:14px;border:1px solid #e2e8f0">${data.grand_count[b] || 0}</td>`).join('');
+  countRows += `<tr style="background:#f0fdf4"><td style="padding:10px 14px;color:#059669;font-weight:900;font-size:12px;border:1px solid #e2e8f0">TOTAL</td>${grandCells}<td style="text-align:center;padding:10px 12px;color:#1e40af;font-weight:900;font-size:15px;border:1px solid #e2e8f0">${grandTotal}</td></tr>`;
 
-  // POS table rows — with vertical borders
+  // POS table rows
   let posRows = '';
   teams.forEach(team => {
     let cells = buckets.map(b => {
       const v = data.team_pos[team][b] || 0;
-      return `<td style="text-align:center;padding:8px 12px;color:#059669;font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${v ? '₹' + fmtIndianFull(v) : ''}</td>`;
+      return `<td style="text-align:center;padding:10px 12px;color:#059669;font-size:12px;font-weight:700;border:1px solid #e2e8f0">${v ? '₹' + fmtIndianFull(v) : ''}</td>`;
     }).join('');
-    posRows += `<tr><td style="padding:8px 12px;color:#1e293b;font-size:13px;font-weight:700;border-bottom:1px solid #e2e8f0;border-right:1px solid #e2e8f0">${team}</td>${cells}</tr>`;
+    posRows += `<tr><td style="padding:10px 14px;font-size:12px;font-weight:700;color:#1e293b;border:1px solid #e2e8f0">${team}</td>${cells}</tr>`;
   });
-  // Grand total POS
-  let grandPosCells = buckets.map(b => `<td style="text-align:center;padding:8px 12px;color:#1e40af;font-weight:900;font-size:14px;font-family:'JetBrains Mono',monospace;border-right:1px solid #e2e8f0">${data.grand_pos[b] ? '₹' + fmtIndianFull(data.grand_pos[b]) : ''}</td>`).join('');
-  posRows += `<tr style="background:#eff6ff"><td style="padding:8px 12px;color:#1e40af;font-weight:800;font-size:13px;border-right:1px solid #e2e8f0">GRAND TOTAL</td>${grandPosCells}</tr>`;
+  let grandPosCells = buckets.map(b => `<td style="text-align:center;padding:10px 12px;color:#1e40af;font-weight:900;font-size:13px;border:1px solid #e2e8f0">${data.grand_pos[b] ? '₹' + fmtIndianFull(data.grand_pos[b]) : ''}</td>`).join('');
+  posRows += `<tr style="background:#eff6ff"><td style="padding:10px 14px;color:#1e40af;font-weight:900;font-size:12px;border:1px solid #e2e8f0">GRAND TOTAL</td>${grandPosCells}</tr>`;
 
-  // Current time (local device time — already IST in India)
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', hour12:true}).toUpperCase();
-
-  // Create report HTML — LIGHT MODE, HORIZONTAL
   const reportHtml = `
-    <div id="reportCard" style="width:640px;background:linear-gradient(180deg,#ffffff,#f8fafc);border-radius:16px;padding:28px 32px;font-family:'Inter',sans-serif;color:#0f172a;box-shadow:0 8px 40px rgba(0,0,0,.1),0 1px 3px rgba(0,0,0,.06);border:1.5px solid #e2e8f0">
-      <div style="text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #f1f5f9">
-        <div style="font-size:22px;font-weight:900;color:#0f172a;letter-spacing:-.02em">📊 TILL TIME PAYMENTS</div>
-        <div style="font-size:14px;color:#475569;margin-top:6px;font-weight:600">${data.date} · ${timeStr} · <span style="color:#2563eb;font-weight:800">${data.total_paid_today}</span> Payments</div>
+    <div id="reportCard" style="width:620px;background:#ffffff;border-radius:4px;padding:28px 30px;font-family:'Inter',-apple-system,sans-serif;color:#0f172a;box-shadow:0 2px 12px rgba(15,23,42,.06);border:2px solid #1e293b">
+      <div style="text-align:center;margin-bottom:20px;padding-bottom:14px;border-bottom:3px solid #2563eb">
+        <div style="font-size:22px;font-weight:900;color:#0f172a;letter-spacing:-.01em">TILL TIME PAYMENTS</div>
+        <div style="font-size:12px;color:#64748b;margin-top:6px;font-weight:600">📅 ${data.date} &nbsp;|&nbsp; 🕐 ${timeStr} &nbsp;|&nbsp; <span style="color:#2563eb;font-weight:800">${data.total_paid_today}</span> Payments</div>
       </div>
-      <div style="display:flex;gap:12px;margin-bottom:22px">
-        <div style="flex:1;background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #93c5fd;border-radius:12px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(37,99,235,.08)">
-          <div style="font-size:10px;color:#475569;font-weight:800;letter-spacing:.06em;margin-bottom:4px">RECEIPT CUT</div>
-          <div style="font-size:26px;font-weight:900;color:#1d4ed8">${data.rc_movement}%</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:22px">
+        <div style="border:1.5px solid #93c5fd;border-radius:10px;padding:12px 10px;text-align:center">
+          <div style="font-size:8px;color:#64748b;font-weight:800;letter-spacing:.08em;margin-bottom:4px">RECEIPT CUT</div>
+          <div style="font-size:22px;font-weight:900;color:#1d4ed8">${totalRcPct}%</div>
+          <div style="font-size:10px;color:#1d4ed8;font-weight:800;margin-top:4px">+${data.rc_movement}% today</div>
         </div>
-        <div style="flex:1;background:linear-gradient(135deg,#ecfdf5,#d1fae5);border:2px solid #6ee7b7;border-radius:12px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(5,150,105,.08)">
-          <div style="font-size:10px;color:#475569;font-weight:800;letter-spacing:.06em;margin-bottom:4px">BKT-1 RES</div>
-          <div style="font-size:26px;font-weight:900;color:#047857">${data.bkt1_movement}%</div>
+        <div style="border:1.5px solid #6ee7b7;border-radius:10px;padding:12px 10px;text-align:center">
+          <div style="font-size:8px;color:#64748b;font-weight:800;letter-spacing:.08em;margin-bottom:4px">BKT-1 RES</div>
+          <div style="font-size:22px;font-weight:900;color:#047857">${totalResl.toFixed(1)}%</div>
+          <div style="font-size:10px;color:#059669;font-weight:800;margin-top:4px">+${data.bkt1_movement}% today</div>
         </div>
-        <div style="flex:1;background:linear-gradient(135deg,#faf5ff,#ede9fe);border:2px solid #c4b5fd;border-radius:12px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(124,58,237,.08)">
-          <div style="font-size:10px;color:#475569;font-weight:800;letter-spacing:.06em;margin-bottom:4px">BKT-2 RES</div>
-          <div style="font-size:26px;font-weight:900;color:#6d28d9">${data.bkt2_movement}%</div>
+        <div style="border:1.5px solid #c4b5fd;border-radius:10px;padding:12px 10px;text-align:center">
+          <div style="font-size:8px;color:#64748b;font-weight:800;letter-spacing:.08em;margin-bottom:4px">BKT-2 RES</div>
+          <div style="font-size:22px;font-weight:900;color:#6d28d9">${totalRes2.toFixed(1)}%</div>
+          <div style="font-size:10px;color:#7c3aed;font-weight:800;margin-top:4px">+${data.bkt2_movement}% today</div>
         </div>
       </div>
-      <div style="font-size:12px;color:#1e293b;font-weight:800;margin-bottom:8px;letter-spacing:.03em;padding-left:4px">▸ EXECUTIVE WISE (COUNT)</div>
-      <table style="width:100%;border-collapse:separate;border-spacing:0;margin-bottom:20px;border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)">
-        <thead><tr style="background:linear-gradient(180deg,#f1f5f9,#e8eef6)"><th style="text-align:left;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">TEAM</th>${buckets.map(b => `<th style="text-align:center;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">BKT ${b}</th>`).join('')}<th style="text-align:center;padding:10px 14px;color:#1e40af;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1">TOTAL</th></tr></thead>
+      <div style="font-size:11px;color:#1e293b;font-weight:800;margin-bottom:8px;letter-spacing:.03em">👥 · EXECUTIVE WISE (COUNT)</div>
+      <table style="width:100%;border-collapse:collapse;border:1.5px solid #1e293b;margin-bottom:20px">
+        <thead><tr style="background:#0f172a"><th style="text-align:left;padding:10px 14px;font-size:10px;font-weight:800;color:#e2e8f0;border:1px solid #334155">TEAM</th>${buckets.map(b => `<th style="text-align:center;padding:10px 12px;font-size:10px;font-weight:800;color:#e2e8f0;border:1px solid #334155">BKT ${b}</th>`).join('')}<th style="text-align:center;padding:10px 12px;font-size:10px;font-weight:800;color:#e2e8f0;border:1px solid #334155">TOTAL</th></tr></thead>
         <tbody>${countRows}</tbody>
       </table>
-      <div style="font-size:12px;color:#1e293b;font-weight:800;margin-bottom:8px;letter-spacing:.03em;padding-left:4px">▸ COLLECTION (POS AMOUNT)</div>
-      <table style="width:100%;border-collapse:separate;border-spacing:0;border:1.5px solid #e2e8f0;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.04)">
-        <thead><tr style="background:linear-gradient(180deg,#f1f5f9,#e8eef6)"><th style="text-align:left;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">TEAM</th>${buckets.map(b => `<th style="text-align:center;padding:10px 14px;color:#475569;font-size:12px;font-weight:800;border-bottom:2px solid #cbd5e1;border-right:1px solid #cbd5e1">BKT ${b}</th>`).join('')}</tr></thead>
+      <div style="font-size:11px;color:#1e293b;font-weight:800;margin-bottom:8px;letter-spacing:.03em">💰 · COLLECTION (POS AMOUNT)</div>
+      <table style="width:100%;border-collapse:collapse;border:1.5px solid #1e293b">
+        <thead><tr style="background:#0f172a"><th style="text-align:left;padding:10px 14px;font-size:10px;font-weight:800;color:#e2e8f0;border:1px solid #334155">TEAM</th>${buckets.map(b => `<th style="text-align:center;padding:10px 12px;font-size:10px;font-weight:800;color:#e2e8f0;border:1px solid #334155">BKT ${b} (POS)</th>`).join('')}</tr></thead>
         <tbody>${posRows}</tbody>
       </table>
-      <div style="text-align:center;margin-top:16px;padding-top:12px;border-top:1px solid #f1f5f9">
-        <div style="font-size:10px;color:#94a3b8;font-weight:600">📱 Till Time Payments · Generated at ${timeStr}</div>
-      </div>
+      <div style="text-align:center;margin-top:14px"><div style="font-size:9px;color:#94a3b8;font-weight:600">📊 Till Time Payments &nbsp;|&nbsp; Generated at ${timeStr}</div></div>
     </div>
   `;
 
-  // Show in page + allow download
   const pages = document.querySelectorAll('.page');
   const navItems = document.querySelectorAll('.nav-item');
   pages.forEach(p => p.classList.remove('active'));
@@ -584,6 +591,7 @@ function zoomReport(dir) {
 // ── RESOLUTION TABLE ──
 async function generateResolutionTable() {
   toggleMenu();
+  hideExecFilter();
   const pages = document.querySelectorAll('.page');
   const navItems = document.querySelectorAll('.nav-item');
   pages.forEach(p => p.classList.remove('active'));
@@ -698,6 +706,7 @@ async function fetchResTable(bucket) {
       <button onclick="zoomResTable(1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer;margin-left:8px">🔍+</button>
       <button onclick="zoomResTable(-1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer;margin-left:4px">🔍−</button>
       <button onclick="toggleResSort(${bucket})" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:13px;cursor:pointer;margin-left:4px;font-weight:700">↕ Sort</button>
+      <button onclick="fetchFlowAgencyView(${bucket})" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;padding:12px 20px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;margin-left:8px">📊 Flow & Agency</button>
     </div>
     <div id="resTableContainer" style="overflow:auto;padding:10px">${reportHtml}</div>
   `;
@@ -729,6 +738,98 @@ async function fetchResTableSorted(bucket) {
   fetchResTable(bucket);
 }
 
+// ── FLOW & AGENCY VIEW (toggle from Resolution Table) ──
+let flowSortMode = 'az';
+let flowViewSortAsc = false;
+
+async function fetchFlowAgencyView(bucket) {
+  showToast('📊 Loading...');
+  const data = await apiCall(`/api/report/resolution?bucket=${bucket}`);
+  if (!data || data.error || !data.teams.length) {
+    showToast('❌ No data');
+    return;
+  }
+
+  if (flowSortMode === 'az') { data.teams.sort((a, b) => a.team.localeCompare(b.team)); }
+  else if (flowSortMode === 'za') { data.teams.sort((a, b) => b.team.localeCompare(a.team)); }
+  else if (flowSortMode === 'resl') { data.teams.sort((a, b) => b.resl - a.resl); }
+  const g = data.grand;
+
+  let rows = '';
+  data.teams.forEach((t, i) => {
+    const reslW = Math.min(t.resl, 100);
+    const reslCol = t.resl >= 80 ? '#10b981' : t.resl >= 60 ? '#84cc16' : t.resl >= 50 ? '#eab308' : t.resl >= 30 ? '#f97316' : '#ef4444';
+    rows += `<tr>
+      <td style="padding:11px 14px;font-size:12px;font-weight:700;color:#1e293b;border:1px solid #e2e8f0;white-space:nowrap">${t.team}</td>
+      <td style="text-align:center;padding:11px 8px;font-size:12px;font-weight:600;color:#334155;border:1px solid #e2e8f0">${t.stable_pct.toFixed(2)}</td>
+      <td style="text-align:center;padding:11px 8px;font-size:12px;font-weight:600;color:#334155;border:1px solid #e2e8f0">${t.rb_pct.toFixed(2)}</td>
+      <td style="padding:11px 12px;border:1px solid #e2e8f0">
+        <div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;padding-left:8px">
+          <div style="width:5px;height:20px;border-radius:3px;background:${reslCol};flex-shrink:0"></div>
+          <span style="font-size:12px;font-weight:800;color:${reslCol}">${t.resl.toFixed(2)}</span>
+        </div>
+      </td>
+      <td style="text-align:center;padding:11px 6px;font-size:12px;font-weight:800;color:#1e293b;border:1px solid #e2e8f0">${t.flow_cases || 0}</td>
+      <td style="text-align:center;padding:11px 6px;font-size:11.5px;font-weight:700;color:#64748b;border:1px solid #e2e8f0">${(t.flow_pct || 0).toFixed(1)}%</td>
+    </tr>`;
+  });
+
+  const reportHtml = `
+    <div id="resTableCard" style="width:580px;background:#ffffff;border-radius:4px;padding:22px 24px;font-family:'Inter',-apple-system,sans-serif;color:#0f172a;box-shadow:0 2px 12px rgba(15,23,42,.06);border:2px solid #1e293b">
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-size:18px;font-weight:900;color:#0f172a;letter-spacing:-.01em">BKT ${bucket} RESOLUTION TILL TIME</div>
+        <div style="font-size:11px;color:#64748b;font-weight:600;margin-top:4px">${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase()}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;border:1.5px solid #1e293b">
+        <thead><tr style="background:#0f172a">
+          <th style="text-align:left;padding:10px 14px;font-size:10px;font-weight:800;color:#e2e8f0;letter-spacing:.05em;border:1px solid #334155">TEAM</th>
+          <th style="text-align:center;padding:10px 8px;font-size:10px;font-weight:800;color:#4ade80;letter-spacing:.04em;border:1px solid #334155">STABLE %</th>
+          <th style="text-align:center;padding:10px 8px;font-size:10px;font-weight:800;color:#fbbf24;letter-spacing:.04em;border:1px solid #334155">RB %</th>
+          <th style="text-align:center;padding:10px 8px;font-size:10px;font-weight:800;color:#e2e8f0;letter-spacing:.04em;border:1px solid #334155">RESOLUTION</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#f87171;letter-spacing:.04em;border:1px solid #334155">FLOW<br>CASES</th>
+          <th style="text-align:center;padding:10px 8px;font-size:10px;font-weight:800;color:#fb923c;letter-spacing:.04em;border:1px solid #334155">FLOW %</th>
+        </tr></thead>
+        <tbody>${rows}
+          <tr style="background:#f1f5f9">
+            <td style="padding:11px 14px;font-size:12px;font-weight:900;color:#0f172a;border:1px solid #e2e8f0">GRAND TOTAL</td>
+            <td style="text-align:center;padding:11px 8px;font-size:12px;font-weight:900;color:#0f172a;border:1px solid #e2e8f0">${g.stable_pct.toFixed(2)}</td>
+            <td style="text-align:center;padding:11px 8px;font-size:12px;font-weight:900;color:#0f172a;border:1px solid #e2e8f0">${g.rb_pct.toFixed(2)}</td>
+            <td style="padding:11px 12px;border:1px solid #e2e8f0">
+              <div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;padding-left:8px">
+                <div style="width:5px;height:22px;border-radius:3px;background:${g.resl>=80?'#10b981':g.resl>=60?'#84cc16':g.resl>=50?'#eab308':g.resl>=30?'#f97316':'#ef4444'};flex-shrink:0"></div>
+                <span style="font-size:13px;font-weight:900;color:${g.resl>=80?'#10b981':g.resl>=60?'#84cc16':g.resl>=50?'#eab308':g.resl>=30?'#f97316':'#ef4444'}">${g.resl.toFixed(2)}</span>
+              </div>
+            </td>
+            <td style="text-align:center;padding:11px 6px;font-size:13px;font-weight:900;color:#0f172a;border:1px solid #e2e8f0">${g.flow_cases||0}</td>
+            <td style="text-align:center;padding:11px 8px;font-size:12px;font-weight:900;color:#0f172a;border:1px solid #e2e8f0">${(g.flow_pct||0).toFixed(1)}%</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="text-align:right;margin-top:8px"><div style="font-size:8px;color:#94a3b8;font-weight:600">RCC · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}).toUpperCase()}</div></div>
+    </div>
+  `;
+
+  document.getElementById('flowContent').innerHTML = `
+    <div style="text-align:center;margin-bottom:12px">
+      <button onclick="shareResTable()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">📤 Share</button>
+      <button onclick="copyResTableImage()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">📋 Copy Image</button>
+      <button onclick="fetchFlowAgencyView(${bucket===1?2:1})" style="background:var(--surface2);border:1px solid var(--border);color:var(--ink);padding:12px 20px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">BKT-${bucket===1?2:1}</button>
+      <button onclick="zoomResTable(1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer;margin-left:8px">🔍+</button>
+      <button onclick="zoomResTable(-1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer;margin-left:4px">🔍−</button>
+      <button onclick="toggleFlowSort(${bucket})" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:13px;cursor:pointer;margin-left:4px;font-weight:700">↕ Sort</button>
+      <button onclick="fetchResTable(${bucket})" style="background:linear-gradient(135deg,#0f172a,#334155);color:#fff;border:none;padding:12px 20px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;margin-left:8px">📋 Resolution</button>
+    </div>
+    <div id="resTableContainer" style="overflow:auto;padding:10px">${reportHtml}</div>
+  `;
+}
+
+function toggleFlowSort(bucket) {
+  if (flowSortMode === 'az') { flowSortMode = 'za'; showToast('↕ Z → A'); }
+  else if (flowSortMode === 'za') { flowSortMode = 'resl'; showToast('↕ Resolution High → Low'); }
+  else { flowSortMode = 'az'; showToast('↕ A → Z'); }
+  fetchFlowAgencyView(bucket);
+}
+
 function shareResTable() {
   const el = document.getElementById('resTableCard');
   if (!el) return;
@@ -752,12 +853,23 @@ function copyResTableImage() {
   const load = () => {
     html2canvas(el, {scale: 3, backgroundColor: '#ffffff'}).then(c => {
       c.toBlob(blob => {
-        try { navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(() => showToast('✅ Image copied!')).catch(() => { const l=document.createElement('a'); l.download='Resolution_Table.png'; l.href=c.toDataURL(); l.click(); showToast('📥 Downloaded'); }); }
-        catch(e) { const l=document.createElement('a'); l.download='Resolution_Table.png'; l.href=c.toDataURL(); l.click(); showToast('📥 Downloaded'); }
+        if (navigator.clipboard && navigator.clipboard.write && window.ClipboardItem && window.isSecureContext) {
+          navigator.clipboard.write([new ClipboardItem({'image/png': blob})]).then(() => showToast('✅ Image copied!')).catch(() => { _downloadCanvas(c, 'Resolution_Table.png'); });
+        } else {
+          _downloadCanvas(c, 'Resolution_Table.png');
+        }
       });
     });
   };
   if (typeof html2canvas !== 'undefined') { load(); } else { const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; s.onload=load; document.head.appendChild(s); }
+}
+
+function _downloadCanvas(canvas, filename) {
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  showToast('📥 Image downloaded!');
 }
 
 // ── RECEIPT CUT REPORT ──
@@ -1192,6 +1304,11 @@ function onExecFilterChange(val) {
   loadRanking();
 }
 
+function hideExecFilter() {
+  const ef = document.getElementById('execFilter');
+  if (ef) ef.style.display = 'none';
+}
+
 // ── NAVIGATION ──
 const navItems = document.querySelectorAll('.nav-item');
 const pages = document.querySelectorAll('.page');
@@ -1203,6 +1320,9 @@ navItems.forEach(item => {
     item.classList.add('active');
     pages.forEach(p => p.classList.remove('active'));
     document.getElementById(pageId).classList.add('active');
+    // Show exec filter on main pages
+    const ef = document.getElementById('execFilter');
+    if (ef) ef.style.display = '';
     if (pageId === 'pageTrails') loadTrails();
     if (pageId === 'pageFlow') loadFlowList();
     if (pageId === 'pageRanking') loadRanking();

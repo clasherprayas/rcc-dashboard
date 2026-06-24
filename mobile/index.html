@@ -111,24 +111,26 @@
           </div>
         </div>
       </div>
-      <!-- SETTINGS — always visible -->
+      <!-- SETTINGS — collapsible -->
       <div class="menu-section">
-        <div class="menu-section-title">⚙️ Settings</div>
-        <div class="menu-item toggle-item">
-          <span>📊 Projection %</span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="projToggle" checked onchange="toggleProjection()">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div class="menu-item" onclick="installApp()">
-          <span>📱 Install App</span>
-        </div>
-        <div class="menu-item" onclick="showVisitorLogs()">
-          <span>👁️ Visitor Logs</span>
-        </div>
-        <div class="menu-item" onclick="generateWinners()">
-          <span>🏅 Daily Winners</span>
+        <div class="menu-section-title menu-accordion" onclick="toggleAccordion(this)">⚙️ Settings <span class="acc-arrow">▶</span></div>
+        <div class="menu-accordion-body" style="display:none">
+          <div class="menu-item toggle-item">
+            <span>📊 Projection %</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="projToggle" checked onchange="toggleProjection()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="menu-item" onclick="installApp()">
+            <span>📱 Install App</span>
+          </div>
+          <div class="menu-item" onclick="showVisitorLogs()">
+            <span>👁️ Visitor Logs</span>
+          </div>
+          <div class="menu-item" onclick="generateWinners()">
+            <span>🏅 Daily Winners</span>
+          </div>
         </div>
       </div>
       <!-- REPORTS — collapsible -->
