@@ -1273,6 +1273,137 @@ function shareReport() {
   }
 }
 
+// ── PAYMENT UPDATE ──
+function showPaymentUpdate() {
+  toggleMenu();
+  hideExecFilter();
+  const pages = document.querySelectorAll('.page');
+  const navItems = document.querySelectorAll('.nav-item');
+  pages.forEach(p => p.classList.remove('active'));
+  navItems.forEach(n => n.classList.remove('active'));
+  document.getElementById('pageFlow').classList.add('active');
+  
+  document.getElementById('flowContent').innerHTML = `
+    <div style="max-width:480px;margin:0 auto;padding:16px">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:18px;font-weight:900;color:var(--ink)">💳 Payment Update</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">Update payment → saves to RCC file instantly</div>
+      </div>
+      
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px">
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em;display:block;margin-bottom:5px">LOAN NO</label>
+          <input type="text" id="payLoanNo" placeholder="Enter Loan Number" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;background:var(--bg);color:var(--ink);outline:none">
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em;display:block;margin-bottom:5px">AMOUNT (₹)</label>
+          <input type="number" id="payAmount" placeholder="Enter Amount" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;background:var(--bg);color:var(--ink);outline:none">
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em;display:block;margin-bottom:5px">MODE OF PAYMENT</label>
+          <select id="payMode" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;background:var(--bg);color:var(--ink);outline:none">
+            <option value="">Select Mode</option>
+            <option value="COLLECT">COLLECT</option>
+            <option value="CASH">CASH</option>
+            <option value="ONLINE">ONLINE</option>
+            <option value="CHEQUE">CHEQUE</option>
+          </select>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em;display:block;margin-bottom:5px">PAYMENT DATE</label>
+          <input type="date" id="payDate" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;background:var(--bg);color:var(--ink);outline:none">
+        </div>
+        <button onclick="submitPayment()" style="width:100%;padding:14px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:800;cursor:pointer;margin-top:8px">✅ Update Payment</button>
+      </div>
+      
+      <div id="payResult" style="display:none;padding:14px;border-radius:10px;text-align:center;font-weight:700;font-size:13px;margin-bottom:16px"></div>
+      
+      <div style="text-align:center">
+        <button onclick="loadPaymentQueue()" style="background:var(--surface);border:1px solid var(--border);color:var(--ink);padding:10px 20px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">📋 View Pending Queue</button>
+      </div>
+      <div id="payQueueList" style="margin-top:12px"></div>
+    </div>
+  `;
+  
+  // Set today's date as default
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('payDate').value = today;
+}
+
+async function submitPayment() {
+  const loanNo = document.getElementById('payLoanNo').value.trim();
+  const amount = document.getElementById('payAmount').value.trim();
+  const mode = document.getElementById('payMode').value;
+  const dateInput = document.getElementById('payDate').value;
+  
+  if (!loanNo || !amount || !mode || !dateInput) {
+    showToast('❌ All fields required');
+    return;
+  }
+  
+  // Convert date to dd.mm.yy format
+  const parts = dateInput.split('-');
+  const payDate = parts[2] + '.' + parts[1] + '.' + parts[0].slice(-2);
+  
+  showToast('💳 Updating...');
+  const result = await apiCall('/api/payment-update', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({loan_no: loanNo, amount: parseFloat(amount), mode: mode, date: payDate})
+  });
+  
+  const resDiv = document.getElementById('payResult');
+  if (result && result.status === 'ok') {
+    resDiv.style.display = 'block';
+    resDiv.style.background = '#dcfce7';
+    resDiv.style.color = '#166534';
+    resDiv.style.border = '1px solid #86efac';
+    resDiv.textContent = result.message;
+    // Clear form
+    document.getElementById('payLoanNo').value = '';
+    document.getElementById('payAmount').value = '';
+    document.getElementById('payMode').value = '';
+    showToast('✅ Payment saved!');
+  } else {
+    resDiv.style.display = 'block';
+    resDiv.style.background = '#fee2e2';
+    resDiv.style.color = '#991b1b';
+    resDiv.style.border = '1px solid #fca5a5';
+    resDiv.textContent = result ? result.message : '❌ Server error';
+    showToast('❌ Failed');
+  }
+}
+
+async function loadPaymentQueue() {
+  const data = await apiCall('/api/payment-queue');
+  const div = document.getElementById('payQueueList');
+  if (!data || !data.entries || !data.entries.length) {
+    div.innerHTML = '<div style="text-align:center;padding:12px;color:var(--muted);font-size:12px">✅ No pending entries. All synced!</div>';
+    return;
+  }
+  let rows = '';
+  data.entries.forEach(e => {
+    rows += `<tr>
+      <td style="padding:8px 10px;font-size:11px;font-weight:700;border-bottom:1px solid var(--border)">${e.loan_no}</td>
+      <td style="padding:8px 8px;font-size:11px;text-align:center;border-bottom:1px solid var(--border)">${e.mode}</td>
+      <td style="padding:8px 8px;font-size:11px;text-align:center;border-bottom:1px solid var(--border)">₹${e.amount}</td>
+      <td style="padding:8px 8px;font-size:11px;text-align:center;border-bottom:1px solid var(--border)">${e.date}</td>
+    </tr>`;
+  });
+  div.innerHTML = `
+    <div style="font-size:11px;font-weight:800;color:var(--ink);margin-bottom:6px">⏳ Pending HDFC Sync (${data.pending})</div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:var(--surface2)">
+        <th style="padding:6px 10px;text-align:left;font-size:10px;color:var(--muted)">LOAN NO</th>
+        <th style="padding:6px 8px;text-align:center;font-size:10px;color:var(--muted)">MODE</th>
+        <th style="padding:6px 8px;text-align:center;font-size:10px;color:var(--muted)">AMT</th>
+        <th style="padding:6px 8px;text-align:center;font-size:10px;color:var(--muted)">DATE</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
 // ── ADMIN EXECUTIVE FILTER ──
 async function loadExecFilter() {
   const data = await apiCall('/api/executives');

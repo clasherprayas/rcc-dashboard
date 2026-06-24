@@ -225,12 +225,105 @@ def main():
         except Exception as e:
             log("ERROR", f"Unexpected in cycle {cycle}: {e}")
         
+        # Process payment queue → write to HDFC
+        try:
+            process_payment_queue()
+        except Exception as e:
+            log("ERROR", f"Payment queue error: {e}")
+        
         # Keep-alive ping every 5 minutes
         if cycle % PING_INTERVAL == 0:
             ping_render()
         
         log("INFO", f"Sleeping {POLL_INTERVAL}s (cycle {cycle} done)")
         time.sleep(POLL_INTERVAL)
+
+
+# ── PAYMENT QUEUE → HDFC SYNC ──
+import json as _json
+
+PAYMENT_QUEUE_FILE = Path(r"C:\Users\BAJAJ1\Desktop\RCC\payment_queue.json")
+
+def process_payment_queue():
+    """Check payment queue. If entries exist and HDFC file is free, write them."""
+    if not PAYMENT_QUEUE_FILE.exists():
+        return
+    
+    try:
+        with open(PAYMENT_QUEUE_FILE, "r", encoding="utf-8") as f:
+            queue = _json.load(f)
+    except Exception:
+        return
+    
+    pending = [q for q in queue if not q.get("synced")]
+    if not pending:
+        return
+    
+    log("INFO", f"Payment queue: {len(pending)} pending entries")
+    
+    # Check if HDFC file is accessible (not locked)
+    try:
+        if not SOURCE_FILE.exists():
+            log("WARN", "HDFC file not reachable for payment sync")
+            return
+    except OSError:
+        log("WARN", "HDFC file network error")
+        return
+    
+    # Try to open HDFC file for writing
+    try:
+        from openpyxl import load_workbook
+        wb = load_workbook(SOURCE_FILE)
+        ws = wb["MAIN"]
+        
+        # Find columns
+        loan_col = mode_col = date_col = amount_col = receipt_col = None
+        for col in range(1, ws.max_column + 1):
+            header = str(ws.cell(row=1, column=col).value or "").strip()
+            if header == "LOAN NO":
+                loan_col = col
+            elif header == "Mode Of Payment":
+                mode_col = col
+            elif header == "Payment Date":
+                date_col = col
+            elif header == "Paid Amount":
+                amount_col = col
+            elif header == "RECEIPT CUT":
+                receipt_col = col
+        
+        if not all([loan_col, mode_col, date_col, amount_col, receipt_col]):
+            log("ERROR", "HDFC file missing required columns")
+            wb.close()
+            return
+        
+        synced_count = 0
+        for entry in pending:
+            loan_no = str(entry["loan_no"]).strip()
+            # Find row
+            for row in range(2, ws.max_row + 1):
+                cell_val = str(ws.cell(row=row, column=loan_col).value or "").strip()
+                if cell_val == loan_no:
+                    ws.cell(row=row, column=mode_col, value=entry["mode"])
+                    ws.cell(row=row, column=date_col, value=entry["date"])
+                    ws.cell(row=row, column=amount_col, value=float(entry["amount"]))
+                    ws.cell(row=row, column=receipt_col, value="PAID")
+                    entry["synced"] = True
+                    synced_count += 1
+                    break
+        
+        wb.save(SOURCE_FILE)
+        wb.close()
+        
+        # Update queue file
+        with open(PAYMENT_QUEUE_FILE, "w", encoding="utf-8") as f:
+            _json.dump(queue, f, ensure_ascii=False)
+        
+        log("SUCCESS", f"✅ {synced_count} payments synced to HDFC file")
+    
+    except PermissionError:
+        log("WARN", "HDFC file locked — will retry next cycle")
+    except Exception as e:
+        log("ERROR", f"HDFC write failed: {e}")
 
 if __name__ == "__main__":
     main()

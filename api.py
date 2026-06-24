@@ -46,6 +46,10 @@ def _sync_from_onedrive():
             
             DATA_FILE.write_bytes(resp.content)
             print(f"☁️ Fresh data downloaded from OneDrive ({len(resp.content)} bytes)")
+            
+            # Re-apply pending payment updates that haven't been synced to HDFC yet
+            _reapply_pending_payments()
+            
             return True
         else:
             print(f"⚠️ OneDrive download failed (HTTP {resp.status_code})")
@@ -56,6 +60,61 @@ def _sync_from_onedrive():
 
 # ── CACHING — Excel sirf tab reload hoga jab file change ho ──
 _cache = {"df": None, "mtime": 0}
+
+def _reapply_pending_payments():
+    """After OneDrive download, re-apply any pending payment entries to the Excel file."""
+    try:
+        queue_file = Path(os.environ.get("PAYMENT_QUEUE_PATH", "/tmp/payment_queue.json" if CLOUD_MODE else str(APP_DIR / "payment_queue.json")))
+        if not queue_file.exists():
+            return
+        with open(queue_file, "r", encoding="utf-8") as f:
+            queue = _json.load(f)
+        
+        # Get entries that need to be in RCC file (all entries, synced or not)
+        if not queue:
+            return
+        
+        from openpyxl import load_workbook
+        wb = load_workbook(DATA_FILE)
+        ws = wb[SHEET_NAME]
+        
+        # Find columns
+        loan_col = mode_col = date_col = amount_col = receipt_col = None
+        for col in range(1, ws.max_column + 1):
+            header = str(ws.cell(row=1, column=col).value or "").strip()
+            if header == "LOAN NO":
+                loan_col = col
+            elif header == "Mode Of Payment":
+                mode_col = col
+            elif header == "Payment Date":
+                date_col = col
+            elif header == "Paid Amount":
+                amount_col = col
+            elif header == "RECEIPT CUT":
+                receipt_col = col
+        
+        if not all([loan_col, mode_col, date_col, amount_col, receipt_col]):
+            return
+        
+        applied = 0
+        for entry in queue:
+            loan_no = str(entry["loan_no"]).strip()
+            for row in range(2, ws.max_row + 1):
+                cell_val = str(ws.cell(row=row, column=loan_col).value or "").strip()
+                if cell_val == loan_no:
+                    ws.cell(row=row, column=mode_col, value=entry["mode"])
+                    ws.cell(row=row, column=date_col, value=entry["date"])
+                    ws.cell(row=row, column=amount_col, value=float(entry["amount"]))
+                    ws.cell(row=row, column=receipt_col, value="PAID")
+                    applied += 1
+                    break
+        
+        if applied > 0:
+            wb.save(DATA_FILE)
+            print(f"💳 Re-applied {applied} pending payments after OneDrive sync")
+        wb.close()
+    except Exception as e:
+        print(f"⚠️ Re-apply payments error: {e}")
 
 CREDENTIALS = {
     "ADMIN": {"password": "Admin@123", "role": "admin"},
@@ -1336,6 +1395,135 @@ async def ranking():
         r["rank"] = i + 1
     
     return {"ranking": rows}
+
+
+# ── PAYMENT UPDATE API ──
+import time as _time_mod
+
+_PAYMENT_QUEUE_FILE = Path(os.environ.get("PAYMENT_QUEUE_PATH", "/tmp/payment_queue.json" if CLOUD_MODE else str(APP_DIR / "payment_queue.json")))
+
+def _load_payment_queue():
+    try:
+        if _PAYMENT_QUEUE_FILE.exists():
+            with open(_PAYMENT_QUEUE_FILE, "r", encoding="utf-8") as f:
+                return _json.load(f)
+    except Exception:
+        pass
+    return []
+
+def _save_payment_queue(queue):
+    try:
+        with open(_PAYMENT_QUEUE_FILE, "w", encoding="utf-8") as f:
+            _json.dump(queue, f, ensure_ascii=False)
+    except Exception as e:
+        print(f"⚠️ Payment queue save failed: {e}")
+
+@app.post("/api/payment-update")
+async def payment_update(request: Request):
+    """Update payment in RCC_DATA.xlsx directly + queue for HDFC sync."""
+    body = await request.json()
+    loan_no = str(body.get("loan_no", "")).strip()
+    amount = body.get("amount", 0)
+    mode = str(body.get("mode", "")).strip().upper()
+    pay_date = str(body.get("date", "")).strip()
+    
+    if not loan_no or not amount or not mode or not pay_date:
+        return {"status": "error", "message": "All fields required (loan_no, amount, mode, date)"}
+    
+    # Validate mode
+    valid_modes = ["COLLECT", "CASH", "ONLINE", "CHEQUE"]
+    if mode not in valid_modes:
+        return {"status": "error", "message": f"Invalid mode. Use: {', '.join(valid_modes)}"}
+    
+    # Write to RCC_DATA.xlsx
+    try:
+        from openpyxl import load_workbook
+        wb = load_workbook(DATA_FILE)
+        ws = wb[SHEET_NAME]
+        
+        # Find the row with matching LOAN NO
+        loan_col = None
+        mode_col = None
+        date_col = None
+        amount_col = None
+        receipt_col = None
+        
+        # Find columns by header (row 1)
+        for col in range(1, ws.max_column + 1):
+            header = str(ws.cell(row=1, column=col).value or "").strip()
+            if header == "LOAN NO":
+                loan_col = col
+            elif header == "Mode Of Payment":
+                mode_col = col
+            elif header == "Payment Date":
+                date_col = col
+            elif header == "Paid Amount":
+                amount_col = col
+            elif header == "RECEIPT CUT":
+                receipt_col = col
+        
+        if not all([loan_col, mode_col, date_col, amount_col, receipt_col]):
+            return {"status": "error", "message": "Required columns not found in Excel"}
+        
+        # Find the loan row
+        found_row = None
+        for row in range(2, ws.max_row + 1):
+            cell_val = str(ws.cell(row=row, column=loan_col).value or "").strip()
+            if cell_val == loan_no:
+                found_row = row
+                break
+        
+        if not found_row:
+            return {"status": "error", "message": f"Loan No '{loan_no}' not found"}
+        
+        # Update the cells
+        ws.cell(row=found_row, column=mode_col, value=mode)
+        ws.cell(row=found_row, column=date_col, value=pay_date)
+        ws.cell(row=found_row, column=amount_col, value=float(amount))
+        ws.cell(row=found_row, column=receipt_col, value="PAID")
+        
+        wb.save(DATA_FILE)
+        wb.close()
+        
+        # Invalidate cache so next load picks up new data
+        _cache["df"] = None
+        _cache["mtime"] = 0
+        
+        # Also save to queue for HDFC sync
+        queue = _load_payment_queue()
+        queue.append({
+            "loan_no": loan_no,
+            "amount": float(amount),
+            "mode": mode,
+            "date": pay_date,
+            "timestamp": _dt.utcnow().isoformat(),
+            "synced": False
+        })
+        _save_payment_queue(queue)
+        
+        return {"status": "ok", "message": f"✅ Payment updated for Loan {loan_no}"}
+    
+    except PermissionError:
+        return {"status": "error", "message": "❌ RCC file is locked. Close Excel and retry."}
+    except Exception as e:
+        return {"status": "error", "message": f"❌ Error: {str(e)}"}
+
+
+@app.get("/api/payment-queue")
+async def get_payment_queue():
+    """Get pending payment queue (not yet synced to HDFC)."""
+    queue = _load_payment_queue()
+    pending = [q for q in queue if not q.get("synced")]
+    return {"pending": len(pending), "entries": pending}
+
+
+@app.post("/api/payment-queue/clear")
+async def clear_synced_payments():
+    """Clear synced entries from queue (called by sync_worker after successful HDFC write)."""
+    queue = _load_payment_queue()
+    pending = [q for q in queue if not q.get("synced")]
+    _save_payment_queue(pending)
+    return {"status": "ok", "remaining": len(pending)}
 
 
 # Root → device-based redirect (with query params forwarding)
