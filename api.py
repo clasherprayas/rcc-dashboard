@@ -1442,6 +1442,8 @@ async def payment_update(request: Request):
                 df.at[idx, "Paid Amount"] = float(amount)
             if "RECEIPT CUT" in df.columns:
                 df.at[idx, "RECEIPT CUT"] = "PAID"
+            if "POS STATUS" in df.columns:
+                df.at[idx, "POS STATUS"] = "STABLE"
             print(f"✅ In-memory updated: {loan_no}")
         else:
             return {"status": "error", "message": f"Loan No '{loan_no}' not found"}
