@@ -610,6 +610,7 @@ async function generateResolutionTable() {
     <div style="text-align:center;padding:20px">
       <button onclick="fetchResTable(1)" style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;padding:14px 28px;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;margin:6px">BKT-1</button>
       <button onclick="fetchResTable(2)" style="background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;border:none;padding:14px 28px;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;margin:6px">BKT-2</button>
+      <button onclick="fetchReceiptCut()" style="background:linear-gradient(135deg,#0891b2,#06b6d4);color:#fff;border:none;padding:14px 28px;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;margin:6px">🧾 Receipt Cut</button>
     </div>
   `;
 }
@@ -700,22 +701,36 @@ async function fetchResTable(bucket) {
   `;
 
   document.getElementById('flowContent').innerHTML = `
-    <div style="text-align:center;margin-bottom:12px">
-      <button onclick="shareResTable()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer">📤 Share</button>
-      <button onclick="copyResTableImage()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">📋 Copy Image</button>
-      <button onclick="fetchResTable(${bucket===1?2:1})" style="background:var(--surface2);border:1px solid var(--border);color:var(--ink);padding:12px 20px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;margin-left:8px">BKT-${bucket===1?2:1}</button>
-      <button onclick="zoomResTable(1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer;margin-left:8px">🔍+</button>
-      <button onclick="zoomResTable(-1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer;margin-left:4px">🔍−</button>
-      <button onclick="toggleResSort(${bucket})" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:13px;cursor:pointer;margin-left:4px;font-weight:700">↕ Sort</button>
-      <button onclick="fetchFlowAgencyView(${bucket})" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;padding:12px 20px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;margin-left:8px">📊 Flow & Agency</button>
+    <div style="text-align:center;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
+      <button onclick="shareResTable()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">📤 Share</button>
+      <button onclick="copyResTableImage()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">📋 Copy Image</button>
+      <button onclick="fetchResTable(1)" style="background:${bucket===1?'linear-gradient(135deg,#059669,#10b981)':'var(--surface2)'};color:${bucket===1?'#fff':'var(--ink)'};border:1px solid ${bucket===1?'#059669':'var(--border)'};padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">BKT-1</button>
+      <button onclick="fetchResTable(2)" style="background:${bucket===2?'linear-gradient(135deg,#2563eb,#3b82f6)':'var(--surface2)'};color:${bucket===2?'#fff':'var(--ink)'};border:1px solid ${bucket===2?'#2563eb':'var(--border)'};padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">BKT-2</button>
+      <button onclick="fetchReceiptCut()" style="background:linear-gradient(135deg,#0891b2,#06b6d4);color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">🧾 Receipt Cut</button>
+      <button onclick="zoomResTable(1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 12px;border-radius:8px;font-size:14px;cursor:pointer">🔍+</button>
+      <button onclick="zoomResTable(-1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 12px;border-radius:8px;font-size:14px;cursor:pointer">🔍−</button>
+      <button onclick="toggleResSort(${bucket})" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700">↕ Sort</button>
+      <button onclick="fetchFlowAgencyView(${bucket})" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">📊 Flow</button>
     </div>
     <div id="resTableContainer" style="overflow:auto;padding:10px">${reportHtml}</div>
   `;
+  // Auto-fit zoom on load
+  resTableZoom = getResTableDefaultZoom();
+  setTimeout(() => {
+    const card = document.getElementById('resTableCard');
+    if (card) { card.style.transform = 'scale(' + resTableZoom + ')'; card.style.transformOrigin = 'top left'; }
+  }, 50);
 }
 
 let resTableZoom = 1;
 let resTableSortMode = 'resl_desc';
 let resTableCurrentBucket = 1;
+
+// Auto-fit zoom for mobile
+function getResTableDefaultZoom() {
+  const screenW = window.innerWidth - 40;
+  return Math.min(1, screenW / 680);
+}
 
 function zoomResTable(dir) {
   resTableZoom += dir * 0.2;
@@ -826,6 +841,12 @@ async function fetchFlowAgencyView(bucket) {
     </div>
     <div id="resTableContainer" style="overflow:auto;padding:10px">${reportHtml}</div>
   `;
+  // Auto-fit zoom for Flow report
+  resTableZoom = getResTableDefaultZoom();
+  setTimeout(() => {
+    const card = document.getElementById('resTableCard');
+    if (card) { card.style.transform = 'scale(' + resTableZoom + ')'; card.style.transformOrigin = 'top left'; }
+  }, 50);
 }
 
 function toggleFlowSort(bucket) {
@@ -879,14 +900,27 @@ function _downloadCanvas(canvas, filename) {
 }
 
 // ── RECEIPT CUT REPORT ──
+let rcSortMode = 'pct_desc';
+
 async function generateReceiptCut() {
   toggleMenu();
+  hideExecFilter();
   showToast('Loading...');
+  fetchReceiptCut();
+}
+
+async function fetchReceiptCut() {
   const data = await apiCall('/api/report/receiptcut');
   if (!data || data.error || !data.teams.length) {
     showToast('No data');
     return;
   }
+
+  // Sort
+  if (rcSortMode === 'pct_asc') data.teams.sort((a,b) => a.pct_achi - b.pct_achi);
+  else if (rcSortMode === 'az') data.teams.sort((a,b) => a.team.localeCompare(b.team));
+  else if (rcSortMode === 'za') data.teams.sort((a,b) => b.team.localeCompare(a.team));
+  // pct_desc is default from API
 
   function rColor(r) { if(r>=50) return '#059669'; if(r>=30) return '#d97706'; if(r>=20) return '#f97316'; return '#ef4444'; }
   function rBg(r) { if(r>=50) return '#ecfdf5'; if(r>=30) return '#fffbeb'; if(r>=20) return '#fff7ed'; return '#fef2f2'; }
@@ -895,59 +929,58 @@ async function generateReceiptCut() {
   data.teams.forEach((t, i) => {
     const c = rColor(t.pct_achi);
     rows += `<tr style="background:${i%2===0?'#ffffff':'#f8fafc'}">
-      <td style="padding:7px 8px;font-size:11px;font-weight:700;color:#0f172a;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9;white-space:nowrap">${t.team}</td>
-      <td style="text-align:center;padding:7px 6px;font-size:12px;font-weight:700;color:#059669;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.paid}</td>
-      <td style="text-align:center;padding:7px 6px;font-size:12px;font-weight:700;color:#ef4444;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.unpaid}</td>
-      <td style="text-align:center;padding:7px 6px;font-size:12px;font-weight:800;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.total}</td>
-      <td style="text-align:center;padding:7px 6px;font-size:11px;color:#64748b;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.target}</td>
-      <td style="text-align:center;padding:7px 6px;font-size:11px;font-weight:700;color:${t.shortfall>0?'#ef4444':'#059669'};border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.shortfall>0?t.shortfall:0}</td>
-      <td style="text-align:center;padding:7px 6px;font-size:11px;color:#64748b;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.drr||0}</td>
-      <td style="text-align:center;padding:7px 6px;font-size:12px;font-weight:900;color:${c};background:${rBg(t.pct_achi)};border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.pct_achi.toFixed(1)}</td>
-      <td style="text-align:center;padding:7px 6px;font-size:12px;font-weight:700;color:#2563eb;border-bottom:1px solid #f1f5f9;border-right:1px solid #f1f5f9">${t.payment||''}</td>
-      <td style="text-align:center;padding:7px 6px;font-size:12px;font-weight:700;color:${t.pending_trails>0?'#ef4444':'#059669'};border-bottom:1px solid #f1f5f9">${t.pending_trails}</td>
+      <td style="padding:8px 10px;font-size:11px;font-weight:700;color:#0f172a;border:1px solid #e2e8f0;white-space:nowrap">👤 ${t.team}</td>
+      <td style="text-align:center;padding:8px 6px;font-size:12px;font-weight:800;color:#059669;border:1px solid #e2e8f0">${t.paid}</td>
+      <td style="text-align:center;padding:8px 6px;font-size:12px;font-weight:800;color:#ef4444;border:1px solid #e2e8f0">${t.unpaid}</td>
+      <td style="text-align:center;padding:8px 6px;font-size:12px;font-weight:800;color:#0f172a;border:1px solid #e2e8f0">${t.total}</td>
+      <td style="text-align:center;padding:8px 6px;font-size:11px;color:#64748b;border:1px solid #e2e8f0">${t.target}</td>
+      <td style="text-align:center;padding:8px 6px;font-size:11px;font-weight:700;color:${t.shortfall>0?'#ef4444':'#059669'};border:1px solid #e2e8f0">${t.shortfall>0?t.shortfall:''}</td>
+      <td style="text-align:center;padding:8px 6px;font-size:11px;color:#64748b;border:1px solid #e2e8f0">${t.drr||''}</td>
+      <td style="text-align:center;padding:8px 6px;font-size:12px;font-weight:900;color:${c};background:${rBg(t.pct_achi)};border:1px solid #e2e8f0">${t.pct_achi.toFixed(1)}%</td>
+      <td style="text-align:center;padding:8px 6px;font-size:12px;font-weight:700;color:#2563eb;border:1px solid #e2e8f0">${t.payment || ''}</td>
+      <td style="text-align:center;padding:8px 6px;font-size:12px;font-weight:700;color:${t.pending_trails>0?'#f97316':'#059669'};border:1px solid #e2e8f0">${t.pending_trails || ''}</td>
     </tr>`;
   });
   const g = data.grand;
-  rows += `<tr style="background:linear-gradient(135deg,#0f172a,#1e293b)">
-    <td style="padding:8px;font-size:11px;font-weight:800;color:#fbbf24">TOTAL</td>
-    <td style="text-align:center;padding:8px;font-weight:800;color:#4ade80;font-size:12px">${g.paid}</td>
-    <td style="text-align:center;padding:8px;font-weight:800;color:#f87171;font-size:12px">${g.unpaid}</td>
-    <td style="text-align:center;padding:8px;font-weight:900;color:#fff;font-size:12px">${g.total}</td>
-    <td style="text-align:center;padding:8px;color:#94a3b8;font-size:11px">${g.target}</td>
-    <td style="text-align:center;padding:8px;font-weight:700;color:#f87171;font-size:11px">${g.shortfall||0}</td>
-    <td style="text-align:center;padding:8px;color:#94a3b8;font-size:11px">${g.drr||0}</td>
-    <td style="text-align:center;padding:8px;font-weight:900;color:#fbbf24;font-size:13px">${g.pct_achi.toFixed(1)}%</td>
-    <td style="text-align:center;padding:8px;font-weight:700;color:#60a5fa;font-size:12px">${g.payment}</td>
-    <td style="text-align:center;padding:8px;font-weight:700;color:#f87171;font-size:12px">${g.pending_trails}</td>
+  rows += `<tr style="background:#ecfdf5;border-top:2px solid #1e293b">
+    <td style="padding:10px 10px;font-size:12px;font-weight:900;color:#059669;border:1px solid #e2e8f0">TOTAL</td>
+    <td style="text-align:center;padding:10px 6px;font-weight:900;color:#059669;font-size:13px;border:1px solid #e2e8f0">${g.paid}</td>
+    <td style="text-align:center;padding:10px 6px;font-weight:900;color:#ef4444;font-size:13px;border:1px solid #e2e8f0">${g.unpaid}</td>
+    <td style="text-align:center;padding:10px 6px;font-weight:900;color:#0f172a;font-size:13px;border:1px solid #e2e8f0">${g.total}</td>
+    <td style="text-align:center;padding:10px 6px;color:#64748b;font-size:11px;font-weight:700;border:1px solid #e2e8f0">${g.target}</td>
+    <td style="text-align:center;padding:10px 6px;font-weight:900;color:#ef4444;font-size:12px;border:1px solid #e2e8f0">${g.shortfall||''}</td>
+    <td style="text-align:center;padding:10px 6px;color:#64748b;font-size:11px;font-weight:700;border:1px solid #e2e8f0">${g.drr||''}</td>
+    <td style="text-align:center;padding:10px 6px;font-weight:900;color:#059669;font-size:14px;border:1px solid #e2e8f0">${g.pct_achi.toFixed(1)}%</td>
+    <td style="text-align:center;padding:10px 6px;font-weight:900;color:#2563eb;font-size:13px;border:1px solid #e2e8f0">${g.payment||''}</td>
+    <td style="text-align:center;padding:10px 6px;font-weight:900;color:#f97316;font-size:13px;border:1px solid #e2e8f0">${g.pending_trails||''}</td>
   </tr>`;
 
   const reportHtml = `
-    <div id="rcReportCard" style="width:750px;background:linear-gradient(180deg,#ffffff,#f8fafc);border-radius:16px;padding:20px;font-family:'Inter',sans-serif;color:#0f172a;box-shadow:0 12px 40px rgba(0,0,0,.12);border:1px solid #e2e8f0">
-      <div style="text-align:center;margin-bottom:16px">
-        <div style="font-size:11px;color:#64748b;font-weight:700;letter-spacing:.08em">RECEIPT CUT REPORT</div>
-        <div style="font-size:20px;font-weight:900;margin-top:2px">Target ${data.target_pct}%</div>
-        <div style="display:inline-block;margin-top:8px;background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:10px;padding:8px 18px;box-shadow:0 4px 12px rgba(0,0,0,.15)">
-          <span style="font-size:9px;color:#94a3b8;font-weight:800">TODAY'S MOVEMENT</span>
-          <span style="font-size:18px;font-weight:900;color:#4ade80;margin-left:8px">${data.movement}%</span>
-          <span style="font-size:9px;color:#94a3b8;font-weight:800;margin-left:12px">REMAINING</span>
-          <span style="font-size:18px;font-weight:900;color:#fbbf24;margin-left:8px">${data.remaining_days}d</span>
+    <div id="rcReportCard" style="width:720px;background:#ffffff;border-radius:14px;padding:24px 20px;font-family:'Inter',-apple-system,sans-serif;color:#0f172a;box-shadow:0 4px 20px rgba(0,0,0,.08);border:1px solid #e2e8f0">
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-size:20px;font-weight:900;color:#0f172a;letter-spacing:-.01em">RECEIPT CUT REPORT</div>
+        <div style="display:inline-flex;align-items:center;gap:20px;margin-top:12px;padding:10px 24px;border:1.5px solid #e2e8f0;border-radius:10px">
+          <div style="text-align:center"><div style="font-size:8px;color:#64748b;font-weight:800;letter-spacing:.06em">🎯 TARGET</div><div style="font-size:20px;font-weight:900;color:#059669">${data.target_pct}%</div></div>
+          <div style="text-align:center"><div style="font-size:8px;color:#64748b;font-weight:800;letter-spacing:.06em">📈 MOVEMENT</div><div style="font-size:20px;font-weight:900;color:#2563eb">${data.movement}%</div></div>
+          <div style="text-align:center"><div style="font-size:8px;color:#64748b;font-weight:800;letter-spacing:.06em">📅 DAYS LEFT</div><div style="font-size:20px;font-weight:900;color:#0f172a">${data.days_remaining}</div></div>
         </div>
       </div>
-      <table style="width:100%;border-collapse:separate;border-spacing:0;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.04)">
-        <thead><tr style="background:linear-gradient(135deg,#1e293b,#334155)">
-          <th style="text-align:left;padding:10px 8px;font-size:10px;font-weight:800;color:#94a3b8;border-right:1px solid #475569">TEAM</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#4ade80;border-right:1px solid #475569">PAID</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#f87171;border-right:1px solid #475569">UNPAID</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#e2e8f0;border-right:1px solid #475569">TOTAL</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#94a3b8;border-right:1px solid #475569">${data.target_pct}%</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#f87171;border-right:1px solid #475569">SHORT FALL</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#94a3b8;border-right:1px solid #475569">DRR</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#fbbf24;border-right:1px solid #475569">% ACHI</th>
-          <th style="text-align:center;padding:10px 6px;font-size:9px;font-weight:800;color:#60a5fa;border-right:1px solid #475569;line-height:1.2">TODAY'S PAYMENTS</th>
-          <th style="text-align:center;padding:10px 6px;font-size:9px;font-weight:800;color:#f87171;line-height:1.2">PENDING TRAILS</th>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#1e293b">
+          <th style="text-align:left;padding:10px 10px;font-size:10px;font-weight:800;color:#e2e8f0;border:1px solid #334155">👥 TEAM</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#4ade80;border:1px solid #334155">✅ PAID</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#f87171;border:1px solid #334155">❌ UNPAID</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#e2e8f0;border:1px solid #334155">TOTAL</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#94a3b8;border:1px solid #334155">${data.target_pct}%<br><span style="font-size:8px;color:#64748b">TARGET</span></th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#f87171;border:1px solid #334155">SHORT<br>FALL</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#94a3b8;border:1px solid #334155">DRR</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#fbbf24;border:1px solid #334155">%ACHI</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#60a5fa;border:1px solid #334155">TODAY'S<br>PAYMENTS</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#fb923c;border:1px solid #334155">PENDING<br>TRAILS</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
+      <div style="text-align:right;margin-top:6px"><div style="font-size:8px;color:#94a3b8;font-weight:600">RCC · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}).toUpperCase()}</div></div>
     </div>
   `;
 
@@ -958,22 +991,48 @@ async function generateReceiptCut() {
   document.getElementById('pageFlow').classList.add('active');
   document.getElementById('flowContent').innerHTML = `
     <div style="text-align:center;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
-      <button onclick="shareRcReport()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">Share</button>
-      <button onclick="copyRcReport()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">Copy Image</button>
+      <button onclick="shareRcReport()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">📤 Share</button>
+      <button onclick="copyRcReport()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">📋 Copy Image</button>
+      <button onclick="zoomRcReport(1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer">🔍+</button>
+      <button onclick="zoomRcReport(-1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer">🔍−</button>
+      <button onclick="toggleRcSort()" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700">↕ Sort</button>
     </div>
-    <div style="overflow:auto;padding:10px">${reportHtml}</div>
+    <div id="rcReportContainer" style="overflow:auto;padding:10px">${reportHtml}</div>
   `;
+  // Auto-fit zoom for Receipt Cut
+  rcZoom = Math.min(1, (window.innerWidth - 40) / 700);
+  setTimeout(() => {
+    const card = document.getElementById('rcReportCard');
+    if (card) { card.style.transform = 'scale(' + rcZoom + ')'; card.style.transformOrigin = 'top left'; }
+  }, 50);
+}
+
+let rcZoom = 1;
+function zoomRcReport(dir) {
+  rcZoom += dir * 0.2;
+  rcZoom = Math.max(0.5, Math.min(2, rcZoom));
+  const card = document.getElementById('rcReportCard');
+  if (card) { card.style.transform = 'scale(' + rcZoom + ')'; card.style.transformOrigin = 'top left'; }
+}
+
+function toggleRcSort() {
+  if (rcSortMode === 'pct_desc') { rcSortMode = 'pct_asc'; showToast('↑ %Achi Low → High'); }
+  else if (rcSortMode === 'pct_asc') { rcSortMode = 'az'; showToast('↕ A → Z'); }
+  else if (rcSortMode === 'az') { rcSortMode = 'za'; showToast('↕ Z → A'); }
+  else { rcSortMode = 'pct_desc'; showToast('↓ %Achi High → Low'); }
+  fetchReceiptCut();
 }
 
 function shareRcReport() {
   const el = document.getElementById('rcReportCard');
   if (!el) return;
+  const shareText = 'TEAM WISE RECEIPT CUT IN BKT 1 TO 6 WITH DAILY DRR & TODAY COLLECT PAYMENT AND TRAILS COUNT';
   const load = () => {
     html2canvas(el, {scale: 3, backgroundColor: '#ffffff'}).then(c => {
       c.toBlob(blob => {
         const file = new File([blob], 'ReceiptCut_Report.png', {type: 'image/png'});
         if (navigator.share && navigator.canShare({files: [file]})) {
-          navigator.share({files: [file], title: 'Receipt Cut Report', text: 'Receipt Cut Report'});
+          navigator.share({files: [file], title: 'Receipt Cut Report', text: shareText});
         } else { const l=document.createElement('a'); l.download='ReceiptCut_Report.png'; l.href=c.toDataURL(); l.click(); }
       });
     });
