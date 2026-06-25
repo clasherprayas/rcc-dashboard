@@ -1314,6 +1314,7 @@ function showPaymentUpdate() {
           <select id="payPosStatus" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;background:var(--bg);color:var(--ink);outline:none">
             <option value="STABLE">STABLE</option>
             <option value="RB">RB</option>
+            <option value="FLOW">FLOW</option>
           </select>
         </div>
         <div style="margin-bottom:14px">
