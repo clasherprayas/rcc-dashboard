@@ -1403,6 +1403,22 @@ async function submitPayment() {
   }
 }
 
+async function cancelPayment(loanNo) {
+  if (!confirm(`Cancel payment for ${loanNo}?`)) return;
+  showToast('🔄 Cancelling...');
+  const result = await apiCall('/api/payment-cancel', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({loan_no: loanNo})
+  });
+  if (result && result.status === 'ok') {
+    showToast('✅ Payment cancelled — reverted to FLOW');
+    loadPaymentQueue();
+  } else {
+    showToast(result ? result.message : '❌ Failed');
+  }
+}
+
 async function triggerMainSync() {
   showToast('🔄 Triggering sync...');
   const result = await apiCall('/api/sync-to-main', {
@@ -1424,12 +1440,13 @@ async function loadPaymentQueue() {
     return;
   }
   let rows = '';
-  data.entries.forEach(e => {
+  data.entries.forEach((e, i) => {
     rows += `<tr>
       <td style="padding:8px 10px;font-size:11px;font-weight:700;border-bottom:1px solid var(--border)">${e.loan_no}</td>
       <td style="padding:8px 8px;font-size:11px;text-align:center;border-bottom:1px solid var(--border)">${e.mode}</td>
       <td style="padding:8px 8px;font-size:11px;text-align:center;border-bottom:1px solid var(--border)">₹${e.amount}</td>
       <td style="padding:8px 8px;font-size:11px;text-align:center;border-bottom:1px solid var(--border)">${e.date}</td>
+      <td style="padding:8px 4px;text-align:center;border-bottom:1px solid var(--border)"><button onclick="cancelPayment('${e.loan_no}')" style="background:#fee2e2;color:#dc2626;border:none;border-radius:4px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer">✕</button></td>
     </tr>`;
   });
   div.innerHTML = `
@@ -1440,6 +1457,7 @@ async function loadPaymentQueue() {
         <th style="padding:6px 8px;text-align:center;font-size:10px;color:var(--muted)">MODE</th>
         <th style="padding:6px 8px;text-align:center;font-size:10px;color:var(--muted)">AMT</th>
         <th style="padding:6px 8px;text-align:center;font-size:10px;color:var(--muted)">DATE</th>
+        <th style="padding:6px 4px;text-align:center;font-size:10px;color:var(--muted)">❌</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>

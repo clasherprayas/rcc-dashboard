@@ -1502,6 +1502,42 @@ async def sync_to_main():
         return {"status": "error", "message": f"❌ Failed: {str(e)}"}
 
 
+@app.post("/api/payment-cancel")
+async def payment_cancel(request: Request):
+    """Cancel a payment — revert POS STATUS to FLOW, RECEIPT CUT to UNPAID, clear paid amount."""
+    body = await request.json()
+    loan_no = str(body.get("loan_no", "")).strip()
+    
+    if not loan_no:
+        return {"status": "error", "message": "Loan No required"}
+    
+    # Revert in-memory
+    df = _cache.get("df")
+    if df is not None and "LOAN NO" in df.columns:
+        mask = df["LOAN NO"].astype(str).str.strip() == loan_no
+        if mask.any():
+            idx = df[mask].index[0]
+            if "POS STATUS" in df.columns:
+                df.at[idx, "POS STATUS"] = "FLOW"
+            if "RECEIPT CUT" in df.columns:
+                df.at[idx, "RECEIPT CUT"] = "UNPAID"
+            if "Paid Amount" in df.columns:
+                df.at[idx, "Paid Amount"] = 0
+            if "Mode Of Payment" in df.columns:
+                df.at[idx, "Mode Of Payment"] = ""
+            if "Payment Date" in df.columns:
+                df.at[idx, "Payment Date"] = ""
+        else:
+            return {"status": "error", "message": f"Loan No '{loan_no}' not found"}
+    
+    # Remove from local queue
+    queue = _load_payment_queue()
+    queue = [q for q in queue if str(q.get("loan_no", "")).strip() != loan_no]
+    _save_payment_queue(queue)
+    
+    return {"status": "ok", "message": f"✅ Payment cancelled for {loan_no}"}
+
+
 # Root → device-based redirect (with query params forwarding)
 @app.get("/")
 async def root(request: Request):
