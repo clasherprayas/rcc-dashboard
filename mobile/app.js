@@ -1319,7 +1319,7 @@ function showPaymentUpdate() {
       <div id="payResult" style="display:none;padding:14px;border-radius:10px;text-align:center;font-weight:700;font-size:13px;margin-bottom:16px"></div>
       
       <div style="text-align:center">
-        <button onclick="loadPaymentQueue()" style="background:var(--surface);border:1px solid var(--border);color:var(--ink);padding:10px 20px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">📋 View Pending Queue</button>
+        <button onclick="loadPaymentQueue()" style="background:var(--surface);border:1px solid var(--border);color:var(--ink);padding:10px 20px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">📋 HDFC Sync Queue</button>
       </div>
       <div id="payQueueList" style="margin-top:12px"></div>
     </div>
@@ -1391,7 +1391,7 @@ async function loadPaymentQueue() {
     </tr>`;
   });
   div.innerHTML = `
-    <div style="font-size:11px;font-weight:800;color:var(--ink);margin-bottom:6px">⏳ Pending HDFC Sync (${data.pending})</div>
+    <div style="font-size:11px;font-weight:800;color:var(--ink);margin-bottom:6px">⏳ HDFC Sync Pending (${data.pending}) — RCC mein already saved ✅</div>
     <table style="width:100%;border-collapse:collapse;font-size:11px">
       <thead><tr style="background:var(--surface2)">
         <th style="padding:6px 10px;text-align:left;font-size:10px;color:var(--muted)">LOAN NO</th>

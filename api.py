@@ -62,57 +62,38 @@ def _sync_from_onedrive():
 _cache = {"df": None, "mtime": 0}
 
 def _reapply_pending_payments():
-    """After OneDrive download, re-apply any pending payment entries to the Excel file."""
+    """After OneDrive download, re-apply pending payments from Google Sheets to in-memory cache."""
     try:
-        queue_file = Path(os.environ.get("PAYMENT_QUEUE_PATH", "/tmp/payment_queue.json" if CLOUD_MODE else str(APP_DIR / "payment_queue.json")))
-        if not queue_file.exists():
-            return
-        with open(queue_file, "r", encoding="utf-8") as f:
-            queue = _json.load(f)
-        
-        # Get entries that need to be in RCC file (all entries, synced or not)
-        if not queue:
-            return
-        
-        from openpyxl import load_workbook
-        wb = load_workbook(DATA_FILE)
-        ws = wb[SHEET_NAME]
-        
-        # Find columns
-        loan_col = mode_col = date_col = amount_col = receipt_col = None
-        for col in range(1, ws.max_column + 1):
-            header = str(ws.cell(row=1, column=col).value or "").strip()
-            if header == "LOAN NO":
-                loan_col = col
-            elif header == "Mode Of Payment":
-                mode_col = col
-            elif header == "Payment Date":
-                date_col = col
-            elif header == "Paid Amount":
-                amount_col = col
-            elif header == "RECEIPT CUT":
-                receipt_col = col
-        
-        if not all([loan_col, mode_col, date_col, amount_col, receipt_col]):
-            return
-        
-        applied = 0
-        for entry in queue:
-            loan_no = str(entry["loan_no"]).strip()
-            for row in range(2, ws.max_row + 1):
-                cell_val = str(ws.cell(row=row, column=loan_col).value or "").strip()
-                if cell_val == loan_no:
-                    ws.cell(row=row, column=mode_col, value=entry["mode"])
-                    ws.cell(row=row, column=date_col, value=entry["date"])
-                    ws.cell(row=row, column=amount_col, value=float(entry["amount"]))
-                    ws.cell(row=row, column=receipt_col, value="PAID")
+        import requests as _req
+        resp = _req.get(GSHEET_WEBHOOK, timeout=15)
+        if resp.status_code == 200:
+            data = resp.json()
+            entries = data.get("entries", [])
+            if not entries:
+                return
+            
+            df = _cache.get("df")
+            if df is None:
+                return
+            
+            applied = 0
+            for entry in entries:
+                loan_no = str(entry.get("loan_no", "")).strip()
+                mask = df["LOAN NO"].astype(str).str.strip() == loan_no
+                if mask.any():
+                    idx = df[mask].index[0]
+                    if "Mode Of Payment" in df.columns:
+                        df.at[idx, "Mode Of Payment"] = entry.get("mode", "")
+                    if "Payment Date" in df.columns:
+                        df.at[idx, "Payment Date"] = entry.get("date", "")
+                    if "Paid Amount" in df.columns:
+                        df.at[idx, "Paid Amount"] = float(entry.get("amount", 0))
+                    if "RECEIPT CUT" in df.columns:
+                        df.at[idx, "RECEIPT CUT"] = "PAID"
                     applied += 1
-                    break
-        
-        if applied > 0:
-            wb.save(DATA_FILE)
-            print(f"💳 Re-applied {applied} pending payments after OneDrive sync")
-        wb.close()
+            
+            if applied > 0:
+                print(f"💳 Re-applied {applied} pending payments from GSheets")
     except Exception as e:
         print(f"⚠️ Re-apply payments error: {e}")
 
@@ -1400,6 +1381,8 @@ async def ranking():
 # ── PAYMENT UPDATE API ──
 import time as _time_mod
 
+GSHEET_WEBHOOK = os.environ.get("GSHEET_WEBHOOK", "https://script.google.com/macros/s/AKfycbyKveilFfsklkMv6Q0FpWC-Y2RtYi6jkZWKBwxgeGifIP6L-71XcmWMOaNdZOushRDwag/exec")
+
 _PAYMENT_QUEUE_FILE = Path(os.environ.get("PAYMENT_QUEUE_PATH", "/tmp/payment_queue.json" if CLOUD_MODE else str(APP_DIR / "payment_queue.json")))
 
 def _load_payment_queue():
@@ -1420,7 +1403,7 @@ def _save_payment_queue(queue):
 
 @app.post("/api/payment-update")
 async def payment_update(request: Request):
-    """Update payment in RCC_DATA.xlsx directly + queue for HDFC sync."""
+    """Update payment: save to Google Sheets + update in-memory cache."""
     body = await request.json()
     loan_no = str(body.get("loan_no", "")).strip()
     amount = body.get("amount", 0)
@@ -1435,78 +1418,49 @@ async def payment_update(request: Request):
     if mode not in valid_modes:
         return {"status": "error", "message": f"Invalid mode. Use: {', '.join(valid_modes)}"}
     
-    # Write to RCC_DATA.xlsx
+    # 1. Save to Google Sheets (persistent, lightweight)
     try:
-        from openpyxl import load_workbook
-        wb = load_workbook(DATA_FILE)
-        ws = wb[SHEET_NAME]
-        
-        # Find the row with matching LOAN NO
-        loan_col = None
-        mode_col = None
-        date_col = None
-        amount_col = None
-        receipt_col = None
-        
-        # Find columns by header (row 1)
-        for col in range(1, ws.max_column + 1):
-            header = str(ws.cell(row=1, column=col).value or "").strip()
-            if header == "LOAN NO":
-                loan_col = col
-            elif header == "Mode Of Payment":
-                mode_col = col
-            elif header == "Payment Date":
-                date_col = col
-            elif header == "Paid Amount":
-                amount_col = col
-            elif header == "RECEIPT CUT":
-                receipt_col = col
-        
-        if not all([loan_col, mode_col, date_col, amount_col, receipt_col]):
-            return {"status": "error", "message": "Required columns not found in Excel"}
-        
-        # Find the loan row
-        found_row = None
-        for row in range(2, ws.max_row + 1):
-            cell_val = str(ws.cell(row=row, column=loan_col).value or "").strip()
-            if cell_val == loan_no:
-                found_row = row
-                break
-        
-        if not found_row:
-            return {"status": "error", "message": f"Loan No '{loan_no}' not found"}
-        
-        # Update the cells
-        ws.cell(row=found_row, column=mode_col, value=mode)
-        ws.cell(row=found_row, column=date_col, value=pay_date)
-        ws.cell(row=found_row, column=amount_col, value=float(amount))
-        ws.cell(row=found_row, column=receipt_col, value="PAID")
-        
-        wb.save(DATA_FILE)
-        wb.close()
-        
-        # Invalidate cache so next load picks up new data
-        _cache["df"] = None
-        _cache["mtime"] = 0
-        
-        # Also save to queue for HDFC sync
-        queue = _load_payment_queue()
-        queue.append({
-            "loan_no": loan_no,
-            "amount": float(amount),
-            "mode": mode,
-            "date": pay_date,
-            "timestamp": _dt.utcnow().isoformat(),
-            "synced": False
-        })
-        _save_payment_queue(queue)
-        
-        return {"status": "ok", "message": f"✅ Payment updated for Loan {loan_no}"}
-    
-    except PermissionError:
-        return {"status": "error", "message": "❌ RCC file is locked. Close Excel and retry."}
+        import requests as _req
+        gsheet_data = {"loan_no": loan_no, "amount": float(amount), "mode": mode, "date": pay_date}
+        _req.post(GSHEET_WEBHOOK, json=gsheet_data, timeout=10)
+        print(f"💳 Payment saved to GSheets: {loan_no}")
     except Exception as e:
-        return {"status": "error", "message": f"❌ Error: {str(e)}"}
+        print(f"⚠️ GSheet save failed: {e}")
+        # Still continue — save to local queue as backup
+    
+    # 2. Update in-memory DataFrame (report instant update, zero memory spike)
+    df = _cache.get("df")
+    if df is not None and "LOAN NO" in df.columns:
+        mask = df["LOAN NO"].astype(str).str.strip() == loan_no
+        if mask.any():
+            idx = df[mask].index[0]
+            if "Mode Of Payment" in df.columns:
+                df.at[idx, "Mode Of Payment"] = mode
+            if "Payment Date" in df.columns:
+                df.at[idx, "Payment Date"] = pay_date
+            if "Paid Amount" in df.columns:
+                df.at[idx, "Paid Amount"] = float(amount)
+            if "RECEIPT CUT" in df.columns:
+                df.at[idx, "RECEIPT CUT"] = "PAID"
+            print(f"✅ In-memory updated: {loan_no}")
+        else:
+            return {"status": "error", "message": f"Loan No '{loan_no}' not found"}
+    else:
+        return {"status": "error", "message": "Data not loaded yet"}
+    
+    # 3. Save to local queue (backup + for sync_worker)
+    queue = _load_payment_queue()
+    queue.append({
+        "loan_no": loan_no,
+        "amount": float(amount),
+        "mode": mode,
+        "date": pay_date,
+        "timestamp": _dt.utcnow().isoformat(),
+        "synced": False
+    })
+    _save_payment_queue(queue)
+    
+    return {"status": "ok", "message": f"✅ Payment updated for Loan {loan_no}"}
 
 
 @app.get("/api/payment-queue")
