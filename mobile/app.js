@@ -615,6 +615,7 @@ async function generateResolutionTable() {
 }
 
 async function fetchResTable(bucket) {
+  resTableCurrentBucket = bucket;
   showToast('📋 Loading...');
   const data = await apiCall(`/api/report/resolution?bucket=${bucket}`);
   if (!data || data.error || !data.teams.length) {
@@ -713,7 +714,8 @@ async function fetchResTable(bucket) {
 }
 
 let resTableZoom = 1;
-let resTableSortAsc = false;
+let resTableSortMode = 'resl_desc';
+let resTableCurrentBucket = 1;
 
 function zoomResTable(dir) {
   resTableZoom += dir * 0.2;
@@ -723,17 +725,20 @@ function zoomResTable(dir) {
 }
 
 function toggleResSort(bucket) {
-  resTableSortAsc = !resTableSortAsc;
-  showToast(resTableSortAsc ? '↑ Low to High' : '↓ High to Low');
-  // Re-fetch will default to high-low, so we reverse in frontend
+  if (resTableSortMode === 'resl_desc') { resTableSortMode = 'resl_asc'; showToast('↑ Resolution Low → High'); }
+  else if (resTableSortMode === 'resl_asc') { resTableSortMode = 'az'; showToast('↕ A → Z'); }
+  else if (resTableSortMode === 'az') { resTableSortMode = 'za'; showToast('↕ Z → A'); }
+  else { resTableSortMode = 'resl_desc'; showToast('↓ Resolution High → Low'); }
   fetchResTableSorted(bucket);
 }
 
 async function fetchResTableSorted(bucket) {
   const data = await apiCall(`/api/report/resolution?bucket=${bucket}`);
   if (!data || !data.teams) return;
-  if (resTableSortAsc) data.teams.reverse();
-  // Re-render by calling fetchResTable logic with sorted data
+  if (resTableSortMode === 'resl_asc') data.teams.reverse();
+  else if (resTableSortMode === 'az') data.teams.sort((a,b) => a.team.localeCompare(b.team));
+  else if (resTableSortMode === 'za') data.teams.sort((a,b) => b.team.localeCompare(a.team));
+  // resl_desc is default from API (already sorted high to low)
   resTableZoom = 1;
   fetchResTable(bucket);
 }
@@ -833,13 +838,14 @@ function toggleFlowSort(bucket) {
 function shareResTable() {
   const el = document.getElementById('resTableCard');
   if (!el) return;
+  const bktTitle = `BKT ${resTableCurrentBucket} RESOLUTION`;
   const load = () => {
     html2canvas(el, {scale: 3, backgroundColor: '#ffffff'}).then(c => {
       c.toBlob(blob => {
-        const file = new File([blob], 'Resolution_Table.png', {type: 'image/png'});
+        const file = new File([blob], `BKT${resTableCurrentBucket}_Resolution.png`, {type: 'image/png'});
         if (navigator.share && navigator.canShare({files: [file]})) {
-          navigator.share({files: [file], title: '📋 Resolution Table', text: '📋 Resolution Table\n🔗 https://app.rccapp.xyz/public/flowlist'});
-        } else { const link=document.createElement('a'); link.download='Resolution_Table.png'; link.href=c.toDataURL(); link.click(); }
+          navigator.share({files: [file], title: bktTitle, text: `📋 ${bktTitle}\n🔗 https://app.rccapp.xyz/public/flowlist`});
+        } else { const link=document.createElement('a'); link.download=`BKT${resTableCurrentBucket}_Resolution.png`; link.href=c.toDataURL(); link.click(); }
       });
     });
   };
