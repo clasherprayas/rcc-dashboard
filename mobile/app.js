@@ -1347,6 +1347,19 @@ async function submitPayment() {
   const payDate = parts[2] + '.' + parts[1] + '.' + parts[0].slice(-2);
   
   showToast('💳 Updating...');
+  
+  // 1. Save to Google Sheets directly from frontend (bypasses Render redirect issues)
+  const GSHEET_URL = 'https://script.google.com/macros/s/AKfycbyKveilFfsklkMv6Q0FpWC-Y2RtYi6jkZWKBwxgeGifIP6L-71XcmWMOaNdZOushRDwag/exec';
+  try {
+    fetch(GSHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({loan_no: loanNo, amount: parseFloat(amount), mode: mode, date: payDate})
+    });
+  } catch(e) { console.log('GSheet save attempt:', e); }
+  
+  // 2. Update in-memory on Render (for instant report update)
   const result = await apiCall('/api/payment-update', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -1360,7 +1373,6 @@ async function submitPayment() {
     resDiv.style.color = '#166534';
     resDiv.style.border = '1px solid #86efac';
     resDiv.textContent = result.message;
-    // Clear form
     document.getElementById('payLoanNo').value = '';
     document.getElementById('payAmount').value = '';
     document.getElementById('payMode').value = '';
