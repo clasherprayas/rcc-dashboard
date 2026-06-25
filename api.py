@@ -47,8 +47,7 @@ def _sync_from_onedrive():
             DATA_FILE.write_bytes(resp.content)
             print(f"☁️ Fresh data downloaded from OneDrive ({len(resp.content)} bytes)")
             
-            # Re-apply pending payment updates that haven't been synced to HDFC yet
-            _reapply_pending_payments()
+            # Re-apply will happen after load_data() caches the new DataFrame
             
             return True
         else:
@@ -927,6 +926,10 @@ def load_data():
     _cache["df"] = df
     _cache["mtime"] = current_mtime
     print(f"✅ Cached! {len(df)} rows loaded.")
+    
+    # Re-apply pending payments from GSheets (in case OneDrive overwrote them)
+    if CLOUD_MODE:
+        _reapply_pending_payments()
     
     # Free memory
     import gc
