@@ -88,7 +88,9 @@ def _reapply_pending_payments():
                     if "Paid Amount" in df.columns:
                         df.at[idx, "Paid Amount"] = float(entry.get("amount", 0))
                     if "RECEIPT CUT" in df.columns:
-                        df.at[idx, "RECEIPT CUT"] = "PAID"
+                        df.at[idx, "RECEIPT CUT"] = entry.get("receipt_cut", "PAID")
+                    if "POS STATUS" in df.columns:
+                        df.at[idx, "POS STATUS"] = entry.get("pos_status", "STABLE")
                     applied += 1
             
             if applied > 0:
@@ -1412,6 +1414,8 @@ async def payment_update(request: Request):
     amount = body.get("amount", 0)
     mode = str(body.get("mode", "")).strip().upper()
     pay_date = str(body.get("date", "")).strip()
+    pos_status = str(body.get("pos_status", "STABLE")).strip().upper()
+    receipt_cut = str(body.get("receipt_cut", "PAID")).strip().upper()
     
     if not loan_no or not amount or not mode or not pay_date:
         return {"status": "error", "message": "All fields required (loan_no, amount, mode, date)"}
@@ -1444,9 +1448,9 @@ async def payment_update(request: Request):
             if "Paid Amount" in df.columns:
                 df.at[idx, "Paid Amount"] = float(amount)
             if "RECEIPT CUT" in df.columns:
-                df.at[idx, "RECEIPT CUT"] = "PAID"
+                df.at[idx, "RECEIPT CUT"] = receipt_cut
             if "POS STATUS" in df.columns:
-                df.at[idx, "POS STATUS"] = "STABLE"
+                df.at[idx, "POS STATUS"] = pos_status
             print(f"✅ In-memory updated: {loan_no}")
         else:
             return {"status": "error", "message": f"Loan No '{loan_no}' not found"}
@@ -1460,6 +1464,8 @@ async def payment_update(request: Request):
         "amount": float(amount),
         "mode": mode,
         "date": pay_date,
+        "pos_status": pos_status,
+        "receipt_cut": receipt_cut,
         "timestamp": _dt.utcnow().isoformat(),
         "synced": False
     })

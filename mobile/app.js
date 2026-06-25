@@ -1310,6 +1310,20 @@ function showPaymentUpdate() {
           </select>
         </div>
         <div style="margin-bottom:14px">
+          <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em;display:block;margin-bottom:5px">POS STATUS</label>
+          <select id="payPosStatus" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;background:var(--bg);color:var(--ink);outline:none">
+            <option value="STABLE">STABLE</option>
+            <option value="RB">RB</option>
+          </select>
+        </div>
+        <div style="margin-bottom:14px">
+          <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em;display:block;margin-bottom:5px">RECEIPT CUT</label>
+          <select id="payReceiptCut" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;background:var(--bg);color:var(--ink);outline:none">
+            <option value="PAID">PAID</option>
+            <option value="UNPAID">UNPAID</option>
+          </select>
+        </div>
+        <div style="margin-bottom:14px">
           <label style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em;display:block;margin-bottom:5px">PAYMENT DATE</label>
           <input type="date" id="payDate" style="width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;background:var(--bg);color:var(--ink);outline:none">
         </div>
@@ -1335,6 +1349,8 @@ async function submitPayment() {
   const loanNo = document.getElementById('payLoanNo').value.trim();
   const amount = document.getElementById('payAmount').value.trim();
   const mode = document.getElementById('payMode').value;
+  const posStatus = document.getElementById('payPosStatus').value;
+  const receiptCut = document.getElementById('payReceiptCut').value;
   const dateInput = document.getElementById('payDate').value;
   
   if (!loanNo || !amount || !mode || !dateInput) {
@@ -1355,7 +1371,7 @@ async function submitPayment() {
       method: 'POST',
       mode: 'no-cors',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({loan_no: loanNo, amount: parseFloat(amount), mode: mode, date: payDate})
+      body: JSON.stringify({loan_no: loanNo, amount: parseFloat(amount), mode: mode, date: payDate, pos_status: posStatus, receipt_cut: receiptCut})
     });
   } catch(e) { console.log('GSheet save attempt:', e); }
   
@@ -1363,7 +1379,7 @@ async function submitPayment() {
   const result = await apiCall('/api/payment-update', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({loan_no: loanNo, amount: parseFloat(amount), mode: mode, date: payDate})
+    body: JSON.stringify({loan_no: loanNo, amount: parseFloat(amount), mode: mode, date: payDate, pos_status: posStatus, receipt_cut: receiptCut})
   });
   
   const resDiv = document.getElementById('payResult');
