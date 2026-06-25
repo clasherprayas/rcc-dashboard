@@ -1480,6 +1480,17 @@ async def clear_synced_payments():
     return {"status": "ok", "remaining": len(pending)}
 
 
+@app.post("/api/sync-to-main")
+async def sync_to_main():
+    """Trigger sync from GSheets to main Excel files (PC must be on, sync_worker running)."""
+    trigger_file = APP_DIR / "sync_trigger.txt"
+    try:
+        trigger_file.write_text(f"triggered at {_dt.utcnow().isoformat()}")
+        return {"status": "ok", "message": "✅ Sync triggered! Worker will process in next 30 sec."}
+    except Exception as e:
+        return {"status": "error", "message": f"❌ Failed: {str(e)}"}
+
+
 # Root → device-based redirect (with query params forwarding)
 @app.get("/")
 async def root(request: Request):

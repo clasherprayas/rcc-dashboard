@@ -1320,6 +1320,7 @@ function showPaymentUpdate() {
       
       <div style="text-align:center">
         <button onclick="loadPaymentQueue()" style="background:var(--surface);border:1px solid var(--border);color:var(--ink);padding:10px 20px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">📋 HDFC Sync Queue</button>
+        <button onclick="triggerMainSync()" style="background:linear-gradient(135deg,#1e40af,#2563eb);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;margin-left:8px">🔄 Sync to Main File</button>
       </div>
       <div id="payQueueList" style="margin-top:12px"></div>
     </div>
@@ -1371,6 +1372,19 @@ async function submitPayment() {
     resDiv.style.border = '1px solid #fca5a5';
     resDiv.textContent = result ? result.message : '❌ Server error';
     showToast('❌ Failed');
+  }
+}
+
+async function triggerMainSync() {
+  showToast('🔄 Triggering sync...');
+  const result = await apiCall('/api/sync-to-main', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'}
+  });
+  if (result && result.status === 'ok') {
+    showToast(result.message);
+  } else {
+    showToast('❌ Sync trigger failed — PC on hai?');
   }
 }
 
