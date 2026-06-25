@@ -1349,7 +1349,7 @@ async function submitPayment() {
   showToast('💳 Updating...');
   
   // 1. Save to Google Sheets directly from frontend (bypasses Render redirect issues)
-  const GSHEET_URL = 'https://script.google.com/macros/s/AKfycbyKveilFfsklkMv6Q0FpWC-Y2RtYi6jkZWKBwxgeGifIP6L-71XcmWMOaNdZOushRDwag/exec';
+  const GSHEET_URL = 'https://script.google.com/macros/s/AKfycbyKveIlFfsklkMv6Q0FpWC-Y2RtYi6jkZWKBwxgeGifIP6L-71XcmWMOaNdZOushRDwag/exec';
   try {
     fetch(GSHEET_URL, {
       method: 'POST',

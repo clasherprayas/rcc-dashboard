@@ -254,7 +254,7 @@ import json as _json
 
 PAYMENT_QUEUE_FILE = Path(r"C:\Users\BAJAJ1\Desktop\RCC\payment_queue.json")
 
-GSHEET_WEBHOOK = "https://script.google.com/macros/s/AKfycbyKveilFfsklkMv6Q0FpWC-Y2RtYi6jkZWKBwxgeGifIP6L-71XcmWMOaNdZOushRDwag/exec"
+GSHEET_WEBHOOK = "https://script.google.com/macros/s/AKfycbyKveIlFfsklkMv6Q0FpWC-Y2RtYi6jkZWKBwxgeGifIP6L-71XcmWMOaNdZOushRDwag/exec"
 
 def process_gsheet_payments():
     """Fetch pending payments from Google Sheets → write to HDFC + RCC Excel."""

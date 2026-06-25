@@ -1381,7 +1381,7 @@ async def ranking():
 # ── PAYMENT UPDATE API ──
 import time as _time_mod
 
-GSHEET_WEBHOOK = os.environ.get("GSHEET_WEBHOOK", "https://script.google.com/macros/s/AKfycbyKveilFfsklkMv6Q0FpWC-Y2RtYi6jkZWKBwxgeGifIP6L-71XcmWMOaNdZOushRDwag/exec")
+GSHEET_WEBHOOK = os.environ.get("GSHEET_WEBHOOK", "https://script.google.com/macros/s/AKfycbyKveIlFfsklkMv6Q0FpWC-Y2RtYi6jkZWKBwxgeGifIP6L-71XcmWMOaNdZOushRDwag/exec")
 
 _PAYMENT_QUEUE_FILE = Path(os.environ.get("PAYMENT_QUEUE_PATH", "/tmp/payment_queue.json" if CLOUD_MODE else str(APP_DIR / "payment_queue.json")))
 
