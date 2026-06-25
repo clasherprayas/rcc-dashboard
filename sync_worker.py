@@ -225,21 +225,17 @@ def main():
         except Exception as e:
             log("ERROR", f"Unexpected in cycle {cycle}: {e}")
         
-        # Process payment queue → write to HDFC + RCC (only local queue, not GSheets auto)
+        # Process payment queue → write to HDFC + RCC (local queue)
         try:
             process_payment_queue()
         except Exception as e:
             log("ERROR", f"Payment queue error: {e}")
         
-        # GSheet sync is MANUAL ONLY — triggered by sync_trigger.txt file
-        trigger_file = Path(r"C:\Users\BAJAJ1\Desktop\RCC\sync_trigger.txt")
-        if trigger_file.exists():
-            try:
-                process_gsheet_payments()
-                trigger_file.unlink()  # Delete trigger file after processing
-                log("SUCCESS", "Manual GSheet sync completed!")
-            except Exception as e:
-                log("ERROR", f"GSheet payment error: {e}")
+        # Process Google Sheets → write to HDFC + RCC (every cycle)
+        try:
+            process_gsheet_payments()
+        except Exception as e:
+            log("ERROR", f"GSheet payment error: {e}")
         
         # Keep-alive ping every 5 minutes
         if cycle % PING_INTERVAL == 0:
