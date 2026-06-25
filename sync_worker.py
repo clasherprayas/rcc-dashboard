@@ -225,11 +225,17 @@ def main():
         except Exception as e:
             log("ERROR", f"Unexpected in cycle {cycle}: {e}")
         
-        # Process payment queue → write to HDFC
+        # Process payment queue → write to HDFC + RCC
         try:
             process_payment_queue()
         except Exception as e:
             log("ERROR", f"Payment queue error: {e}")
+        
+        # Process Google Sheets queue → write to HDFC + RCC
+        try:
+            process_gsheet_payments()
+        except Exception as e:
+            log("ERROR", f"GSheet payment error: {e}")
         
         # Keep-alive ping every 5 minutes
         if cycle % PING_INTERVAL == 0:
@@ -244,36 +250,54 @@ import json as _json
 
 PAYMENT_QUEUE_FILE = Path(r"C:\Users\BAJAJ1\Desktop\RCC\payment_queue.json")
 
-def process_payment_queue():
-    """Check payment queue. If entries exist and HDFC file is free, write them."""
-    if not PAYMENT_QUEUE_FILE.exists():
-        return
+GSHEET_WEBHOOK = "https://script.google.com/macros/s/AKfycbyKveilFfsklkMv6Q0FpWC-Y2RtYi6jkZWKBwxgeGifIP6L-71XcmWMOaNdZOushRDwag/exec"
+
+def process_gsheet_payments():
+    """Fetch pending payments from Google Sheets → write to HDFC + RCC Excel."""
+    import urllib.request
     
     try:
-        with open(PAYMENT_QUEUE_FILE, "r", encoding="utf-8") as f:
-            queue = _json.load(f)
-    except Exception:
+        req = urllib.request.Request(GSHEET_WEBHOOK)
+        resp = urllib.request.urlopen(req, timeout=15)
+        data = _json.loads(resp.read().decode())
+    except Exception as e:
+        return  # Silent fail — network might be down
+    
+    entries = data.get("entries", [])
+    if not entries:
         return
     
-    pending = [q for q in queue if not q.get("synced")]
-    if not pending:
-        return
+    log("INFO", f"GSheets: {len(entries)} pending payments to sync")
     
-    log("INFO", f"Payment queue: {len(pending)} pending entries")
+    # Write to RCC_DATA.xlsx (local)
+    rcc_synced = _write_payments_to_excel(LOCAL_COPY, entries)
     
-    # Check if HDFC file is accessible (not locked)
+    # Write to HDFC file
+    hdfc_synced = _write_payments_to_excel(SOURCE_FILE, entries)
+    
+    if rcc_synced > 0 or hdfc_synced > 0:
+        log("SUCCESS", f"✅ Synced: {rcc_synced} to RCC, {hdfc_synced} to HDFC")
+        # Mark as synced in Google Sheets (update SYNCED column)
+        _mark_gsheet_synced(entries)
+        
+        # Copy updated RCC to OneDrive
+        if rcc_synced > 0 and ONEDRIVE_COPY.parent.exists():
+            try:
+                import shutil
+                shutil.copy2(LOCAL_COPY, ONEDRIVE_COPY)
+                log("INFO", "Updated OneDrive copy")
+            except Exception:
+                pass
+
+
+def _write_payments_to_excel(file_path, entries):
+    """Write payment entries to an Excel file. Returns count of entries written."""
     try:
-        if not SOURCE_FILE.exists():
-            log("WARN", "HDFC file not reachable for payment sync")
-            return
-    except OSError:
-        log("WARN", "HDFC file network error")
-        return
-    
-    # Try to open HDFC file for writing
-    try:
+        if not file_path.exists():
+            return 0
+        
         from openpyxl import load_workbook
-        wb = load_workbook(SOURCE_FILE)
+        wb = load_workbook(file_path)
         ws = wb["MAIN"]
         
         # Find columns
@@ -292,38 +316,66 @@ def process_payment_queue():
                 receipt_col = col
         
         if not all([loan_col, mode_col, date_col, amount_col, receipt_col]):
-            log("ERROR", "HDFC file missing required columns")
             wb.close()
-            return
+            return 0
         
-        synced_count = 0
-        for entry in pending:
-            loan_no = str(entry["loan_no"]).strip()
-            # Find row
+        synced = 0
+        for entry in entries:
+            loan_no = str(entry.get("loan_no", "")).strip()
             for row in range(2, ws.max_row + 1):
                 cell_val = str(ws.cell(row=row, column=loan_col).value or "").strip()
                 if cell_val == loan_no:
-                    ws.cell(row=row, column=mode_col, value=entry["mode"])
-                    ws.cell(row=row, column=date_col, value=entry["date"])
-                    ws.cell(row=row, column=amount_col, value=float(entry["amount"]))
+                    ws.cell(row=row, column=mode_col, value=entry.get("mode", ""))
+                    ws.cell(row=row, column=date_col, value=entry.get("date", ""))
+                    ws.cell(row=row, column=amount_col, value=float(entry.get("amount", 0)))
                     ws.cell(row=row, column=receipt_col, value="PAID")
-                    entry["synced"] = True
-                    synced_count += 1
+                    synced += 1
                     break
         
-        wb.save(SOURCE_FILE)
+        if synced > 0:
+            wb.save(file_path)
         wb.close()
-        
-        # Update queue file
-        with open(PAYMENT_QUEUE_FILE, "w", encoding="utf-8") as f:
-            _json.dump(queue, f, ensure_ascii=False)
-        
-        log("SUCCESS", f"✅ {synced_count} payments synced to HDFC file")
+        return synced
     
     except PermissionError:
-        log("WARN", "HDFC file locked — will retry next cycle")
+        log("WARN", f"File locked: {file_path.name} — retry next cycle")
+        return 0
     except Exception as e:
-        log("ERROR", f"HDFC write failed: {e}")
+        log("ERROR", f"Excel write error ({file_path.name}): {e}")
+        return 0
+
+
+def _mark_gsheet_synced(entries):
+    """Mark entries as SYNCED in Google Sheets (update column F)."""
+    # For now we use Apps Script — add a markSynced endpoint later
+    # This is a placeholder — entries will remain PENDING until manually cleared
+    pass
+
+
+def process_payment_queue():
+    """Process local payment_queue.json (backup if GSheets fails)."""
+    if not PAYMENT_QUEUE_FILE.exists():
+        return
+    try:
+        with open(PAYMENT_QUEUE_FILE, "r", encoding="utf-8") as f:
+            queue = _json.load(f)
+    except Exception:
+        return
+    
+    pending = [q for q in queue if not q.get("synced")]
+    if not pending:
+        return
+    
+    log("INFO", f"Local queue: {len(pending)} pending entries")
+    synced = _write_payments_to_excel(LOCAL_COPY, pending)
+    hdfc = _write_payments_to_excel(SOURCE_FILE, pending)
+    
+    if synced > 0 or hdfc > 0:
+        for entry in pending:
+            entry["synced"] = True
+        with open(PAYMENT_QUEUE_FILE, "w", encoding="utf-8") as f:
+            _json.dump(queue, f, ensure_ascii=False)
+        log("SUCCESS", f"Local queue: {synced} to RCC, {hdfc} to HDFC")
 
 if __name__ == "__main__":
     main()
