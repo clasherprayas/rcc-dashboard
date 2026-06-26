@@ -611,6 +611,8 @@ async def receiptcut_report():
     # Team wise stats
     teams = []
     for team, grp in df.groupby("TEAM"):
+        if not team or str(team).strip() == "" or str(team).lower() == "nan":
+            continue
         total = len(grp)
         paid = int((grp["RECEIPT CUT"].astype(str).str.upper() == "PAID").sum())
         unpaid = total - paid
@@ -699,6 +701,8 @@ async def receipt_cut_report():
     # Team wise data
     teams = []
     for team, grp in df.groupby("TEAM"):
+        if not team or str(team).strip() == "" or str(team).lower() == "nan":
+            continue
         total = len(grp)
         paid = int((grp["RECEIPT CUT"].astype(str).str.upper() == "PAID").sum())
         unpaid = total - paid

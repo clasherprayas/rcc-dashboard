@@ -654,6 +654,12 @@ async function fetchResTable(bucket) {
     return;
   }
 
+  // Apply sort
+  if (resTableSortMode === 'resl_asc') data.teams.sort((a,b) => a.resl - b.resl);
+  else if (resTableSortMode === 'az') data.teams.sort((a,b) => a.team.localeCompare(b.team));
+  else if (resTableSortMode === 'za') data.teams.sort((a,b) => b.team.localeCompare(a.team));
+  // resl_desc is default from API
+
   function fmtInd(v) { if (!v) return ''; v=Math.round(v); let s=v.toString(); if(s.length<=3) return s; let r=s.slice(-3); s=s.slice(0,-3); while(s.length>0){r=s.slice(-2)+','+r; s=s.slice(0,-2);} return r; }
   function reslColor(r) { if(r>=80) return '#10b981'; if(r>=50) return '#f59e0b'; if(r>=30) return '#f97316'; return '#ef4444'; }
   function reslBg(r) { if(r>=80) return 'rgba(16,185,129,.12)'; if(r>=50) return 'rgba(245,158,11,.1)'; if(r>=30) return 'rgba(249,115,22,.1)'; return 'rgba(239,68,68,.1)'; }
@@ -779,12 +785,7 @@ function toggleResSort(bucket) {
 }
 
 async function fetchResTableSorted(bucket) {
-  const data = await apiCall(`/api/report/resolution?bucket=${bucket}`);
-  if (!data || !data.teams) return;
-  if (resTableSortMode === 'resl_asc') data.teams.reverse();
-  else if (resTableSortMode === 'az') data.teams.sort((a,b) => a.team.localeCompare(b.team));
-  else if (resTableSortMode === 'za') data.teams.sort((a,b) => b.team.localeCompare(a.team));
-  // resl_desc is default from API (already sorted high to low)
+  // Just re-fetch with sort applied inside fetchResTable
   resTableZoom = 1;
   fetchResTable(bucket);
 }
@@ -993,7 +994,7 @@ async function fetchReceiptCut() {
         <div style="display:inline-flex;align-items:center;gap:24px;margin-top:12px;padding:12px 28px;border:1.5px solid #e2e8f0;border-radius:12px;background:#f8fafc">
           <div style="display:flex;align-items:center;gap:8px"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 2v4M12 18v4"/></svg><div><div style="font-size:9px;color:#64748b;font-weight:800;letter-spacing:.06em">TARGET</div><div style="font-size:22px;font-weight:900;color:#1d4ed8;line-height:1.1">${data.target_pct}%</div></div></div>
           <div style="display:flex;align-items:center;gap:8px"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg><div><div style="font-size:9px;color:#64748b;font-weight:800;letter-spacing:.06em">MOVEMENT</div><div style="font-size:22px;font-weight:900;color:#059669;line-height:1.1">${data.movement}%</div></div></div>
-          <div style="display:flex;align-items:center;gap:8px"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><div><div style="font-size:9px;color:#64748b;font-weight:800;letter-spacing:.06em">DAYS LEFT</div><div style="font-size:22px;font-weight:900;color:#0f172a;line-height:1.1">${data.days_remaining}</div></div></div>
+          <div style="display:flex;align-items:center;gap:8px"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><div><div style="font-size:9px;color:#64748b;font-weight:800;letter-spacing:.06em">DAYS LEFT</div><div style="font-size:22px;font-weight:900;color:#0f172a;line-height:1.1">${data.days_remaining || data.remaining_days || ''}</div></div></div>
         </div>
       </div>
       <table style="width:100%;border-collapse:collapse">
