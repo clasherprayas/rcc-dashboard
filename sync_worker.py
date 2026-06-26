@@ -231,11 +231,12 @@ def main():
         except Exception as e:
             log("ERROR", f"Payment queue error: {e}")
         
-        # Process Google Sheets → write to HDFC + RCC (every cycle)
-        try:
-            process_gsheet_payments()
-        except Exception as e:
-            log("ERROR", f"GSheet payment error: {e}")
+        # Process Google Sheets → write to HDFC + RCC (every 5th cycle = ~2.5 min)
+        if cycle % 5 == 0:
+            try:
+                process_gsheet_payments()
+            except Exception as e:
+                log("ERROR", f"GSheet payment error: {e}")
         
         # Keep-alive ping every 5 minutes
         if cycle % PING_INTERVAL == 0:
