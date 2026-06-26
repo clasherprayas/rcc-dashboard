@@ -1383,6 +1383,55 @@ async def ranking():
     return {"ranking": rows}
 
 
+# ── BUCKET SUMMARY REPORT API ──
+@app.get("/api/report/bucket-summary")
+async def bucket_summary_report():
+    """Bucket-wise POS STATUS summary (FLOW/STABLE/RB with percentages)."""
+    df = load_data()
+    if df is None:
+        return {"error": "Data not found"}
+    
+    rows = []
+    for bkt in sorted(df["BUCKET"].unique()):
+        if bkt == 0:
+            continue
+        bkt_df = df[df["BUCKET"] == bkt]
+        flow_pos = float(bkt_df[bkt_df["POS STATUS"] == "FLOW"]["POS"].sum())
+        stable_pos = float(bkt_df[bkt_df["POS STATUS"] == "STABLE"]["POS"].sum())
+        rb_pos = float(bkt_df[bkt_df["POS STATUS"] == "RB"]["POS"].sum())
+        grand_total = flow_pos + stable_pos + rb_pos
+        stable_pct = round(stable_pos / grand_total * 100, 2) if grand_total else 0
+        rb_pct = round(rb_pos / grand_total * 100, 2) if grand_total else 0
+        resl = round(stable_pct + rb_pct, 2)
+        rows.append({
+            "bucket": int(bkt),
+            "flow": round(flow_pos, 2),
+            "stable": round(stable_pos, 2),
+            "rb": round(rb_pos, 2),
+            "grand_total": round(grand_total, 2),
+            "stable_pct": stable_pct,
+            "rb_pct": rb_pct,
+            "resl": resl
+        })
+    
+    # Grand total
+    total_flow = sum(r["flow"] for r in rows)
+    total_stable = sum(r["stable"] for r in rows)
+    total_rb = sum(r["rb"] for r in rows)
+    total_all = total_flow + total_stable + total_rb
+    grand = {
+        "flow": round(total_flow, 2),
+        "stable": round(total_stable, 2),
+        "rb": round(total_rb, 2),
+        "grand_total": round(total_all, 2),
+        "stable_pct": round(total_stable / total_all * 100, 2) if total_all else 0,
+        "rb_pct": round(total_rb / total_all * 100, 2) if total_all else 0,
+        "resl": round((total_stable + total_rb) / total_all * 100, 2) if total_all else 0
+    }
+    
+    return {"rows": rows, "grand": grand}
+
+
 # ── PAYMENT UPDATE API ──
 import time as _time_mod
 

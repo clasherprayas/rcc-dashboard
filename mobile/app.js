@@ -48,6 +48,34 @@ function getFilterParams() {
 }
 
 // ── THEME TOGGLE ──
+let isLandscape = false;
+
+function toggleLandscape() {
+  isLandscape = !isLandscape;
+  const app = document.getElementById('appContainer') || document.body;
+  if (isLandscape) {
+    app.style.transform = 'rotate(90deg)';
+    app.style.transformOrigin = 'top left';
+    app.style.width = '100vh';
+    app.style.height = '100vw';
+    app.style.position = 'fixed';
+    app.style.top = '0';
+    app.style.left = '100%';
+    app.style.overflow = 'auto';
+    document.getElementById('landscapeBtn').textContent = '📱';
+  } else {
+    app.style.transform = '';
+    app.style.transformOrigin = '';
+    app.style.width = '';
+    app.style.height = '';
+    app.style.position = '';
+    app.style.top = '';
+    app.style.left = '';
+    app.style.overflow = '';
+    document.getElementById('landscapeBtn').textContent = '🔄';
+  }
+}
+
 function initTheme() {
   const saved = localStorage.getItem('rcc_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', saved);
@@ -611,6 +639,8 @@ async function generateResolutionTable() {
       <button onclick="fetchResTable(1)" style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;padding:14px 28px;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;margin:6px">BKT-1</button>
       <button onclick="fetchResTable(2)" style="background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;border:none;padding:14px 28px;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;margin:6px">BKT-2</button>
       <button onclick="fetchReceiptCut()" style="background:linear-gradient(135deg,#0891b2,#06b6d4);color:#fff;border:none;padding:14px 28px;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;margin:6px">🧾 Receipt Cut</button>
+      <button onclick="fetchBucketSummary()" style="background:linear-gradient(135deg,#7c3aed,#8b5cf6);color:#fff;border:none;padding:14px 28px;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;margin:6px">📊 Bucket Summary</button>
+      <button onclick="shareAllReports()" style="background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;border:none;padding:14px 28px;border-radius:8px;font-weight:700;font-size:15px;cursor:pointer;margin:6px">📤 Share All</button>
     </div>
   `;
 }
@@ -691,7 +721,7 @@ async function fetchResTable(bucket) {
           <th style="text-align:right;padding:10px 10px;font-size:10px;font-weight:800;color:#4ade80;border-right:1px solid #475569">STABLE</th>
           <th style="text-align:right;padding:10px 10px;font-size:10px;font-weight:800;color:#fbbf24;border-right:1px solid #475569">RB</th>
           <th style="text-align:right;padding:10px 10px;font-size:10px;font-weight:800;color:#e2e8f0;border-right:1px solid #475569">TOTAL</th>
-          <th style="text-align:center;padding:10px 10px;font-size:10px;font-weight:800;color:#4ade80;border-right:1px solid #475569">S%</th>
+          <th style="text-align:center;padding:10px 10px;font-size:10px;font-weight:800;color:#4ade80;border-right:1px solid #475569">STABLE%</th>
           <th style="text-align:center;padding:10px 10px;font-size:10px;font-weight:800;color:#fbbf24;border-right:1px solid #475569">RB%</th>
           <th style="text-align:center;padding:10px 10px;font-size:10px;font-weight:800;color:#e2e8f0">RESOLUTION %</th>
         </tr></thead>
@@ -711,6 +741,7 @@ async function fetchResTable(bucket) {
       <button onclick="zoomResTable(-1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 12px;border-radius:8px;font-size:14px;cursor:pointer">🔍−</button>
       <button onclick="toggleResSort(${bucket})" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 12px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700">↕ Sort</button>
       <button onclick="fetchFlowAgencyView(${bucket})" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">📊 Flow</button>
+      <button onclick="generateResolutionTable()" style="background:linear-gradient(135deg,#0f172a,#334155);color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">← Back</button>
     </div>
     <div id="resTableContainer" style="overflow:auto;padding:10px">${reportHtml}</div>
   `;
@@ -959,10 +990,10 @@ async function fetchReceiptCut() {
     <div id="rcReportCard" style="width:720px;background:#ffffff;border-radius:14px;padding:24px 20px;font-family:'Inter',-apple-system,sans-serif;color:#0f172a;box-shadow:0 4px 20px rgba(0,0,0,.08);border:1px solid #e2e8f0">
       <div style="text-align:center;margin-bottom:18px">
         <div style="font-size:20px;font-weight:900;color:#0f172a;letter-spacing:-.01em">RECEIPT CUT REPORT</div>
-        <div style="display:inline-flex;align-items:center;gap:20px;margin-top:12px;padding:10px 24px;border:1.5px solid #e2e8f0;border-radius:10px">
-          <div style="text-align:center"><div style="font-size:8px;color:#64748b;font-weight:800;letter-spacing:.06em">🎯 TARGET</div><div style="font-size:20px;font-weight:900;color:#059669">${data.target_pct}%</div></div>
-          <div style="text-align:center"><div style="font-size:8px;color:#64748b;font-weight:800;letter-spacing:.06em">📈 MOVEMENT</div><div style="font-size:20px;font-weight:900;color:#2563eb">${data.movement}%</div></div>
-          <div style="text-align:center"><div style="font-size:8px;color:#64748b;font-weight:800;letter-spacing:.06em">📅 DAYS LEFT</div><div style="font-size:20px;font-weight:900;color:#0f172a">${data.days_remaining}</div></div>
+        <div style="display:inline-flex;align-items:center;gap:24px;margin-top:12px;padding:12px 28px;border:1.5px solid #e2e8f0;border-radius:12px;background:#f8fafc">
+          <div style="display:flex;align-items:center;gap:8px"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><path d="M12 2v4M12 18v4"/></svg><div><div style="font-size:9px;color:#64748b;font-weight:800;letter-spacing:.06em">TARGET</div><div style="font-size:22px;font-weight:900;color:#1d4ed8;line-height:1.1">${data.target_pct}%</div></div></div>
+          <div style="display:flex;align-items:center;gap:8px"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg><div><div style="font-size:9px;color:#64748b;font-weight:800;letter-spacing:.06em">MOVEMENT</div><div style="font-size:22px;font-weight:900;color:#059669;line-height:1.1">${data.movement}%</div></div></div>
+          <div style="display:flex;align-items:center;gap:8px"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><div><div style="font-size:9px;color:#64748b;font-weight:800;letter-spacing:.06em">DAYS LEFT</div><div style="font-size:22px;font-weight:900;color:#0f172a;line-height:1.1">${data.days_remaining}</div></div></div>
         </div>
       </div>
       <table style="width:100%;border-collapse:collapse">
@@ -996,6 +1027,7 @@ async function fetchReceiptCut() {
       <button onclick="zoomRcReport(1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer">🔍+</button>
       <button onclick="zoomRcReport(-1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer">🔍−</button>
       <button onclick="toggleRcSort()" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700">↕ Sort</button>
+      <button onclick="generateResolutionTable()" style="background:linear-gradient(135deg,#0f172a,#334155);color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">← Back</button>
     </div>
     <div id="rcReportContainer" style="overflow:auto;padding:10px">${reportHtml}</div>
   `;
@@ -1021,6 +1053,213 @@ function toggleRcSort() {
   else if (rcSortMode === 'az') { rcSortMode = 'za'; showToast('↕ Z → A'); }
   else { rcSortMode = 'pct_desc'; showToast('↓ %Achi High → Low'); }
   fetchReceiptCut();
+}
+
+function toggleRcSort() {
+  if (rcSortMode === 'pct_desc') { rcSortMode = 'pct_asc'; showToast('↑ %Achi Low → High'); }
+  else if (rcSortMode === 'pct_asc') { rcSortMode = 'az'; showToast('↕ A → Z'); }
+  else if (rcSortMode === 'az') { rcSortMode = 'za'; showToast('↕ Z → A'); }
+  else { rcSortMode = 'pct_desc'; showToast('↓ %Achi High → Low'); }
+  fetchReceiptCut();
+}
+
+// ── BUCKET SUMMARY REPORT ──
+async function fetchBucketSummary() {
+  showToast('📊 Loading...');
+  const data = await apiCall('/api/report/bucket-summary');
+  if (!data || data.error || !data.rows.length) {
+    showToast('❌ No data');
+    return;
+  }
+
+  function fmtInd(v) { if(!v) return ''; v=Math.round(v); let s=v.toString(); if(s.length<=3) return s; let r=s.slice(-3); s=s.slice(0,-3); while(s.length>0){r=s.slice(-2)+','+r; s=s.slice(0,-2);} return r; }
+  function reslColor(r) { if(r>=60) return '#059669'; if(r>=40) return '#ca8a04'; if(r>=20) return '#ea580c'; return '#dc2626'; }
+
+  let rows = '';
+  data.rows.forEach((r, i) => {
+    const rc = reslColor(r.resl);
+    rows += `<tr style="background:${i%2===0?'#ffffff':'#f8fafc'}">
+      <td style="padding:10px 14px;font-size:13px;font-weight:800;color:#0f172a;border:1px solid #e2e8f0;text-align:center">${r.bucket}</td>
+      <td style="text-align:right;padding:10px 12px;font-size:12px;font-weight:700;color:#ef4444;border:1px solid #e2e8f0">${fmtInd(r.flow)}</td>
+      <td style="text-align:right;padding:10px 12px;font-size:12px;font-weight:700;color:#059669;border:1px solid #e2e8f0">${fmtInd(r.stable)}</td>
+      <td style="text-align:right;padding:10px 12px;font-size:12px;font-weight:700;color:#d97706;border:1px solid #e2e8f0">${fmtInd(r.rb)}</td>
+      <td style="text-align:right;padding:10px 12px;font-size:12px;font-weight:800;color:#0f172a;border:1px solid #e2e8f0">${fmtInd(r.grand_total)}</td>
+      <td style="text-align:center;padding:10px 10px;font-size:12px;font-weight:700;color:#059669;border:1px solid #e2e8f0">${r.stable_pct.toFixed(2)}</td>
+      <td style="text-align:center;padding:10px 10px;font-size:12px;font-weight:700;color:#d97706;border:1px solid #e2e8f0">${r.rb_pct.toFixed(2)}</td>
+      <td style="padding:10px 12px;border:1px solid #e2e8f0">
+        <div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;padding-left:4px">
+          <div style="width:5px;height:20px;border-radius:3px;background:${rc};flex-shrink:0"></div>
+          <span style="font-size:13px;font-weight:800;color:${rc}">${r.resl.toFixed(2)}</span>
+        </div>
+      </td>
+    </tr>`;
+  });
+
+  const g = data.grand;
+  const gc = reslColor(g.resl);
+  rows += `<tr style="background:#ecfdf5">
+    <td style="padding:10px 14px;font-size:13px;font-weight:900;color:#059669;border:1px solid #e2e8f0;text-align:center">Grand Total</td>
+    <td style="text-align:right;padding:10px 12px;font-size:12px;font-weight:900;color:#ef4444;border:1px solid #e2e8f0">${fmtInd(g.flow)}</td>
+    <td style="text-align:right;padding:10px 12px;font-size:12px;font-weight:900;color:#059669;border:1px solid #e2e8f0">${fmtInd(g.stable)}</td>
+    <td style="text-align:right;padding:10px 12px;font-size:12px;font-weight:900;color:#d97706;border:1px solid #e2e8f0">${fmtInd(g.rb)}</td>
+    <td style="text-align:right;padding:10px 12px;font-size:12px;font-weight:900;color:#0f172a;border:1px solid #e2e8f0">${fmtInd(g.grand_total)}</td>
+    <td style="text-align:center;padding:10px 10px;font-size:12px;font-weight:900;color:#059669;border:1px solid #e2e8f0">${g.stable_pct.toFixed(2)}</td>
+    <td style="text-align:center;padding:10px 10px;font-size:12px;font-weight:900;color:#d97706;border:1px solid #e2e8f0">${g.rb_pct.toFixed(2)}</td>
+    <td style="padding:10px 12px;border:1px solid #e2e8f0">
+      <div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;padding-left:4px">
+        <div style="width:5px;height:22px;border-radius:3px;background:${gc};flex-shrink:0"></div>
+        <span style="font-size:14px;font-weight:900;color:${gc}">${g.resl.toFixed(2)}</span>
+      </div>
+    </td>
+  </tr>`;
+
+  const reportHtml = `
+    <div id="resTableCard" style="width:650px;background:#ffffff;border-radius:14px;padding:24px 20px;font-family:'Inter',-apple-system,sans-serif;color:#0f172a;box-shadow:0 4px 20px rgba(0,0,0,.08);border:1px solid #e2e8f0">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:18px;font-weight:900;color:#0f172a">BUCKET SUMMARY</div>
+        <div style="font-size:10px;color:#64748b;font-weight:600;margin-top:4px">${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase()} · POS STATUS WISE</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#1e293b">
+          <th style="padding:10px 14px;font-size:10px;font-weight:800;color:#e2e8f0;border:1px solid #334155;text-align:center">BUCKET</th>
+          <th style="text-align:right;padding:10px 12px;font-size:10px;font-weight:800;color:#f87171;border:1px solid #334155">FLOW</th>
+          <th style="text-align:right;padding:10px 12px;font-size:10px;font-weight:800;color:#4ade80;border:1px solid #334155">STABLE</th>
+          <th style="text-align:right;padding:10px 12px;font-size:10px;font-weight:800;color:#fbbf24;border:1px solid #334155">RB</th>
+          <th style="text-align:right;padding:10px 12px;font-size:10px;font-weight:800;color:#e2e8f0;border:1px solid #334155">GRAND TOTAL</th>
+          <th style="text-align:center;padding:10px 10px;font-size:10px;font-weight:800;color:#4ade80;border:1px solid #334155">STABLE %</th>
+          <th style="text-align:center;padding:10px 10px;font-size:10px;font-weight:800;color:#fbbf24;border:1px solid #334155">RB %</th>
+          <th style="text-align:center;padding:10px 10px;font-size:10px;font-weight:800;color:#e2e8f0;border:1px solid #334155">RESL</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+
+  const pages = document.querySelectorAll('.page');
+  const navItems = document.querySelectorAll('.nav-item');
+  pages.forEach(p => p.classList.remove('active'));
+  navItems.forEach(n => n.classList.remove('active'));
+  document.getElementById('pageFlow').classList.add('active');
+  document.getElementById('flowContent').innerHTML = `
+    <div style="text-align:center;margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center">
+      <button onclick="shareResTable()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">📤 Share</button>
+      <button onclick="copyResTableImage()" style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">📋 Copy Image</button>
+      <button onclick="zoomResTable(1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 12px;border-radius:8px;font-size:14px;cursor:pointer">🔍+</button>
+      <button onclick="zoomResTable(-1)" style="background:#f1f5f9;border:1px solid #e2e8f0;padding:10px 12px;border-radius:8px;font-size:14px;cursor:pointer">🔍−</button>
+      <button onclick="generateResolutionTable()" style="background:linear-gradient(135deg,#0f172a,#334155);color:#fff;border:none;padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">← Back</button>
+    </div>
+    <div id="resTableContainer" style="overflow:auto;padding:10px">${reportHtml}</div>
+  `;
+  resTableZoom = getResTableDefaultZoom();
+  setTimeout(() => {
+    const card = document.getElementById('resTableCard');
+    if (card) { card.style.transform = 'scale(' + resTableZoom + ')'; card.style.transformOrigin = 'top left'; }
+  }, 50);
+}
+
+// ── SHARE ALL REPORTS ──
+async function shareAllReports() {
+  showToast('📤 Generating all reports...');
+  
+  const loadH2C = () => new Promise((resolve) => {
+    if (typeof html2canvas !== 'undefined') return resolve();
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    s.onload = resolve;
+    document.head.appendChild(s);
+  });
+  await loadH2C();
+
+  // Generate all 4 reports in hidden container
+  const container = document.createElement('div');
+  container.style.cssText = 'position:absolute;left:-9999px;top:0;';
+  document.body.appendChild(container);
+
+  const files = [];
+  
+  // 1. BKT-1 Resolution
+  try {
+    const d1 = await apiCall('/api/report/resolution?bucket=1');
+    if (d1 && d1.teams) {
+      const img = await _generateResImage(d1, 1);
+      if (img) files.push(new File([img], 'BKT1_Resolution.png', {type: 'image/png'}));
+    }
+  } catch(e) {}
+
+  // 2. BKT-2 Resolution
+  try {
+    const d2 = await apiCall('/api/report/resolution?bucket=2');
+    if (d2 && d2.teams) {
+      const img = await _generateResImage(d2, 2);
+      if (img) files.push(new File([img], 'BKT2_Resolution.png', {type: 'image/png'}));
+    }
+  } catch(e) {}
+
+  // 3. Receipt Cut
+  try {
+    const d3 = await apiCall('/api/report/receiptcut');
+    if (d3 && d3.teams) {
+      // Render receipt cut, capture, then restore
+      await fetchReceiptCut();
+      await new Promise(r => setTimeout(r, 200));
+      const el3 = document.getElementById('rcReportCard');
+      if (el3) {
+        const c3 = await html2canvas(el3, {scale: 2, backgroundColor: '#ffffff'});
+        const b3 = await new Promise(r => c3.toBlob(r));
+        files.push(new File([b3], 'ReceiptCut_Report.png', {type: 'image/png'}));
+      }
+    }
+  } catch(e) {}
+
+  // 4. Bucket Summary
+  try {
+    await fetchBucketSummary();
+    await new Promise(r => setTimeout(r, 200));
+    const el4 = document.getElementById('resTableCard');
+    if (el4) {
+      const c4 = await html2canvas(el4, {scale: 2, backgroundColor: '#ffffff'});
+      const b4 = await new Promise(r => c4.toBlob(r));
+      files.push(new File([b4], 'Bucket_Summary.png', {type: 'image/png'}));
+    }
+  } catch(e) {}
+
+  document.body.removeChild(container);
+
+  if (files.length === 0) {
+    showToast('❌ No reports generated');
+    return;
+  }
+
+  // Share all files
+  if (navigator.share && navigator.canShare({files})) {
+    const caption = `📊 BUCKET WISE PERFORMANCE\n📋 BKT-1 RESOLUTION PERFORMANCE\n📋 BKT-2 RESOLUTION PERFORMANCE\n🧾 TEAM WISE RECEIPT CUT IN BKT 1 TO 6 WITH DAILY DRR & TODAY COLLECT PAYMENT AND TRAILS COUNT`;
+    navigator.share({files, title: 'RCC Reports', text: caption}).then(() => {
+      showToast('✅ Shared!');
+    }).catch(() => showToast('Share cancelled'));
+  } else {
+    // Fallback — download all
+    files.forEach(f => {
+      const url = URL.createObjectURL(f);
+      const a = document.createElement('a'); a.href = url; a.download = f.name; a.click();
+    });
+    showToast('📥 Downloaded ' + files.length + ' images');
+  }
+  
+  // Go back to selection page
+  generateResolutionTable();
+}
+
+async function _generateResImage(data, bucket) {
+  // Quick render BKT resolution table as image
+  try {
+    resTableCurrentBucket = bucket;
+    await fetchResTable(bucket);
+    await new Promise(r => setTimeout(r, 200));
+    const el = document.getElementById('resTableCard');
+    if (!el) return null;
+    const canvas = await html2canvas(el, {scale: 2, backgroundColor: '#ffffff'});
+    return await new Promise(r => canvas.toBlob(r));
+  } catch(e) { return null; }
 }
 
 function shareRcReport() {
@@ -1557,8 +1796,8 @@ function onExecFilterChange(val) {
   loadDashboard();
   loadTrails();
   loadFlowList();
-  loadFlowList();
   loadRanking();
+  searchLoan(document.getElementById('searchInput') ? document.getElementById('searchInput').value : '');
 }
 
 function hideExecFilter() {
@@ -1801,7 +2040,57 @@ function fmtIndianFull(v) {
   return result;
 }
 
+// ── SHARE FLOW LIST ──
+async function shareFlowList(bucket) {
+  showToast('📤 Generating image...');
+  
+  // Load html2canvas
+  if (typeof html2canvas === 'undefined') {
+    await new Promise(resolve => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s.onload = resolve;
+      document.head.appendChild(s);
+    });
+  }
+
+  // Capture the flow table area
+  const tableEl = document.querySelector('.flow-table-wrap');
+  const bannerEl = document.querySelector('.summary-banner');
+  
+  // Create a container with both banner + table for screenshot
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:absolute;left:-9999px;top:0;background:#ffffff;padding:16px;width:500px;font-family:Inter,sans-serif';
+  wrapper.innerHTML = `
+    <div style="text-align:center;margin-bottom:12px">
+      <div style="font-size:16px;font-weight:900;color:#0f172a">📋 BKT-${bucket} FLOW CASES</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px">${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})} · ${document.querySelector('.banner-value')?.textContent || ''} cases</div>
+    </div>
+  ` + (tableEl ? tableEl.outerHTML : '');
+  document.body.appendChild(wrapper);
+
+  try {
+    const canvas = await html2canvas(wrapper, {scale: 2, backgroundColor: '#ffffff'});
+    const blob = await new Promise(r => canvas.toBlob(r));
+    const file = new File([blob], `BKT${bucket}_FlowCases.png`, {type: 'image/png'});
+    
+    if (navigator.share && navigator.canShare({files: [file]})) {
+      await navigator.share({files: [file], title: `BKT-${bucket} Flow Cases`, text: `📋 BKT-${bucket} FLOW CASES`});
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = file.name; a.click();
+      showToast('📥 Image downloaded!');
+    }
+  } catch(e) {
+    showToast('❌ Share failed');
+  }
+  
+  document.body.removeChild(wrapper);
+}
+
 async function loadFlowList(bucket = currentFlowBucket) {
+
+
   currentFlowBucket = bucket;
   const el = document.getElementById('flowContent');
   const data = await apiCall(`/api/flowlist?${getFilterParams()}&bucket=${bucket}&auth=rcc-admin-token`);
@@ -1828,6 +2117,9 @@ async function loadFlowList(bucket = currentFlowBucket) {
   // Render table immediately (no delay)
   el.innerHTML = `
     <div class="pill-tabs">${tabs}</div>
+    <div style="text-align:center;margin-bottom:8px">
+      <button onclick="shareFlowList(${bucket})" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">📤 Share Flow List</button>
+    </div>
     <div class="summary-banner">
       <div class="banner-left">
         <span style="font-size:1.3rem">📋</span>
