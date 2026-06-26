@@ -267,18 +267,38 @@ def process_gsheet_payments():
     if not entries:
         return
     
-    log("INFO", f"GSheets: {len(entries)} pending payments to sync")
+    # Filter out already synced entries (tracked locally)
+    synced_file = Path(r"C:\Users\BAJAJ1\Desktop\RCC\synced_loans.json")
+    synced_loans = set()
+    try:
+        if synced_file.exists():
+            with open(synced_file, "r") as f:
+                synced_loans = set(_json.load(f))
+    except Exception:
+        pass
+    
+    new_entries = [e for e in entries if e.get("loan_no") not in synced_loans]
+    if not new_entries:
+        return
+    
+    log("INFO", f"GSheets: {len(new_entries)} new payments to sync")
     
     # Write to RCC_DATA.xlsx (local)
-    rcc_synced = _write_payments_to_excel(LOCAL_COPY, entries)
+    rcc_synced = _write_payments_to_excel(LOCAL_COPY, new_entries)
     
     # Write to HDFC file
-    hdfc_synced = _write_payments_to_excel(SOURCE_FILE, entries)
+    hdfc_synced = _write_payments_to_excel(SOURCE_FILE, new_entries)
     
     if rcc_synced > 0 or hdfc_synced > 0:
         log("SUCCESS", f"✅ Synced: {rcc_synced} to RCC, {hdfc_synced} to HDFC")
-        # Mark as synced in Google Sheets (update SYNCED column)
-        _mark_gsheet_synced(entries)
+        # Track synced loans locally
+        for e in new_entries:
+            synced_loans.add(e.get("loan_no"))
+        try:
+            with open(synced_file, "w") as f:
+                _json.dump(list(synced_loans), f)
+        except Exception:
+            pass
         
         # Copy updated RCC to OneDrive
         if rcc_synced > 0 and ONEDRIVE_COPY.parent.exists():
