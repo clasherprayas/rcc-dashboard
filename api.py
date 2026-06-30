@@ -893,7 +893,7 @@ def load_data():
                    "Paid Amount", "EMI", "TOTAL EMI DUE", "STAB AMOUNTWITH DPIC", 
                    "RB AMOUNTWITH DPIC", "BUCKET", "POS STATUS", "RECEIPT CUT", 
                    "TEAM", "POS", "DPIC CHARGES", "DRA CASE%", "AGENCY CASE%", 
-                   "AREA", "MOBILE", "DPD", "TRAILS PENDING", "PROJECTION"]
+                   "AREA", "MOBILE", "DPD", "TRAILS PENDING", "PROJECTION", "CURRENT CODE"]
     try:
         df = pd.read_excel(DATA_FILE, sheet_name=SHEET_NAME, engine="openpyxl", usecols=lambda c: str(c).strip() in needed_cols)
     except Exception:
@@ -1107,13 +1107,19 @@ async def trails(user: str = "", role: str = "executive", auth: str = ""):
     else:
         pending = df[(df["TEAM"] == username) & (df["TRAILS PENDING"] == 0)]
     
+    # Filter out blank/nan rows
+    pending = pending[pending["LOAN NO"].notna() & (pending["LOAN NO"] != "") & (pending["LOAN NO"] != "nan")]
+    
     result = []
     for _, row in pending.iterrows():
+        ln = str(row["LOAN NO"]).strip()
+        if not ln or ln == "nan" or ln == "0":
+            continue
         result.append({
-            "loan_no": str(row["LOAN NO"]),
-            "customer_name": str(row["CUSTOMER NAME"]),
-            "team": str(row["TEAM"]),
-            "area": str(row.get("AREA", "—")),
+            "loan_no": ln,
+            "customer_name": str(row["CUSTOMER NAME"]) if str(row["CUSTOMER NAME"]) != "nan" else "—",
+            "team": str(row["TEAM"]) if str(row["TEAM"]) != "nan" else "—",
+            "area": str(row.get("AREA", "—")) if str(row.get("AREA", "—")) != "nan" else "—",
         })
     
     return {"total": len(result), "trails": result}
@@ -1150,6 +1156,7 @@ async def flowlist(user: str = "", bucket: int = 1, role: str = "executive", aut
                     "mobile": str(row.get("MOBILE", "")),
                     "area": str(row.get("AREA", "")),
                     "projection": str(row["PROJECTION"]) if "PROJECTION" in row.index else "",
+                    "current_code": str(row.get("CURRENT CODE", "")).strip() if "CURRENT CODE" in row.index and pd.notna(row.get("CURRENT CODE")) else "",
                 })
             except Exception:
                 continue
@@ -1434,6 +1441,301 @@ async def bucket_summary_report():
     }
     
     return {"rows": rows, "grand": grand}
+
+
+# ── MONTHLY INCENTIVE REPORT API ──
+@app.get("/api/report/monthly-incentive")
+async def monthly_incentive(month: int = 0, year: int = 0):
+    """Generate monthly incentive report — executive wise daily breakdown."""
+    df = load_data()
+    if df is None:
+        return {"error": "Data not found"}
+    
+    ist_now = _dt.now() if not CLOUD_MODE else _dt.utcnow() + _IST_OFFSET
+    if month == 0:
+        month = ist_now.month
+    if year == 0:
+        year = ist_now.year
+    
+    import calendar
+    last_day = calendar.monthrange(year, month)[1]
+    yr_short = str(year)[2:]  # "26"
+    
+    # Get all paid entries for this month
+    paid_df = df[df["RECEIPT CUT"].astype(str).str.upper() == "PAID"].copy()
+    
+    # Parse payment dates and filter by month
+    def parse_date(d):
+        try:
+            s = str(d).strip()
+            parts = s.split(".")
+            if len(parts) == 3:
+                dd, mm, yy = int(parts[0]), int(parts[1]), int(parts[2])
+                if mm == month and (yy == int(yr_short) or yy == year):
+                    return dd
+        except Exception:
+            pass
+        return 0
+    
+    paid_df["_day"] = paid_df["Payment Date"].apply(parse_date)
+    month_paid = paid_df[paid_df["_day"] > 0]
+    
+    # Calculate daily incentive per executive
+    teams = sorted(df["TEAM"].dropna().unique())
+    teams = [t for t in teams if t and str(t).lower() != "nan" and str(t).strip() != ""]
+    
+    results = {}
+    for team in teams:
+        results[team] = {"total_receipts": 0, "total_incentive": 0, "daily": {}}
+    
+    for day in range(1, last_day + 1):
+        day_data = month_paid[month_paid["_day"] == day]
+        if day_data.empty:
+            continue
+        
+        # Check if Sunday
+        try:
+            check_date = _dt(year, month, day)
+            is_sunday = check_date.weekday() == 6
+        except Exception:
+            is_sunday = False
+        
+        for team in teams:
+            team_day = day_data[day_data["TEAM"] == team]
+            if team_day.empty:
+                continue
+            
+            count = len(team_day)
+            bkt12_count = len(team_day[team_day["BUCKET"].isin([1, 2])])
+            bkt36_count = len(team_day[team_day["BUCKET"].isin([3, 4, 5, 6])])
+            
+            incentive = 0
+            # BKT 1-2: ₹150/receipt if 2+ receipts
+            if bkt12_count >= 2:
+                incentive += bkt12_count * 150
+            # BKT 3-6: ₹100/receipt
+            incentive += bkt36_count * 100
+            # Sunday special: ₹200/receipt (all buckets)
+            if is_sunday:
+                incentive += count * 200
+            
+            # POS bonus BKT-1
+            bkt1_pos = float(team_day[team_day["BUCKET"] == 1]["POS"].sum())
+            if bkt1_pos >= 200000:
+                incentive += int(bkt1_pos // 100000) * 100
+            elif bkt1_pos >= 50000:
+                incentive += 100
+            
+            # POS bonus BKT-2
+            bkt2_pos = float(team_day[team_day["BUCKET"] == 2]["POS"].sum())
+            if bkt2_pos >= 200000:
+                incentive += int(bkt2_pos // 100000) * 100
+            elif bkt2_pos >= 50000:
+                incentive += 100
+            
+            results[team]["total_receipts"] += count
+            results[team]["total_incentive"] += incentive
+            results[team]["daily"][day] = {"count": count, "incentive": incentive}
+    
+    return {
+        "month": month,
+        "year": year,
+        "last_day": last_day,
+        "teams": results
+    }
+
+
+@app.get("/api/report/monthly-incentive/download")
+async def download_monthly_incentive(month: int = 0, year: int = 0):
+    """Download monthly incentive as Excel — flat list: DATE | WINNER | BKT 1-2 | REMARK | BKT1 50K | BKT2 50K | BKT 3-6 | INCENTIVE."""
+    from openpyxl import Workbook
+    from fastapi.responses import Response
+    
+    df = load_data()
+    if df is None:
+        return Response(content=b"No data", status_code=500)
+    
+    ist_now = _dt.now() if not CLOUD_MODE else _dt.utcnow() + _IST_OFFSET
+    if month == 0:
+        month = ist_now.month
+    if year == 0:
+        year = ist_now.year
+    
+    import calendar
+    last_day = calendar.monthrange(year, month)[1]
+    yr_short = str(year)[2:]
+    
+    # Get all paid entries for this month
+    paid_df = df[df["RECEIPT CUT"].astype(str).str.upper() == "PAID"].copy()
+    
+    def parse_day(d):
+        try:
+            s = str(d).strip()
+            parts = s.split(".")
+            if len(parts) == 3:
+                dd, mm, yy = int(parts[0]), int(parts[1]), int(parts[2])
+                if mm == month and (yy == int(yr_short) or yy == year):
+                    return dd
+        except Exception:
+            pass
+        return 0
+    
+    paid_df["_day"] = paid_df["Payment Date"].apply(parse_day)
+    month_paid = paid_df[paid_df["_day"] > 0]
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"Incentive {month}-{year}"
+    
+    # Header
+    ws.append(["DATE", "WINNER", "BKT 1-2", "REMARK", "BKT 1 50K", "BKT 2 50K", "BKT 3-6", "INCENTIVE"])
+    
+    # Process day by day
+    for day in range(1, last_day + 1):
+        day_data = month_paid[month_paid["_day"] == day]
+        if day_data.empty:
+            continue
+        
+        date_str = f"{day:02d}.{month:02d}.{yr_short}"
+        
+        # Check Sunday
+        try:
+            is_sunday = _dt(year, month, day).weekday() == 6
+        except Exception:
+            is_sunday = False
+        
+        # Group by team
+        for team, grp in day_data.groupby("TEAM"):
+            if not team or str(team).lower() == "nan":
+                continue
+            
+            count = len(grp)
+            bkt12_count = len(grp[grp["BUCKET"].isin([1, 2])])
+            bkt36_count = len(grp[grp["BUCKET"].isin([3, 4, 5, 6])])
+            bkt1_pos = float(grp[grp["BUCKET"] == 1]["POS"].sum())
+            bkt2_pos = float(grp[grp["BUCKET"] == 2]["POS"].sum())
+            
+            incentive = 0
+            remark_parts = []
+            
+            # BKT 1-2 incentive (2+ receipts = ₹150/receipt)
+            bkt12_incentive = 0
+            if bkt12_count >= 2:
+                bkt12_incentive = bkt12_count * 150
+                incentive += bkt12_incentive
+                remark_parts.append(f"{team} - {bkt12_count}")
+            
+            # BKT 1 50K POS bonus
+            bkt1_bonus = 0
+            if bkt1_pos >= 200000:
+                bkt1_bonus = int(bkt1_pos // 100000) * 100
+            elif bkt1_pos >= 50000:
+                bkt1_bonus = 100
+            incentive += bkt1_bonus
+            
+            # BKT 2 50K POS bonus
+            bkt2_bonus = 0
+            if bkt2_pos >= 200000:
+                bkt2_bonus = int(bkt2_pos // 100000) * 100
+            elif bkt2_pos >= 50000:
+                bkt2_bonus = 100
+            incentive += bkt2_bonus
+            
+            # BKT 3-6 incentive (₹100/receipt)
+            bkt36_incentive = 0
+            if bkt36_count > 0:
+                bkt36_incentive = bkt36_count * 100
+                incentive += bkt36_incentive
+            
+            # Sunday special (₹200/receipt all buckets)
+            if is_sunday:
+                incentive += count * 200
+            
+            if incentive > 0:
+                remark = f"{team} - {bkt12_count}" if bkt12_count >= 2 else ""
+                ws.append([
+                    date_str,
+                    team,
+                    bkt12_count if bkt12_count >= 2 else "",
+                    remark,
+                    bkt1_bonus if bkt1_bonus > 0 else "",
+                    bkt2_bonus if bkt2_bonus > 0 else "",
+                    bkt36_count if bkt36_count > 0 else "",
+                    incentive
+                ])
+    
+    # Save
+    from io import BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    filename = f"Monthly_Incentive_{month}_{year}.xlsx"
+    return Response(
+        content=output.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+# ── PROJECTION API ──
+@app.get("/api/projection-cases")
+async def projection_list(user: str = "", role: str = "executive", bucket: int = 1, filter: str = "ALL"):
+    """Get projection cases — bucket wise with optional FLOW/STABLE/RB filter."""
+    df = load_data()
+    if df is None:
+        raise HTTPException(status_code=500, detail="Data file not found")
+    
+    username = user.strip().upper()
+    
+    # Role filter — only FLOW cases (POS STATUS = FLOW)
+    if role == "admin":
+        proj_df = df[(df["BUCKET"] == bucket) & (df["POS STATUS"] == "FLOW")]
+    else:
+        proj_df = df[(df["TEAM"] == username) & (df["BUCKET"] == bucket) & (df["POS STATUS"] == "FLOW")]
+    
+    # Projection filter (from PROJECTION column)
+    if "PROJECTION" in proj_df.columns and filter != "ALL":
+        proj_df = proj_df[proj_df["PROJECTION"].astype(str).str.upper() == filter.upper()]
+    
+    # Filter out blank rows
+    proj_df = proj_df[proj_df["LOAN NO"].notna() & (proj_df["LOAN NO"] != "") & (proj_df["LOAN NO"].astype(str) != "nan")]
+    
+    # Sort by POS descending
+    proj_df = proj_df.sort_values("POS", ascending=False)
+    
+    cases = []
+    for _, row in proj_df.iterrows():
+        proj_val = str(row.get("CURRENT CODE", "—")).strip().upper() if "CURRENT CODE" in proj_df.columns else "—"
+        if proj_val == "NAN" or proj_val == "":
+            proj_val = "—"
+        dra = row.get("DRA CASE%", 0)
+        dra_pct = round(float(dra) * 100, 1) if dra and dra != 0 else 0
+        cases.append({
+            "customer_name": str(row["CUSTOMER NAME"]) if str(row["CUSTOMER NAME"]) != "nan" else "—",
+            "pos": float(row["POS"]),
+            "dra_pct": dra_pct,
+            "code": proj_val,
+            "loan_no": str(row["LOAN NO"]),
+        })
+    
+    # Counts (from FLOW cases only — filter by PROJECTION column)
+    all_bkt = df[(df["BUCKET"] == bucket) & (df["POS STATUS"] == "FLOW")] if role == "admin" else df[(df["TEAM"] == username) & (df["BUCKET"] == bucket) & (df["POS STATUS"] == "FLOW")]
+    flow_count = 0
+    stable_count = 0
+    rb_count = 0
+    if "PROJECTION" in all_bkt.columns:
+        flow_count = int((all_bkt["PROJECTION"].astype(str).str.upper() == "FLOW").sum())
+        stable_count = int((all_bkt["PROJECTION"].astype(str).str.upper() == "STABLE").sum())
+        rb_count = int((all_bkt["PROJECTION"].astype(str).str.upper() == "RB").sum())
+    
+    return {
+        "total": len(cases),
+        "cases": cases[:100],
+        "flow_count": flow_count,
+        "stable_count": stable_count,
+        "rb_count": rb_count,
+    }
 
 
 # ── PAYMENT UPDATE API ──

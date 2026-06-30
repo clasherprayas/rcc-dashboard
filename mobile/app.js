@@ -805,6 +805,7 @@ async function fetchFlowAgencyView(bucket) {
   if (flowSortMode === 'az') { data.teams.sort((a, b) => a.team.localeCompare(b.team)); }
   else if (flowSortMode === 'za') { data.teams.sort((a, b) => b.team.localeCompare(a.team)); }
   else if (flowSortMode === 'resl') { data.teams.sort((a, b) => b.resl - a.resl); }
+  else if (flowSortMode === 'resl_asc') { data.teams.sort((a, b) => a.resl - b.resl); }
   const g = data.grand;
 
   let rows = '';
@@ -883,7 +884,8 @@ async function fetchFlowAgencyView(bucket) {
 
 function toggleFlowSort(bucket) {
   if (flowSortMode === 'az') { flowSortMode = 'za'; showToast('↕ Z → A'); }
-  else if (flowSortMode === 'za') { flowSortMode = 'resl'; showToast('↕ Resolution High → Low'); }
+  else if (flowSortMode === 'za') { flowSortMode = 'resl'; showToast('↓ Resolution High → Low'); }
+  else if (flowSortMode === 'resl') { flowSortMode = 'resl_asc'; showToast('↑ Resolution Low → High'); }
   else { flowSortMode = 'az'; showToast('↕ A → Z'); }
   fetchFlowAgencyView(bucket);
 }
@@ -2107,11 +2109,11 @@ async function loadFlowList(bucket = currentFlowBucket) {
 
   let rows = '';
   if (data.total === 0) {
-    rows = `<tr><td colspan="3" style="text-align:center;padding:30px;color:var(--muted)">✅ No flow cases in this bucket</td></tr>`;
+    rows = `<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted)">✅ No flow cases in this bucket</td></tr>`;
   } else {
     data.cases.forEach(c => {
       const posCls = c.projection === 'FLOW' ? 'orange' : 'green';
-      rows += `<tr><td>${c.customer_name}</td><td class="mono ${posCls} text-center">₹${fmtIndianFull(c.pos)}</td><td class="mono ${posCls} text-center">${c.dra_pct}%</td></tr>`;
+      rows += `<tr><td>${c.customer_name}</td><td class="mono ${posCls} text-center">₹${fmtIndianFull(c.pos)}</td><td class="mono ${posCls} text-center">${c.dra_pct}%</td><td class="mono text-center" style="font-size:10px;font-weight:700">${c.current_code||''}</td></tr>`;
     });
   }
 
@@ -2144,8 +2146,8 @@ async function loadFlowList(bucket = currentFlowBucket) {
     </div>
     <div class="rcc-table-wrap flow-table-wrap">
       <table class="rcc-table flow-table">
-        <colgroup><col><col><col></colgroup>
-        <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">DRA CASE %</th></tr></thead>
+        <colgroup><col><col><col><col></colgroup>
+        <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">DRA%</th><th class="text-center">CODE</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
@@ -2250,45 +2252,102 @@ async function searchLoan(query) {
   el.innerHTML = html;
 }
 
-// ── RANKING ──
+// ── PROJECTION (replaces Ranking) ──
+let projBucket = 1;
+let projFilter = 'ALL';
+
 async function loadRanking() {
+  // This now loads Projection page
+  loadProjectionPage();
+}
+
+async function loadProjectionPage() {
   const el = document.getElementById('rankingContent');
-  const data = await apiCall('/api/ranking');
-  if (!data || !data.ranking.length) {
-    el.innerHTML = '<div class="empty-state"><div class="emoji">🏆</div><div class="msg">No ranking data</div></div>';
+  const data = await apiCall(`/api/projection-cases?${getFilterParams()}&bucket=${projBucket}&filter=${projFilter}`);
+  if (!data) {
+    el.innerHTML = '<div class="empty-state"><div class="emoji">📊</div><div class="msg">Failed to load</div></div>';
     return;
   }
 
-  let rows = '';
-  data.ranking.forEach(r => {
-    const resCls = r.resolution_pct >= 80 ? 'chip-green' : r.resolution_pct >= 60 ? 'chip-amber' : 'chip-red';
-    rows += `<tr>
-      <td class="rank-cell"><span class="rank-badge ${r.rank<=3?'rank-'+r.rank:''}">${r.rank}</span></td>
-      <td class="exec-name">${r.executive}</td>
-      <td class="mono">${r.cases}</td>
-      <td class="mono green">${r.paid}</td>
-      <td><span class="status-chip ${resCls}">${r.resolution_pct.toFixed(1)}%</span></td>
-      <td class="mono">${formatIndian(r.collection)}</td>
-    </tr>`;
+  // Bucket tabs
+  let bktTabs = '';
+  for (let i = 1; i <= 6; i++) {
+    bktTabs += `<div class="pill-tab ${projBucket===i?'active':''}" onclick="projBucket=${i};loadProjectionPage()">BKT-${i}</div>`;
+  }
+
+  // Filter tabs
+  const filters = ['ALL','FLOW','STABLE','RB'];
+  let filterTabs = '';
+  filters.forEach(f => {
+    const active = projFilter === f ? 'active' : '';
+    filterTabs += `<div class="pill-tab ${active}" onclick="projFilter='${f}';loadProjectionPage()" style="font-size:11px">${f}${f==='FLOW'?' ('+data.flow_count+')':f==='STABLE'?' ('+data.stable_count+')':f==='RB'?' ('+data.rb_count+')':''}</div>`;
   });
 
+  // Table rows
+  let rows = '';
+  if (data.total === 0) {
+    rows = `<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted)">No cases</td></tr>`;
+  } else {
+    data.cases.forEach(c => {
+      const codeCls = c.code === 'FLOW' ? 'color:#ef4444' : c.code === 'STABLE' ? 'color:#059669' : c.code === 'RB' ? 'color:#d97706' : 'color:var(--muted)';
+      rows += `<tr>
+        <td style="font-size:11px;font-weight:700;padding:8px 6px">${c.customer_name}</td>
+        <td class="mono" style="font-size:11px;text-align:right;padding:8px 6px">₹${fmtIndianFull(c.pos)}</td>
+        <td class="mono" style="font-size:11px;text-align:center;padding:8px 6px;color:#059669">${c.dra_pct}%</td>
+        <td style="font-size:10px;font-weight:800;text-align:center;padding:8px 6px;${codeCls}">${c.code}</td>
+      </tr>`;
+    });
+  }
+
   el.innerHTML = `
+    <div style="text-align:center;margin-bottom:8px">
+      <button onclick="shareProjection()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">📤 Share</button>
+    </div>
+    <div class="pill-tabs">${bktTabs}</div>
+    <div class="pill-tabs" style="margin-top:6px">${filterTabs}</div>
     <div class="summary-banner">
       <div class="banner-left">
-        <span style="font-size:1.3rem">🏆</span>
+        <span style="font-size:1.3rem">📊</span>
         <div>
-          <div class="banner-label">EXECUTIVE RANKING</div>
-          <div class="banner-value">${data.ranking.length} Executives</div>
+          <div class="banner-label">BKT-${projBucket} PROJECTION</div>
+          <div class="banner-value">${data.total} cases</div>
         </div>
       </div>
     </div>
     <div class="rcc-table-wrap">
       <table class="rcc-table">
-        <thead><tr><th>#</th><th>EXECUTIVE</th><th>CASES</th><th>PAID</th><th>RES%</th><th>COLLECTION</th></tr></thead>
+        <thead><tr><th>CUSTOMER</th><th class="text-center">POS</th><th class="text-center">DRA%</th><th class="text-center">CODE</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
   `;
+}
+
+function downloadMonthlyIncentive() {
+  toggleMenu();
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  showToast('📊 Downloading...');
+  window.open(`${API}/api/report/monthly-incentive/download?month=${month}&year=${year}`, '_blank');
+}
+
+async function shareProjection() {
+  showToast('📤 Generating...');
+  if (typeof html2canvas === 'undefined') {
+    await new Promise(r => { const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; s.onload=r; document.head.appendChild(s); });
+  }
+  const el = document.querySelector('#rankingContent .rcc-table-wrap');
+  if (!el) return;
+  const canvas = await html2canvas(el, {scale: 2, backgroundColor: '#0b1120'});
+  const blob = await new Promise(r => canvas.toBlob(r));
+  const file = new File([blob], `BKT${projBucket}_Projection.png`, {type: 'image/png'});
+  if (navigator.share && navigator.canShare({files: [file]})) {
+    navigator.share({files: [file], title: `BKT-${projBucket} Projection`});
+  } else {
+    const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=file.name; a.click();
+    showToast('📥 Downloaded');
+  }
 }
 
 // ── PROJECTION ──
