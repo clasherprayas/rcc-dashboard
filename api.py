@@ -1488,7 +1488,7 @@ async def monthly_incentive(month: int = 0, year: int = 0):
     for team in teams:
         results[team] = {"total_receipts": 0, "total_incentive": 0, "daily": {}}
     
-    for day in range(1, last_day + 1):
+    for day in range(1, last_day):  # Exclude last day of month (no incentive)
         day_data = month_paid[month_paid["_day"] == day]
         if day_data.empty:
             continue
@@ -1519,19 +1519,30 @@ async def monthly_incentive(month: int = 0, year: int = 0):
             if is_sunday:
                 incentive += count * 200
             
-            # POS bonus BKT-1
+            # POS bonus BKT-1 (only if resolution >= 89%)
             bkt1_pos = float(team_day[team_day["BUCKET"] == 1]["POS"].sum())
-            if bkt1_pos >= 200000:
-                incentive += int(bkt1_pos // 100000) * 100
-            elif bkt1_pos >= 50000:
-                incentive += 100
+            if bkt1_pos >= 50000:
+                # Check team's BKT-1 resolution
+                t_b1 = df[(df["TEAM"] == team) & (df["BUCKET"] == 1)]
+                t_b1_total = float(t_b1["POS"].sum())
+                t_b1_res = float((t_b1[t_b1["POS STATUS"].isin(["STABLE","RB"])]["POS"].sum()) / t_b1_total * 100) if t_b1_total else 0
+                if t_b1_res >= 89:
+                    if bkt1_pos >= 200000:
+                        incentive += int(bkt1_pos // 100000) * 100
+                    else:
+                        incentive += 100
             
-            # POS bonus BKT-2
+            # POS bonus BKT-2 (only if resolution >= 65%)
             bkt2_pos = float(team_day[team_day["BUCKET"] == 2]["POS"].sum())
-            if bkt2_pos >= 200000:
-                incentive += int(bkt2_pos // 100000) * 100
-            elif bkt2_pos >= 50000:
-                incentive += 100
+            if bkt2_pos >= 50000:
+                t_b2 = df[(df["TEAM"] == team) & (df["BUCKET"] == 2)]
+                t_b2_total = float(t_b2["POS"].sum())
+                t_b2_res = float((t_b2[t_b2["POS STATUS"].isin(["STABLE","RB"])]["POS"].sum()) / t_b2_total * 100) if t_b2_total else 0
+                if t_b2_res >= 65:
+                    if bkt2_pos >= 200000:
+                        incentive += int(bkt2_pos // 100000) * 100
+                    else:
+                        incentive += 100
             
             results[team]["total_receipts"] += count
             results[team]["total_incentive"] += incentive
@@ -1587,11 +1598,32 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
     ws = wb.active
     ws.title = f"Incentive {month}-{year}"
     
+    # Calculate team-wise resolution for POS bonus eligibility
+    team_bkt1_resl = {}
+    team_bkt2_resl = {}
+    for team_name, team_grp in df.groupby("TEAM"):
+        if not team_name or str(team_name).lower() == "nan":
+            continue
+        # BKT-1 resolution
+        b1 = team_grp[team_grp["BUCKET"] == 1]
+        if len(b1) > 0:
+            b1_total = float(b1["POS"].sum())
+            b1_stable = float(b1[b1["POS STATUS"] == "STABLE"]["POS"].sum())
+            b1_rb = float(b1[b1["POS STATUS"] == "RB"]["POS"].sum())
+            team_bkt1_resl[team_name] = round((b1_stable + b1_rb) / b1_total * 100, 2) if b1_total else 0
+        # BKT-2 resolution
+        b2 = team_grp[team_grp["BUCKET"] == 2]
+        if len(b2) > 0:
+            b2_total = float(b2["POS"].sum())
+            b2_stable = float(b2[b2["POS STATUS"] == "STABLE"]["POS"].sum())
+            b2_rb = float(b2[b2["POS STATUS"] == "RB"]["POS"].sum())
+            team_bkt2_resl[team_name] = round((b2_stable + b2_rb) / b2_total * 100, 2) if b2_total else 0
+    
     # Header
     ws.append(["DATE", "WINNER", "BKT 1-2", "REMARK", "BKT 1 50K", "BKT 2 50K", "BKT 3-6", "INCENTIVE"])
     
-    # Process day by day
-    for day in range(1, last_day + 1):
+    # Process day by day (exclude last day — no incentive)
+    for day in range(1, last_day):
         day_data = month_paid[month_paid["_day"] == day]
         if day_data.empty:
             continue
@@ -1625,20 +1657,22 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
                 incentive += bkt12_incentive
                 remark_parts.append(f"{team} - {bkt12_count}")
             
-            # BKT 1 50K POS bonus
+            # BKT 1 50K POS bonus (only if team BKT-1 resolution >= 89%)
             bkt1_bonus = 0
-            if bkt1_pos >= 200000:
-                bkt1_bonus = int(bkt1_pos // 100000) * 100
-            elif bkt1_pos >= 50000:
-                bkt1_bonus = 100
+            if team_bkt1_resl.get(team, 0) >= 89:
+                if bkt1_pos >= 200000:
+                    bkt1_bonus = int(bkt1_pos // 100000) * 100
+                elif bkt1_pos >= 50000:
+                    bkt1_bonus = 100
             incentive += bkt1_bonus
             
-            # BKT 2 50K POS bonus
+            # BKT 2 50K POS bonus (only if team BKT-2 resolution >= 65%)
             bkt2_bonus = 0
-            if bkt2_pos >= 200000:
-                bkt2_bonus = int(bkt2_pos // 100000) * 100
-            elif bkt2_pos >= 50000:
-                bkt2_bonus = 100
+            if team_bkt2_resl.get(team, 0) >= 65:
+                if bkt2_pos >= 200000:
+                    bkt2_bonus = int(bkt2_pos // 100000) * 100
+                elif bkt2_pos >= 50000:
+                    bkt2_bonus = 100
             incentive += bkt2_bonus
             
             # BKT 3-6 incentive (₹100/receipt)

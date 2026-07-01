@@ -2326,8 +2326,35 @@ async function loadProjectionPage() {
 function downloadMonthlyIncentive() {
   toggleMenu();
   const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
+  const pages = document.querySelectorAll('.page');
+  const navItems = document.querySelectorAll('.nav-item');
+  pages.forEach(p => p.classList.remove('active'));
+  navItems.forEach(n => n.classList.remove('active'));
+  document.getElementById('pageFlow').classList.add('active');
+  document.getElementById('flowContent').innerHTML = `
+    <div style="text-align:center;padding:30px">
+      <div style="font-size:18px;font-weight:900;color:var(--ink);margin-bottom:16px">📊 Monthly Incentive Download</div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:6px">SELECT MONTH</label>
+        <select id="incentiveMonth" style="padding:12px 16px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;background:var(--bg);color:var(--ink)">
+          <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+          <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+          <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+          <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+        </select>
+        <select id="incentiveYear" style="padding:12px 16px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-weight:600;background:var(--bg);color:var(--ink);margin-left:8px">
+          <option value="2026">2026</option><option value="2025">2025</option>
+        </select>
+      </div>
+      <button onclick="doDownloadIncentive()" style="background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;padding:14px 28px;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer">📥 Download Excel</button>
+    </div>
+  `;
+  document.getElementById('incentiveMonth').value = now.getMonth() + 1;
+}
+
+function doDownloadIncentive() {
+  const month = document.getElementById('incentiveMonth').value;
+  const year = document.getElementById('incentiveYear').value;
   showToast('📊 Downloading...');
   window.open(`${API}/api/report/monthly-incentive/download?month=${month}&year=${year}`, '_blank');
 }
