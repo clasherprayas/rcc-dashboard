@@ -1809,7 +1809,11 @@ async def payment_update(request: Request):
     pos_status = str(body.get("pos_status", "STABLE")).strip().upper()
     receipt_cut = str(body.get("receipt_cut", "PAID")).strip().upper()
     
-    if not loan_no or not amount or not mode or not pay_date:
+    if not loan_no or not mode:
+        return {"status": "error", "message": "loan_no and mode required"}
+    
+    # For STATUS_CHANGE, amount and date are optional
+    if mode != "STATUS_CHANGE" and (not amount or not pay_date):
         return {"status": "error", "message": "All fields required (loan_no, amount, mode, date)"}
     
     # Validate mode
