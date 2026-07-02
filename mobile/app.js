@@ -77,18 +77,21 @@ function toggleLandscape() {
 }
 
 function initTheme() {
-  const saved = localStorage.getItem('rcc_theme') || 'dark';
+  const saved = localStorage.getItem('rcc_theme') || 'light';
   document.documentElement.setAttribute('data-theme', saved);
-  updateThemeBtn(saved);
+  setTimeout(() => {
+    const nightToggle = document.getElementById('nightToggle');
+    if (nightToggle) nightToggle.checked = (saved === 'dark');
+  }, 500);
 }
 
 function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
   const next = current === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('rcc_theme', next);
-  updateThemeBtn(next);
-  // Reload dashboard to update donut SVG colors
+  const nightToggle = document.getElementById('nightToggle');
+  if (nightToggle) nightToggle.checked = (next === 'dark');
   if (currentUser) loadDashboard();
 }
 
@@ -1302,6 +1305,7 @@ let winnersDate = '';
 
 async function generateWinners() {
   toggleMenu();
+  hideExecFilter();
   // Show date picker first
   const pages = document.querySelectorAll('.page');
   const navItems = document.querySelectorAll('.nav-item');
@@ -2010,13 +2014,16 @@ async function loadTrails() {
       <div class="banner-left">
         <span style="font-size:1.3rem">📋</span>
         <div>
-          <div class="banner-label">TOTAL PENDING CASES</div>
+          <div class="banner-label">PENDING TRAILS</div>
           <div class="banner-value">${data.total}</div>
         </div>
       </div>
-      <div class="banner-right">Showing ${data.total}</div>
+      <div class="banner-right" style="display:flex;align-items:center;gap:8px">
+        <button onclick="shareTrailsList()" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;padding:6px 12px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer">📤 Share</button>
+        <span>Showing ${data.total}</span>
+      </div>
     </div>
-    <div class="rcc-table-wrap">
+    <div class="rcc-table-wrap trails-table-wrap">
       <table class="rcc-table trails-table">
         <colgroup><col><col><col></colgroup>
         <thead><tr><th>LOAN NO</th><th>CUSTOMER NAME</th><th>AREA</th></tr></thead>
@@ -2024,6 +2031,134 @@ async function loadTrails() {
       </table>
     </div>
   `;
+}
+
+// ── VERIFY LIST ──
+async function showVerifyList() {
+  toggleMenu();
+  hideExecFilter();
+  const pages = document.querySelectorAll('.page');
+  const navItems = document.querySelectorAll('.nav-item');
+  pages.forEach(p => p.classList.remove('active'));
+  navItems.forEach(n => n.classList.remove('active'));
+  document.getElementById('pageFlow').classList.add('active');
+  
+  showToast('📋 Loading verify list...');
+  
+  // Fetch from Google Sheets (all entries with MODE = STATUS_CHANGE)
+  const GSHEET_URL = 'https://script.google.com/macros/s/AKfycbyKveIlFfsklkMv6Q0FpWC-Y2RtYi6jkZWKBwxgeGifIP6L-71XcmWMOaNdZOushRDwag/exec';
+  let entries = [];
+  try {
+    const res = await fetch(GSHEET_URL);
+    const data = await res.json();
+    entries = (data.entries || []).filter(e => e.mode === 'STATUS_CHANGE');
+  } catch(e) {
+    // Fallback — use local queue
+    const localData = await apiCall('/api/payment-queue');
+    if (localData && localData.entries) {
+      entries = localData.entries.filter(e => e.mode === 'STATUS_CHANGE');
+    }
+  }
+  
+  let rows = '';
+  if (entries.length === 0) {
+    rows = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted)">✅ No pending verifications</td></tr>';
+  } else {
+    entries.forEach(e => {
+      const statusColor = e.pos_status === 'STABLE' ? 'color:#059669' : e.pos_status === 'RB' ? 'color:#d97706' : 'color:#ef4444';
+      rows += `<tr>
+        <td style="font-size:11px;font-weight:700;padding:10px 8px">${e.loan_no}</td>
+        <td style="font-size:11px;font-weight:800;padding:10px 6px;${statusColor}">${e.pos_status || '—'}</td>
+        <td style="font-size:10px;padding:10px 6px;color:var(--muted)">${e.date || e.timestamp || '—'}</td>
+        <td style="padding:10px 4px;text-align:center"><button onclick="revertStatus('${e.loan_no}')" style="background:#fee2e2;color:#dc2626;border:none;border-radius:4px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer">↩ Revert</button></td>
+      </tr>`;
+    });
+  }
+  
+  document.getElementById('flowContent').innerHTML = `
+    <div style="text-align:center;margin-bottom:12px">
+      <div style="font-size:16px;font-weight:900;color:var(--ink);margin-bottom:4px">📋 Verify List</div>
+      <div style="font-size:11px;color:var(--muted)">Phone se status change kiye — PC pe verify karo</div>
+    </div>
+    <div class="rcc-table-wrap">
+      <table class="rcc-table">
+        <thead><tr><th>LOAN NO</th><th>STATUS</th><th>DATE</th><th>ACTION</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function revertStatus(loanNo) {
+  if (!confirm('Revert to FLOW?')) return;
+  await quickStatusChange(loanNo, 'STABLE');
+}
+
+// ── QUICK STATUS CHANGE (tap on badge) ──
+async function quickStatusChange(loanNo, currentStatus) {
+  const options = ['FLOW', 'STABLE', 'RB'].filter(s => s !== currentStatus);
+  const newStatus = prompt(`Change status from ${currentStatus} to:\n\n1. ${options[0]}\n2. ${options[1]}\n\nType: ${options[0]} or ${options[1]}`);
+  
+  if (!newStatus || !['FLOW','STABLE','RB'].includes(newStatus.toUpperCase())) {
+    return;
+  }
+  
+  const status = newStatus.toUpperCase();
+  const receiptCut = status === 'STABLE' || status === 'RB' ? 'PAID' : 'UNPAID';
+  
+  showToast(`🔄 Changing to ${status}...`);
+  
+  // Save to Google Sheets
+  const GSHEET_URL = 'https://script.google.com/macros/s/AKfycbyKveIlFfsklkMv6Q0FpWC-Y2RtYi6jkZWKBwxgeGifIP6L-71XcmWMOaNdZOushRDwag/exec';
+  try {
+    fetch(GSHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({loan_no: loanNo, amount: 0, mode: 'STATUS_CHANGE', date: new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'2-digit'}).replace(/\//g,'.'), pos_status: status, receipt_cut: receiptCut})
+    });
+  } catch(e) {}
+  
+  // Update in-memory on Render
+  const result = await apiCall('/api/payment-update', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({loan_no: loanNo, amount: 0, mode: 'STATUS_CHANGE', date: '', pos_status: status, receipt_cut: receiptCut})
+  });
+  
+  if (result && result.status === 'ok') {
+    showToast(`✅ ${loanNo} → ${status}`);
+    // Reload current page
+    searchLoan(document.getElementById('searchInput') ? document.getElementById('searchInput').value : '');
+  } else {
+    showToast('❌ Failed: ' + (result ? result.message : 'error'));
+  }
+}
+
+// ── SHARE TRAILS LIST ──
+async function shareTrailsList() {
+  showToast('📤 Generating...');
+  if (typeof html2canvas === 'undefined') {
+    await new Promise(r => { const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; s.onload=r; document.head.appendChild(s); });
+  }
+  const el = document.querySelector('.trails-table-wrap');
+  if (!el) return;
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:absolute;left:-9999px;top:0;background:#ffffff;padding:16px;width:450px;font-family:Inter,sans-serif';
+  wrapper.innerHTML = `<div style="text-align:center;margin-bottom:12px"><div style="font-size:16px;font-weight:900;color:#0f172a">📋 PENDING TRAILS</div><div style="font-size:12px;color:#64748b;margin-top:4px">${document.querySelector('.banner-value')?.textContent || ''} cases</div></div>` + el.outerHTML;
+  document.body.appendChild(wrapper);
+  try {
+    const canvas = await html2canvas(wrapper, {scale: 2, backgroundColor: '#ffffff'});
+    const blob = await new Promise(r => canvas.toBlob(r));
+    const file = new File([blob], 'Pending_Trails.png', {type: 'image/png'});
+    if (navigator.share && navigator.canShare({files: [file]})) {
+      await navigator.share({files: [file], title: 'Pending Trails'});
+    } else {
+      const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=file.name; a.click();
+      showToast('📥 Downloaded');
+    }
+  } catch(e) { showToast('❌ Share failed'); }
+  document.body.removeChild(wrapper);
 }
 
 // ── FLOW LIST (TABLE — CUSTOMER NAME + POS + DRA%) ──
@@ -2113,7 +2248,7 @@ async function loadFlowList(bucket = currentFlowBucket) {
   } else {
     data.cases.forEach(c => {
       const posCls = c.projection === 'FLOW' ? 'orange' : 'green';
-      rows += `<tr><td>${c.customer_name}</td><td class="mono ${posCls} text-center">₹${fmtIndianFull(c.pos)}</td><td class="mono ${posCls} text-center">${c.dra_pct}%</td><td class="mono text-center" style="font-size:10px;font-weight:700">${c.current_code||''}</td></tr>`;
+      rows += `<tr><td>${c.customer_name}</td><td class="mono ${posCls} text-center">₹${fmtIndianFull(c.pos)}</td><td class="mono ${posCls} text-center">${c.dra_pct}%</td><td class="mono text-center" style="font-size:10px;font-weight:700">${c.current_code||''}</td><td style="text-align:center"><span class="status-chip chip-orange" onclick="quickStatusChange('${c.loan_no||''}','FLOW')" style="cursor:pointer;font-size:9px;padding:3px 6px">FLOW</span></td></tr>`;
     });
   }
 
@@ -2146,8 +2281,8 @@ async function loadFlowList(bucket = currentFlowBucket) {
     </div>
     <div class="rcc-table-wrap flow-table-wrap">
       <table class="rcc-table flow-table">
-        <colgroup><col><col><col><col></colgroup>
-        <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">DRA%</th><th class="text-center">CODE</th></tr></thead>
+        <colgroup><col><col><col><col><col style="width:50px"></colgroup>
+        <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">DRA%</th><th class="text-center">CODE</th><th class="text-center">⚡</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
@@ -2205,7 +2340,7 @@ async function searchLoan(query) {
             <span style="font-size:.85rem">🏦</span>
             <span>${r.customer_name}</span>
           </div>
-          <span class="status-chip ${statusCls}">${r.pos_status}</span>
+          <span class="status-chip ${statusCls}" onclick="event.stopPropagation();quickStatusChange('${r.loan_no}','${r.pos_status}')" style="cursor:pointer">${r.pos_status}</span>
         </div>
         <div class="action-subtitle">
           For Stable ₹${fmtIndianFull(r.stab_amount)} · POS ₹${fmtIndianFull(r.pos)} · BKT-${r.bucket}
@@ -2325,6 +2460,7 @@ async function loadProjectionPage() {
 
 function downloadMonthlyIncentive() {
   toggleMenu();
+  hideExecFilter();
   const now = new Date();
   const pages = document.querySelectorAll('.page');
   const navItems = document.querySelectorAll('.nav-item');

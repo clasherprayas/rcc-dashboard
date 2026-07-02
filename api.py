@@ -911,7 +911,7 @@ def load_data():
             ).fillna(0)
     
     if "LOAN NO" in df.columns:
-        df["LOAN NO"] = df["LOAN NO"].astype(str).str.strip()
+        df["LOAN NO"] = df["LOAN NO"].astype(str).str.strip().str.replace(r'\.0$', '', regex=True)
     if "CUSTOMER NAME" in df.columns:
         df["CUSTOMER NAME"] = df["CUSTOMER NAME"].astype(str).str.strip()
     if "TEAM" in df.columns:
@@ -1177,7 +1177,7 @@ def _calc_projection(df, bucket, username):
     """Calculate inline projection + current res for flowlist banner."""
     try:
         bkt_df = df[df["BUCKET"] == bucket]
-        if username:
+        if username and username != "ADMIN":
             user_bkt = bkt_df[bkt_df["TEAM"] == username]
         else:
             user_bkt = bkt_df
@@ -1216,6 +1216,9 @@ async def search_loan(q: str = "", user: str = "", role: str = "executive", buck
         search_df = df[df["TEAM"] == username]
     else:
         search_df = df
+    
+    # Filter out blank/nan rows
+    search_df = search_df[search_df["LOAN NO"].notna() & (search_df["LOAN NO"] != "") & (search_df["LOAN NO"] != "nan") & (search_df["LOAN NO"] != "0")]
     
     # Bucket filter
     if bucket > 0:

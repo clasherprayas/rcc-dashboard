@@ -46,7 +46,6 @@
       <div class="topbar-user">
         <span class="topbar-badge" id="userBadge">Admin</span>
         <button class="btn-icon" onclick="forceRefresh()" title="Refresh">⟳</button>
-        <button class="btn-icon" id="landscapeBtn" onclick="toggleLandscape()" title="Rotate">🔄</button>
         <button class="btn-icon" id="themeBtn" onclick="toggleTheme()" title="Theme">☀️</button>
         <button class="btn-logout" id="logoutBtn">Logout</button>
       </div>
@@ -117,6 +116,13 @@
         <div class="menu-section-title menu-accordion" onclick="toggleAccordion(this)">⚙️ Settings <span class="acc-arrow">▶</span></div>
         <div class="menu-accordion-body" style="display:none">
           <div class="menu-item toggle-item">
+            <span>🌙 Night Mode</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="nightToggle" onchange="toggleTheme()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="menu-item toggle-item">
             <span>📊 Projection %</span>
             <label class="toggle-switch">
               <input type="checkbox" id="projToggle" checked onchange="toggleProjection()">
@@ -128,12 +134,6 @@
           </div>
           <div class="menu-item" onclick="showVisitorLogs()">
             <span>👁️ Visitor Logs</span>
-          </div>
-          <div class="menu-item" onclick="generateWinners()">
-            <span>🏅 Daily Winners</span>
-          </div>
-          <div class="menu-item" onclick="downloadMonthlyIncentive()">
-            <span>📊 Monthly Incentive (Excel)</span>
           </div>
         </div>
       </div>
@@ -150,8 +150,23 @@
           <div class="menu-item" onclick="showPaymentUpdate()">
             <span>💳 Payment Update</span>
           </div>
+          <div class="menu-item" onclick="showVerifyList()">
+            <span>📋 Verify List</span>
+          </div>
           <div class="menu-item" onclick="showTrailsUpload()">
             <span>📤 Upload Trails CSV</span>
+          </div>
+        </div>
+      </div>
+      <!-- INCENTIVE — collapsible -->
+      <div class="menu-section">
+        <div class="menu-section-title menu-accordion" onclick="toggleAccordion(this)">💰 Incentive <span class="acc-arrow">▶</span></div>
+        <div class="menu-accordion-body" style="display:none">
+          <div class="menu-item" onclick="generateWinners()">
+            <span>🏅 Daily Winners</span>
+          </div>
+          <div class="menu-item" onclick="downloadMonthlyIncentive()">
+            <span>📊 Monthly Incentive (Excel)</span>
           </div>
         </div>
       </div>

@@ -93,7 +93,7 @@ st.markdown("""
 
 # ── Theme state ──
 if "theme" not in st.session_state:
-    st.session_state.theme = "dark"
+    st.session_state.theme = "light"
 
 THEME = st.session_state.theme
 
@@ -1583,12 +1583,16 @@ def main():
             st.cache_data.clear()
             sync_source_excel()
             st.rerun()
-        # Theme toggle
-        theme_icon = "☀️" if THEME == "dark" else "🌙"
-        theme_label = f"{theme_icon} Light Mode" if THEME == "dark" else f"{theme_icon} Dark Mode"
-        if st.button(theme_label, use_container_width=True, key="theme_toggle"):
-            st.session_state.theme = "light" if THEME == "dark" else "dark"
-            st.rerun()
+
+        # ── SETTINGS section ──
+        with st.expander("⚙️ SETTINGS", expanded=False):
+            # Theme toggle (Night Mode)
+            theme_icon = "🌙" if THEME == "light" else "☀️"
+            theme_label = f"{theme_icon} Night Mode" if THEME == "light" else f"{theme_icon} Light Mode"
+            if st.button(theme_label, use_container_width=True, key="theme_toggle"):
+                st.session_state.theme = "dark" if THEME == "light" else "light"
+                st.rerun()
+
         if st.button("🚪 Logout", use_container_width=True):
             st.session_state.user = None
             st.rerun()
