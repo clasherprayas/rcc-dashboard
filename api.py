@@ -893,7 +893,7 @@ def load_data():
                    "Paid Amount", "EMI", "TOTAL EMI DUE", "STAB AMOUNTWITH DPIC", 
                    "RB AMOUNTWITH DPIC", "BUCKET", "POS STATUS", "RECEIPT CUT", 
                    "TEAM", "POS", "DPIC CHARGES", "DRA CASE%", "AGENCY CASE%", 
-                   "AREA", "MOBILE", "DPD", "TRAILS PENDING", "PROJECTION", "CURRENT CODE"]
+                   "AREA", "MOBILE", "DPD", "TRAILS PENDING", "PROJECTION", "CURRENT CODE", "Allocated"]
     try:
         df = pd.read_excel(DATA_FILE, sheet_name=SHEET_NAME, engine="openpyxl", usecols=lambda c: str(c).strip() in needed_cols)
     except Exception:
@@ -1115,12 +1115,17 @@ async def trails(user: str = "", role: str = "executive", auth: str = ""):
         ln = str(row["LOAN NO"]).strip()
         if not ln or ln == "nan" or ln == "0":
             continue
+        allocated = str(row.get("Allocated", "")).strip() if "Allocated" in pending.columns else ""
         result.append({
             "loan_no": ln,
             "customer_name": str(row["CUSTOMER NAME"]) if str(row["CUSTOMER NAME"]) != "nan" else "—",
             "team": str(row["TEAM"]) if str(row["TEAM"]) != "nan" else "—",
             "area": str(row.get("AREA", "—")) if str(row.get("AREA", "—")) != "nan" else "—",
+            "allocated": allocated,
         })
+    
+    # Sort by area A-Z
+    result.sort(key=lambda x: x.get("area", "—"))
     
     return {"total": len(result), "trails": result}
 
@@ -1817,7 +1822,7 @@ async def payment_update(request: Request):
         return {"status": "error", "message": "All fields required (loan_no, amount, mode, date)"}
     
     # Validate mode
-    valid_modes = ["COLLECT", "CASH", "ONLINE", "CHEQUE"]
+    valid_modes = ["COLLECT", "CASH", "ONLINE", "CHEQUE", "STATUS_CHANGE"]
     if mode not in valid_modes:
         return {"status": "error", "message": f"Invalid mode. Use: {', '.join(valid_modes)}"}
     
@@ -1854,9 +1859,19 @@ async def payment_update(request: Request):
         return {"status": "error", "message": "Data not loaded yet"}
     
     # 3. Save to local queue (backup + for sync_worker)
+    # Get customer name from DataFrame
+    customer_name = ""
+    if df is not None and "CUSTOMER NAME" in df.columns:
+        mask = df["LOAN NO"].astype(str).str.strip() == loan_no
+        if mask.any():
+            customer_name = str(df.loc[mask, "CUSTOMER NAME"].iloc[0])
+            if customer_name == "nan":
+                customer_name = ""
+    
     queue = _load_payment_queue()
     queue.append({
         "loan_no": loan_no,
+        "customer_name": customer_name,
         "amount": float(amount),
         "mode": mode,
         "date": pay_date,
@@ -1872,9 +1887,19 @@ async def payment_update(request: Request):
 
 @app.get("/api/payment-queue")
 async def get_payment_queue():
-    """Get pending payment queue (not yet synced to HDFC)."""
+    """Get pending payment queue (not yet synced to HDFC) — with customer names."""
     queue = _load_payment_queue()
     pending = [q for q in queue if not q.get("synced")]
+    
+    # Add customer names from cached data
+    df = _cache.get("df")
+    if df is not None and "LOAN NO" in df.columns:
+        for entry in pending:
+            loan = str(entry.get("loan_no", "")).strip()
+            mask = df["LOAN NO"].astype(str).str.strip() == loan
+            if mask.any():
+                entry["customer_name"] = str(df.loc[mask.idxmax(), "CUSTOMER NAME"])
+    
     return {"pending": len(pending), "entries": pending}
 
 

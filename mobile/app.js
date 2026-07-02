@@ -2006,7 +2006,9 @@ async function loadTrails() {
 
   let rows = '';
   data.trails.forEach(t => {
-    rows += `<tr><td class="mono">${t.loan_no}</td><td>${t.customer_name}</td><td><span class="area-chip">${t.area}</span></td></tr>`;
+    const isUnalloc = !t.allocated || t.allocated === '#N/A' || t.allocated.toLowerCase() === 'unallocated' || t.allocated === '—' || t.allocated === 'nan';
+    const rowStyle = isUnalloc ? 'background:#fef2f2;border-left:3px solid #ef4444' : '';
+    rows += `<tr style="${rowStyle}"><td class="mono">${t.loan_no}</td><td>${t.customer_name}</td><td><span class="area-chip">${t.area}</span></td><td style="text-align:center;font-size:10px;font-weight:700;color:${isUnalloc?'#ef4444':'#059669'}">${isUnalloc?'✗':'✓'}</td></tr>`;
   });
 
   el.innerHTML = `
@@ -2025,8 +2027,8 @@ async function loadTrails() {
     </div>
     <div class="rcc-table-wrap trails-table-wrap">
       <table class="rcc-table trails-table">
-        <colgroup><col><col><col></colgroup>
-        <thead><tr><th>LOAN NO</th><th>CUSTOMER NAME</th><th>AREA</th></tr></thead>
+        <colgroup><col><col><col><col style="width:30px"></colgroup>
+        <thead><tr><th>LOAN NO</th><th>CUSTOMER NAME</th><th>AREA</th><th>AL</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
@@ -2045,29 +2047,24 @@ async function showVerifyList() {
   
   showToast('📋 Loading verify list...');
   
-  // Fetch from Google Sheets (all entries with MODE = STATUS_CHANGE)
-  const GSHEET_URL = 'https://script.google.com/macros/s/AKfycbyKveIlFfsklkMv6Q0FpWC-Y2RtYi6jkZWKBwxgeGifIP6L-71XcmWMOaNdZOushRDwag/exec';
+  // Fetch from local queue (Render pe)
   let entries = [];
   try {
-    const res = await fetch(GSHEET_URL);
-    const data = await res.json();
-    entries = (data.entries || []).filter(e => e.mode === 'STATUS_CHANGE');
-  } catch(e) {
-    // Fallback — use local queue
     const localData = await apiCall('/api/payment-queue');
     if (localData && localData.entries) {
       entries = localData.entries.filter(e => e.mode === 'STATUS_CHANGE');
     }
-  }
+  } catch(e) {}
   
   let rows = '';
   if (entries.length === 0) {
-    rows = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted)">✅ No pending verifications</td></tr>';
+    rows = '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted)">✅ No pending verifications</td></tr>';
   } else {
     entries.forEach(e => {
       const statusColor = e.pos_status === 'STABLE' ? 'color:#059669' : e.pos_status === 'RB' ? 'color:#d97706' : 'color:#ef4444';
       rows += `<tr>
         <td style="font-size:11px;font-weight:700;padding:10px 8px">${e.loan_no}</td>
+        <td style="font-size:11px;padding:10px 6px">${e.customer_name || '—'}</td>
         <td style="font-size:11px;font-weight:800;padding:10px 6px;${statusColor}">${e.pos_status || '—'}</td>
         <td style="font-size:10px;padding:10px 6px;color:var(--muted)">${e.date || e.timestamp || '—'}</td>
         <td style="padding:10px 4px;text-align:center"><button onclick="revertStatus('${e.loan_no}')" style="background:#fee2e2;color:#dc2626;border:none;border-radius:4px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer">↩ Revert</button></td>
@@ -2082,7 +2079,7 @@ async function showVerifyList() {
     </div>
     <div class="rcc-table-wrap">
       <table class="rcc-table">
-        <thead><tr><th>LOAN NO</th><th>STATUS</th><th>DATE</th><th>ACTION</th></tr></thead>
+        <thead><tr><th>LOAN NO</th><th>CUSTOMER</th><th>STATUS</th><th>DATE</th><th>ACTION</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
@@ -2091,7 +2088,26 @@ async function showVerifyList() {
 
 async function revertStatus(loanNo) {
   if (!confirm('Revert to FLOW?')) return;
-  await quickStatusChange(loanNo, 'STABLE');
+  showToast('🔄 Reverting...');
+  
+  // Save to Google Sheets
+  const GSHEET_URL = 'https://script.google.com/macros/s/AKfycbyKveIlFfsklkMv6Q0FpWC-Y2RtYi6jkZWKBwxgeGifIP6L-71XcmWMOaNdZOushRDwag/exec';
+  try {
+    fetch(GSHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({loan_no:loanNo,amount:0,mode:'STATUS_CHANGE',date:new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'2-digit'}).replace(/\//g,'.'),pos_status:'FLOW',receipt_cut:'UNPAID'})});
+  } catch(e) {}
+  
+  const result = await apiCall('/api/payment-update', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({loan_no: loanNo, amount: 0, mode: 'STATUS_CHANGE', date: '', pos_status: 'FLOW', receipt_cut: 'UNPAID'})
+  });
+  
+  if (result && result.status === 'ok') {
+    showToast('✅ Reverted to FLOW');
+    showVerifyList();
+  } else {
+    showToast('❌ Failed');
+  }
 }
 
 // ── QUICK STATUS CHANGE (tap on badge) ──
