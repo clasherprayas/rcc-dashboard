@@ -822,6 +822,7 @@ def load_data(data_file, sheet_name, _mtime=0):
         df[col] = as_number(df[col])
     df["LOAN NO"]       = df["LOAN NO"].astype(str).str.strip()
     df["CUSTOMER NAME"] = df["CUSTOMER NAME"].astype(str).str.strip()
+    df["CUSTOMER NAME"] = df["CUSTOMER NAME"].replace({"nan": "—", "": "—", "None": "—"})
     df["TEAM"]          = clean_team(df["TEAM"])
     df["POS STATUS"]    = clean_status(df["POS STATUS"])
     df["BUCKET"]        = clean_bucket(df["BUCKET"])

@@ -2264,7 +2264,7 @@ async function loadFlowList(bucket = currentFlowBucket) {
   } else {
     data.cases.forEach(c => {
       const posCls = c.projection === 'FLOW' ? 'orange' : 'green';
-      rows += `<tr><td>${c.customer_name}</td><td class="mono ${posCls} text-center">₹${fmtIndianFull(c.pos)}</td><td class="mono ${posCls} text-center">${c.dra_pct}%</td><td class="mono text-center" style="font-size:10px;font-weight:700">${c.current_code||''}</td><td style="text-align:center"><span class="status-chip chip-orange" onclick="quickStatusChange('${c.loan_no||''}','FLOW')" style="cursor:pointer;font-size:9px;padding:3px 6px">FLOW</span></td></tr>`;
+      rows += `<tr><td>${c.customer_name}</td><td class="mono ${posCls} text-center">₹${fmtIndianFull(c.pos)}</td><td class="mono text-center" style="font-size:10px;color:#059669;font-weight:700">₹${fmtIndianFull(c.stab_amount||0)}</td><td class="mono ${posCls} text-center">${c.dra_pct}%</td><td style="text-align:center"><span class="status-chip chip-orange" onclick="quickStatusChange('${c.loan_no||''}','FLOW')" style="cursor:pointer;font-size:9px;padding:3px 6px">FLOW</span></td></tr>`;
     });
   }
 
@@ -2298,7 +2298,7 @@ async function loadFlowList(bucket = currentFlowBucket) {
     <div class="rcc-table-wrap flow-table-wrap">
       <table class="rcc-table flow-table">
         <colgroup><col><col><col><col><col style="width:50px"></colgroup>
-        <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">DRA%</th><th class="text-center">CODE</th><th class="text-center">⚡</th></tr></thead>
+        <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">STAB</th><th class="text-center">DRA%</th><th class="text-center">⚡</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
