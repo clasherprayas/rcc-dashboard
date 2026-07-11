@@ -414,7 +414,7 @@ async def daily_winners(date: str = ""):
         if not rc_winners.empty:
             lines.append("*DAILY (BKT 1-2) RECEIPTS*")
             for team, count in rc_winners.sort_values(ascending=False).items():
-                incentive = count * 150
+                incentive = count * 100
                 lines.append(f"{team} - {count} 💵 {incentive}")
             lines.append("")
     
@@ -1157,11 +1157,13 @@ async def flowlist(user: str = "", bucket: int = 1, role: str = "executive", aut
                     "customer_name": str(row["CUSTOMER NAME"]) if "CUSTOMER NAME" in row.index else "",
                     "team": str(row["TEAM"]) if "TEAM" in row.index else "",
                     "pos": float(row["POS"]) if pd.notna(row.get("POS")) else 0,
+                    "stab_amount": float(row.get("STAB AMOUNTWITH DPIC", 0) or 0),
                     "dra_pct": round(float(row["DRA CASE%"]) * 100, 1) if pd.notna(row.get("DRA CASE%")) else 0,
                     "mobile": str(row.get("MOBILE", "")),
                     "area": str(row.get("AREA", "")),
                     "projection": str(row["PROJECTION"]) if "PROJECTION" in row.index else "",
                     "current_code": str(row.get("CURRENT CODE", "")).strip() if "CURRENT CODE" in row.index and pd.notna(row.get("CURRENT CODE")) else "",
+                    "loan_no": str(row["LOAN NO"]) if "LOAN NO" in row.index else "",
                 })
             except Exception:
                 continue
@@ -1520,7 +1522,7 @@ async def monthly_incentive(month: int = 0, year: int = 0):
             incentive = 0
             # BKT 1-2: ₹150/receipt if 2+ receipts
             if bkt12_count >= 2:
-                incentive += bkt12_count * 150
+                incentive += bkt12_count * 100
             # BKT 3-6: ₹100/receipt
             incentive += bkt36_count * 100
             # Sunday special: ₹200/receipt (all buckets)
@@ -1661,7 +1663,7 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
             # BKT 1-2 incentive (2+ receipts = ₹150/receipt)
             bkt12_incentive = 0
             if bkt12_count >= 2:
-                bkt12_incentive = bkt12_count * 150
+                bkt12_incentive = bkt12_count * 100
                 incentive += bkt12_incentive
                 remark_parts.append(f"{team} - {bkt12_count}")
             
