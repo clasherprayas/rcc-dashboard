@@ -414,7 +414,7 @@ async def daily_winners(date: str = ""):
         if not rc_winners.empty:
             lines.append("*DAILY (BKT 1-2) RECEIPTS*")
             for team, count in rc_winners.sort_values(ascending=False).items():
-                incentive = count * 100
+                incentive = count * 150
                 lines.append(f"{team} - {count} 💵 {incentive}")
             lines.append("")
     
@@ -459,7 +459,7 @@ async def daily_winners(date: str = ""):
         if not rc_by_team_36.empty:
             lines.append("*DAILY (BKT 3-6) RECEIPTS*")
             for team, count in rc_by_team_36.sort_values(ascending=False).items():
-                incentive = count * 100
+                incentive = count * 150
                 lines.append(f"{team} - {count} 💵 {incentive}")
             lines.append("")
     
@@ -1522,9 +1522,9 @@ async def monthly_incentive(month: int = 0, year: int = 0):
             incentive = 0
             # BKT 1-2: ₹150/receipt if 2+ receipts
             if bkt12_count >= 2:
-                incentive += bkt12_count * 100
+                incentive += bkt12_count * 150
             # BKT 3-6: ₹100/receipt
-            incentive += bkt36_count * 100
+            incentive += bkt36_count * 150
             # Sunday special: ₹200/receipt (all buckets)
             if is_sunday:
                 incentive += count * 200
@@ -1663,7 +1663,7 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
             # BKT 1-2 incentive (2+ receipts = ₹150/receipt)
             bkt12_incentive = 0
             if bkt12_count >= 2:
-                bkt12_incentive = bkt12_count * 100
+                bkt12_incentive = bkt12_count * 150
                 incentive += bkt12_incentive
                 remark_parts.append(f"{team} - {bkt12_count}")
             
@@ -1688,7 +1688,7 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
             # BKT 3-6 incentive (₹100/receipt)
             bkt36_incentive = 0
             if bkt36_count > 0:
-                bkt36_incentive = bkt36_count * 100
+                bkt36_incentive = bkt36_count * 150
                 incentive += bkt36_incentive
             
             # Sunday special (₹200/receipt all buckets)
