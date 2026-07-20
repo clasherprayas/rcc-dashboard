@@ -568,6 +568,7 @@
             <td>${c.customer_name}</td>
             <td class="text-center ${posCls}">${fmtIndian(c.pos)}</td>
             <td class="text-center ${posCls}">${c.dra_pct}%</td>
+            <td class="text-center pos-val" style="font-size:11px">${fmtIndian(c.stab_amount||0)}</td>
           </tr>`;
         });
 
@@ -608,8 +609,8 @@
           ${greetHtml ? '<div class="confetti-wrap"><div class="confetti c1"></div><div class="confetti c2"></div><div class="confetti c3"></div><div class="confetti c4"></div><div class="confetti c5"></div><div class="confetti c6"></div><div class="confetti c7"></div><div class="confetti c8"></div><div class="confetti c9"></div><div class="confetti c10"></div></div>' : ''}
           <div class="table-wrap">
             <table>
-              <colgroup><col><col><col></colgroup>
-              <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">DRA CASE %</th></tr></thead>
+              <colgroup><col><col><col><col></colgroup>
+              <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">DRA %</th><th class="text-center">STAB</th></tr></thead>
               <tbody>${rows}</tbody>
             </table>
           </div>

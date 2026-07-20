@@ -1475,14 +1475,28 @@ def flowlist_public_view(df_full):
                     s = s[:-2]
                 pos = pos.lstrip(",")
             dra = f'{row["DRA CASE%"]:.1f}%'
-            rows_html += f'<tr style="border-bottom:1px solid {T["border"]}"><td style="padding:8px 10px;font-size:.82rem;color:{T["ink"]}">{name}</td><td style="padding:8px 10px;font-size:.82rem;color:{T["green_val"]};font-family:var(--font-mono);text-align:center">{pos}</td><td style="padding:8px 10px;font-size:.82rem;color:{T["amber_val"]};font-family:var(--font-mono);text-align:center">{dra}</td></tr>'
+            # STAB amount in Indian comma format
+            stab_val = row["STAB AMOUNTWITH DPIC"]
+            sv = int(stab_val) if stab_val >= 1 else 0
+            ss = str(sv)
+            if len(ss) <= 3:
+                stab = ss
+            else:
+                stab = ss[-3:]
+                ss = ss[:-3]
+                while ss:
+                    stab = ss[-2:] + "," + stab
+                    ss = ss[:-2]
+                stab = stab.lstrip(",")
+            rows_html += f'<tr style="border-bottom:1px solid {T["border"]}"><td style="padding:8px 10px;font-size:.82rem;color:{T["ink"]}">{name}</td><td style="padding:8px 10px;font-size:.82rem;color:{T["green_val"]};font-family:var(--font-mono);text-align:center">{pos}</td><td style="padding:8px 10px;font-size:.82rem;color:{T["amber_val"]};font-family:var(--font-mono);text-align:center">{dra}</td><td style="padding:8px 10px;font-size:.82rem;color:{T["purple_val"]};font-family:var(--font-mono);text-align:center">₹{stab}</td></tr>'
         st.markdown(f"""
         <div style="overflow-x:auto;border-radius:10px;border:1px solid {T['border']}">
           <table style="width:100%;border-collapse:collapse">
             <thead><tr style="background:{T['inner_bg2']};border-bottom:2px solid {T['border']}">
               <th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:{T['muted']};text-transform:uppercase">Customer Name</th>
-              <th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:{T['muted']};text-transform:uppercase">POS</th>
-              <th style="padding:8px 10px;text-align:right;font-size:.68rem;font-weight:700;color:{T['muted']};text-transform:uppercase">DRA Case %</th>
+              <th style="padding:8px 10px;text-align:center;font-size:.68rem;font-weight:700;color:{T['muted']};text-transform:uppercase">POS</th>
+              <th style="padding:8px 10px;text-align:center;font-size:.68rem;font-weight:700;color:{T['muted']};text-transform:uppercase">DRA %</th>
+              <th style="padding:8px 10px;text-align:center;font-size:.68rem;font-weight:700;color:{T['muted']};text-transform:uppercase">STAB</th>
             </tr></thead>
             <tbody>{rows_html}</tbody>
           </table>
@@ -2120,10 +2134,24 @@ def main():
                     pos = pos.lstrip(",")
                 
                 dra = f'{row["DRA CASE%"]:.1f}%'
+                # STAB amount in Indian comma format
+                stab_val = row["STAB AMOUNTWITH DPIC"]
+                sv = int(stab_val) if stab_val >= 1 else 0
+                ss = str(sv)
+                if len(ss) <= 3:
+                    stab = ss
+                else:
+                    stab = ss[-3:]
+                    ss = ss[:-3]
+                    while ss:
+                        stab = ss[-2:] + "," + stab
+                        ss = ss[:-2]
+                    stab = stab.lstrip(",")
+
                 team = str(row.get("TEAM", ""))
                 row_bg = T["inner_bg2"] if idx_r % 2 == 1 else T["surface"]
                 exec_td = f'<td class="flow-col-exec" style="padding:10px 14px;font-size:.8rem;color:{T["blue_val"]};text-align:center">{team}</td>' if is_admin else ""
-                rows_flow += f'<tr style="background:{row_bg};border-bottom:1px solid {row_border}"><td style="padding:10px 14px;font-size:.84rem;font-weight:500;color:{T["ink"]}">{name}</td><td style="padding:10px 14px;font-size:.84rem;color:{T["green_val"]};font-family:var(--font-mono);text-align:center;font-weight:700">{pos}</td><td style="padding:10px 14px;font-size:.84rem;color:{T["amber_val"]};font-family:var(--font-mono);text-align:center;font-weight:600">{dra}</td>{exec_td}</tr>'
+                rows_flow += f'<tr style="background:{row_bg};border-bottom:1px solid {row_border}"><td style="padding:10px 14px;font-size:.84rem;font-weight:500;color:{T["ink"]}">{name}</td><td style="padding:10px 14px;font-size:.84rem;color:{T["green_val"]};font-family:var(--font-mono);text-align:center;font-weight:700">{pos}</td><td style="padding:10px 14px;font-size:.84rem;color:{T["amber_val"]};font-family:var(--font-mono);text-align:center;font-weight:600">{dra}</td><td style="padding:10px 14px;font-size:.84rem;color:{T["purple_val"]};font-family:var(--font-mono);text-align:center;font-weight:600">₹{stab}</td>{exec_td}</tr>'
 
             exec_th = f'<th class="flow-col-exec" style="padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">Executive</th>' if is_admin else ""
 
@@ -2131,7 +2159,7 @@ def main():
             table_shadow = "0 4px 16px rgba(0,0,0,.2)" if THEME == "dark" else "0 4px 12px rgba(0,0,0,.05)"
             thead_bg = "#0a1628" if THEME == "dark" else "linear-gradient(180deg,#f8fafc,#f1f5f9)"
             thead_border = "#1e3460" if THEME == "dark" else "#cbd5e1"
-            html_out = f'<style>@media (max-width: 768px) {{ .flow-col-exec {{ display:none!important; }} }}</style><div style="overflow-x:auto;border-radius:12px;border:1px solid {table_border};box-shadow:{table_shadow}"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:{thead_bg};border-bottom:2px solid {thead_border}"><th style="padding:10px 14px;text-align:left;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">Customer Name</th><th style="padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">POS</th><th style="padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">DRA Case %</th>{exec_th}</tr></thead><tbody>{rows_flow}</tbody></table></div>'
+            html_out = f'<style>@media (max-width: 768px) {{ .flow-col-exec {{ display:none!important; }} }}</style><div style="overflow-x:auto;border-radius:12px;border:1px solid {table_border};box-shadow:{table_shadow}"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:{thead_bg};border-bottom:2px solid {thead_border}"><th style="padding:10px 14px;text-align:left;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">Customer Name</th><th style="padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">POS</th><th style="padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">DRA %</th><th style="padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">STAB</th>{exec_th}</tr></thead><tbody>{rows_flow}</tbody></table></div>'
             st.markdown(html_out, unsafe_allow_html=True)
 
     # ── PAGE: EXECUTIVE TRACKER ──
