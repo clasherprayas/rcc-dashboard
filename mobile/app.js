@@ -2229,7 +2229,7 @@ async function shareFlowList(bucket) {
     const file = new File([blob], `BKT${bucket}_FlowCases.png`, {type: 'image/png'});
     
     if (navigator.share && navigator.canShare({files: [file]})) {
-      await navigator.share({files: [file], title: `BKT-${bucket} Flow Cases`, text: `📋 BKT-${bucket} FLOW CASES`});
+      await navigator.share({files: [file], title: `BKT-${bucket} Flow Cases`, text: `📋 BKT-${bucket} FLOW CASES\n👉 See all bucket flow list: https://app.rccapp.xyz/public/flowlist`});
     } else {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = file.name; a.click();
