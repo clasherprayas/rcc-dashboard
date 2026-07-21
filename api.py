@@ -927,6 +927,8 @@ def load_data():
         df["RECEIPT CUT"] = df["RECEIPT CUT"].astype(str).str.strip().str.upper()
     if "AREA" in df.columns:
         df["AREA"] = df["AREA"].astype(str).str.strip()
+    if "PROJECTION" in df.columns:
+        df["PROJECTION"] = df["PROJECTION"].astype(str).str.strip().str.upper()
     
     # Store in cache
     _cache["df"] = df
@@ -1161,7 +1163,7 @@ async def flowlist(user: str = "", bucket: int = 1, role: str = "executive", aut
                     "dra_pct": round(float(row["DRA CASE%"]) * 100, 1) if pd.notna(row.get("DRA CASE%")) else 0,
                     "mobile": str(row.get("MOBILE", "")),
                     "area": str(row.get("AREA", "")),
-                    "projection": str(row["PROJECTION"]) if "PROJECTION" in row.index else "",
+                    "projection": str(row["PROJECTION"]).strip() if "PROJECTION" in row.index and pd.notna(row.get("PROJECTION")) else "FLOW",
                     "current_code": str(row.get("CURRENT CODE", "")).strip() if "CURRENT CODE" in row.index and pd.notna(row.get("CURRENT CODE")) else "",
                     "loan_no": str(row["LOAN NO"]) if "LOAN NO" in row.index else "",
                 })
