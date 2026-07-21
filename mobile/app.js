@@ -2260,7 +2260,7 @@ async function loadFlowList(bucket = currentFlowBucket) {
 
   let rows = '';
   if (data.total === 0) {
-    rows = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted)">✅ No flow cases in this bucket</td></tr>`;
+    rows = `<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--muted)">✅ No flow cases in this bucket</td></tr>`;
   } else {
     data.cases.forEach(c => {
       const rawProj = (c.projection || '').toUpperCase().trim();
@@ -2269,7 +2269,7 @@ async function loadFlowList(bucket = currentFlowBucket) {
       let chipLabel = 'FLOW';
       if (projStatus === 'STABLE') { chipCls = 'chip-green'; chipLabel = 'STABLE'; }
       else if (projStatus === 'RB') { chipCls = 'chip-purple'; chipLabel = 'RB'; }
-      rows += `<tr><td>${c.customer_name}</td><td class="mono green text-center">₹${fmtIndianFull(c.pos)}</td><td class="mono text-center" style="font-size:10px;color:#d97706;font-weight:700">${c.dra_pct||0}%</td><td class="mono text-center" style="font-size:10px;color:#059669;font-weight:700">₹${fmtIndianFull(c.stab_amount||0)}</td><td style="text-align:center"><span class="status-chip ${chipCls}" onclick="event.stopPropagation();quickStatusChange('${c.loan_no||''}','${projStatus}')" style="cursor:pointer;font-size:9px;padding:3px 6px">${chipLabel}</span></td></tr>`;
+      rows += `<tr><td>${c.customer_name}</td><td class="mono green text-center">₹${fmtIndianFull(c.pos)}</td><td class="mono text-center" style="font-size:10px;color:#d97706;font-weight:700">${c.dra_pct||0}%</td><td class="mono text-center" style="font-size:10px;color:#059669;font-weight:700">₹${fmtIndianFull(c.stab_amount||0)}</td></tr>`;
     });
   }
 
@@ -2302,8 +2302,8 @@ async function loadFlowList(bucket = currentFlowBucket) {
     </div>
     <div class="rcc-table-wrap flow-table-wrap">
       <table class="rcc-table flow-table">
-        <colgroup><col><col><col><col><col></colgroup>
-        <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">DRA %</th><th class="text-center">STAB</th><th class="text-center">⚡</th></tr></thead>
+        <colgroup><col><col><col><col></colgroup>
+        <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">DRA %</th><th class="text-center">STAB</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
