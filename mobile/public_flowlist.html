@@ -186,10 +186,11 @@
       table-layout: fixed;
       font-size: 12px;
     }
-    colgroup col:nth-child(1) { width: 36%; }
-    colgroup col:nth-child(2) { width: 22%; }
-    colgroup col:nth-child(3) { width: 20%; }
-    colgroup col:nth-child(4) { width: 22%; }
+    colgroup col:nth-child(1) { width: 32%; }
+    colgroup col:nth-child(2) { width: 20%; }
+    colgroup col:nth-child(3) { width: 16%; }
+    colgroup col:nth-child(4) { width: 18%; }
+    colgroup col:nth-child(5) { width: 14%; }
     thead { background: #f1f5f9; position: sticky; top: 0; z-index: 10; }
     th {
       padding: 10px 8px;
@@ -565,11 +566,17 @@
         let rows = '';
         data.cases.forEach(c => {
           const posCls = c.projection === 'FLOW' ? 'pos-warn' : 'pos-val';
+          const rawProj = (c.projection || '').toUpperCase().trim();
+          const projStatus = (rawProj === 'STABLE' || rawProj === 'RB') ? rawProj : 'FLOW';
+          let projCls = 'dra-val';
+          if (projStatus === 'STABLE') projCls = 'pos-val';
+          else if (projStatus === 'RB') projCls = 'pos-warn';
           rows += `<tr>
             <td>${c.customer_name}</td>
             <td class="text-center ${posCls}">${fmtIndian(c.pos)}</td>
             <td class="text-center ${posCls}">${c.dra_pct}%</td>
             <td class="text-center pos-val" style="font-size:11px">${fmtIndian(c.stab_amount||0)}</td>
+            <td class="text-center" style="font-size:10px;font-weight:700;color:${projStatus==='STABLE'?'#059669':projStatus==='RB'?'#7c3aed':'#d97706'}">${projStatus}</td>
           </tr>`;
         });
 
@@ -610,8 +617,8 @@
           ${greetHtml ? '<div class="confetti-wrap"><div class="confetti c1"></div><div class="confetti c2"></div><div class="confetti c3"></div><div class="confetti c4"></div><div class="confetti c5"></div><div class="confetti c6"></div><div class="confetti c7"></div><div class="confetti c8"></div><div class="confetti c9"></div><div class="confetti c10"></div></div>' : ''}
           <div class="table-wrap">
             <table>
-              <colgroup><col><col><col><col></colgroup>
-              <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">DRA %</th><th class="text-center">STAB</th></tr></thead>
+              <colgroup><col><col><col><col><col></colgroup>
+              <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">DRA %</th><th class="text-center">STAB</th><th class="text-center">⚡</th></tr></thead>
               <tbody>${rows}</tbody>
             </table>
           </div>
