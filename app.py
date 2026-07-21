@@ -1496,7 +1496,7 @@ def flowlist_public_view(df_full):
               <th style="padding:8px 10px;text-align:left;font-size:.68rem;font-weight:700;color:{T['muted']};text-transform:uppercase">Customer Name</th>
               <th style="padding:8px 10px;text-align:center;font-size:.68rem;font-weight:700;color:{T['muted']};text-transform:uppercase">POS</th>
               <th style="padding:8px 10px;text-align:center;font-size:.68rem;font-weight:700;color:{T['muted']};text-transform:uppercase">DRA %</th>
-              <th style="padding:8px 10px;text-align:center;font-size:.68rem;font-weight:700;color:{T['muted']};text-transform:uppercase">STAB</th>
+              <th style="padding:8px 10px;text-align:center;font-size:.68rem;font-weight:700;color:{T['muted']};text-transform:uppercase">For Stab</th>
             </tr></thead>
             <tbody>{rows_html}</tbody>
           </table>
@@ -2159,7 +2159,7 @@ def main():
             table_shadow = "0 4px 16px rgba(0,0,0,.2)" if THEME == "dark" else "0 4px 12px rgba(0,0,0,.05)"
             thead_bg = "#0a1628" if THEME == "dark" else "linear-gradient(180deg,#f8fafc,#f1f5f9)"
             thead_border = "#1e3460" if THEME == "dark" else "#cbd5e1"
-            html_out = f'<style>@media (max-width: 768px) {{ .flow-col-exec {{ display:none!important; }} }}</style><div style="overflow-x:auto;border-radius:12px;border:1px solid {table_border};box-shadow:{table_shadow}"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:{thead_bg};border-bottom:2px solid {thead_border}"><th style="padding:10px 14px;text-align:left;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">Customer Name</th><th style="padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">POS</th><th style="padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">DRA %</th><th style="padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">STAB</th>{exec_th}</tr></thead><tbody>{rows_flow}</tbody></table></div>'
+            html_out = f'<style>@media (max-width: 768px) {{ .flow-col-exec {{ display:none!important; }} }}</style><div style="overflow-x:auto;border-radius:12px;border:1px solid {table_border};box-shadow:{table_shadow}"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:{thead_bg};border-bottom:2px solid {thead_border}"><th style="padding:10px 14px;text-align:left;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">Customer Name</th><th style="padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">POS</th><th style="padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">DRA %</th><th style="padding:10px 14px;text-align:center;font-size:.7rem;font-weight:700;color:{T["muted"]};text-transform:uppercase;letter-spacing:.03em">For Stab</th>{exec_th}</tr></thead><tbody>{rows_flow}</tbody></table></div>'
             st.markdown(html_out, unsafe_allow_html=True)
 
     # ── PAGE: EXECUTIVE TRACKER ──
