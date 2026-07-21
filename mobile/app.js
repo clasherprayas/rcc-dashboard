@@ -2215,10 +2215,28 @@ async function shareFlowList(bucket) {
   // Create a container with both banner + table for screenshot
   const wrapper = document.createElement('div');
   wrapper.style.cssText = 'position:absolute;left:-9999px;top:0;background:#ffffff;padding:16px;width:500px;font-family:Inter,sans-serif';
+  
+  // Get current & projection values from banner
+  const projEls = document.querySelectorAll('.banner-projection .proj-value, .banner-proj .proj-value');
+  let curVal = '--', projVal = '--';
+  if (projEls.length >= 1) curVal = projEls[0]?.textContent || '--';
+  if (projEls.length >= 2) projVal = projEls[1]?.textContent || '--';
+  const flowCount = document.querySelector('.banner-value')?.textContent || '';
+
   wrapper.innerHTML = `
     <div style="text-align:center;margin-bottom:12px">
-      <div style="font-size:16px;font-weight:900;color:#0f172a">📋 BKT-${bucket} FLOW CASES</div>
-      <div style="font-size:12px;color:#64748b;margin-top:4px">${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})} · ${document.querySelector('.banner-value')?.textContent || ''} cases</div>
+      <div style="font-size:16px;font-weight:900;color:#0f172a">📋 BKT-${bucket} FLOW CASES · ${flowCount}</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px">${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</div>
+      <div style="display:flex;justify-content:center;gap:12px;margin-top:10px">
+        <div style="background:#e0f2fe;border:1px solid #7dd3fc;border-radius:8px;padding:8px 16px;text-align:center">
+          <div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase">Current</div>
+          <div style="font-size:18px;font-weight:900;color:#0369a1">${curVal}</div>
+        </div>
+        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:8px 16px;text-align:center">
+          <div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase">Projection</div>
+          <div style="font-size:18px;font-weight:900;color:#059669">${projVal}</div>
+        </div>
+      </div>
     </div>
   ` + (tableEl ? tableEl.outerHTML : '');
   document.body.appendChild(wrapper);
@@ -2303,7 +2321,7 @@ async function loadFlowList(bucket = currentFlowBucket) {
     <div class="rcc-table-wrap flow-table-wrap">
       <table class="rcc-table flow-table">
         <colgroup><col><col><col><col></colgroup>
-        <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">DRA %</th><th class="text-center">STAB</th></tr></thead>
+        <thead><tr><th>CUSTOMER NAME</th><th class="text-center">POS</th><th class="text-center">DRA %</th><th class="text-center">For Stab</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
