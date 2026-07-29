@@ -861,7 +861,6 @@ async function fetchFlowAgencyView(bucket) {
           </tr>
         </tbody>
       </table>
-      <div style="text-align:right;margin-top:8px"><div style="font-size:8px;color:#94a3b8;font-weight:600">RCC · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}).toUpperCase()}</div></div>
     </div>
   `;
 
@@ -1017,7 +1016,6 @@ async function fetchReceiptCut() {
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      <div style="text-align:right;margin-top:6px"><div style="font-size:8px;color:#94a3b8;font-weight:600">RCC · ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:true}).toUpperCase()}</div></div>
     </div>
   `;
 
