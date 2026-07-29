@@ -1163,7 +1163,7 @@ async function fetchBucketSummary() {
 
 // ── SHARE ALL REPORTS ──
 async function shareAllReports() {
-  showToast('📤 Generating all reports...');
+  showToast('📤 Generating report...');
   
   const loadH2C = () => new Promise((resolve) => {
     if (typeof html2canvas !== 'undefined') return resolve();
@@ -1174,19 +1174,23 @@ async function shareAllReports() {
   });
   await loadH2C();
 
-  // Generate all 4 reports in hidden container
-  const container = document.createElement('div');
-  container.style.cssText = 'position:absolute;left:-9999px;top:0;';
-  document.body.appendChild(container);
-
-  const files = [];
+  const canvases = [];
   
+  const captureCard = async (elementId) => {
+    const el = document.getElementById(elementId);
+    if (!el) return null;
+    return await html2canvas(el, {scale: 2, backgroundColor: '#ffffff'});
+  };
+
   // 1. BKT-1 Resolution
   try {
     const d1 = await apiCall('/api/report/resolution?bucket=1');
     if (d1 && d1.teams) {
-      const img = await _generateResImage(d1, 1);
-      if (img) files.push(new File([img], 'BKT1_Resolution.png', {type: 'image/png'}));
+      resTableCurrentBucket = 1;
+      await fetchResTable(1);
+      await new Promise(r => setTimeout(r, 150));
+      const c1 = await captureCard('resTableCard');
+      if (c1) canvases.push(c1);
     }
   } catch(e) {}
 
@@ -1194,63 +1198,85 @@ async function shareAllReports() {
   try {
     const d2 = await apiCall('/api/report/resolution?bucket=2');
     if (d2 && d2.teams) {
-      const img = await _generateResImage(d2, 2);
-      if (img) files.push(new File([img], 'BKT2_Resolution.png', {type: 'image/png'}));
+      resTableCurrentBucket = 2;
+      await fetchResTable(2);
+      await new Promise(r => setTimeout(r, 150));
+      const c2 = await captureCard('resTableCard');
+      if (c2) canvases.push(c2);
     }
   } catch(e) {}
 
   // 3. Receipt Cut
   try {
-    const d3 = await apiCall('/api/report/receiptcut');
-    if (d3 && d3.teams) {
-      // Render receipt cut, capture, then restore
-      await fetchReceiptCut();
-      await new Promise(r => setTimeout(r, 200));
-      const el3 = document.getElementById('rcReportCard');
-      if (el3) {
-        const c3 = await html2canvas(el3, {scale: 2, backgroundColor: '#ffffff'});
-        const b3 = await new Promise(r => c3.toBlob(r));
-        files.push(new File([b3], 'ReceiptCut_Report.png', {type: 'image/png'}));
-      }
-    }
+    await fetchReceiptCut();
+    await new Promise(r => setTimeout(r, 150));
+    const c3 = await captureCard('resTableCard') || await captureCard('rcReportContainer');
+    if (c3) canvases.push(c3);
   } catch(e) {}
 
   // 4. Bucket Summary
   try {
     await fetchBucketSummary();
-    await new Promise(r => setTimeout(r, 200));
-    const el4 = document.getElementById('resTableCard');
-    if (el4) {
-      const c4 = await html2canvas(el4, {scale: 2, backgroundColor: '#ffffff'});
-      const b4 = await new Promise(r => c4.toBlob(r));
-      files.push(new File([b4], 'Bucket_Summary.png', {type: 'image/png'}));
-    }
+    await new Promise(r => setTimeout(r, 150));
+    const c4 = await captureCard('resTableCard');
+    if (c4) canvases.push(c4);
   } catch(e) {}
 
-  document.body.removeChild(container);
+  // Go back to selection page
+  generateResolutionTable();
 
-  if (files.length === 0) {
+  if (canvases.length === 0) {
     showToast('❌ No reports generated');
     return;
   }
 
-  // Share all files
-  if (navigator.share && navigator.canShare({files})) {
-    const caption = `📊 BUCKET WISE PERFORMANCE\n📋 BKT-1 RESOLUTION PERFORMANCE\n📋 BKT-2 RESOLUTION PERFORMANCE\n🧾 TEAM WISE RECEIPT CUT IN BKT 1 TO 6 WITH DAILY DRR & TODAY COLLECT PAYMENT AND TRAILS COUNT`;
-    navigator.share({files, title: 'RCC Reports', text: caption}).then(() => {
-      showToast('✅ Shared!');
-    }).catch(() => showToast('Share cancelled'));
-  } else {
-    // Fallback — download all
-    files.forEach(f => {
-      const url = URL.createObjectURL(f);
-      const a = document.createElement('a'); a.href = url; a.download = f.name; a.click();
-    });
-    showToast('📥 Downloaded ' + files.length + ' images');
-  }
+  // Merge all report canvases into 1 single vertical image
+  const maxWidth = Math.max(...canvases.map(c => c.width));
+  const padding = 24;
+  const totalHeight = canvases.reduce((sum, c) => sum + c.height, 0) + (canvases.length + 1) * padding;
   
-  // Go back to selection page
-  generateResolutionTable();
+  const mergedCanvas = document.createElement('canvas');
+  mergedCanvas.width = maxWidth + padding * 2;
+  mergedCanvas.height = totalHeight;
+  const ctx = mergedCanvas.getContext('2d');
+  
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(0, 0, mergedCanvas.width, mergedCanvas.height);
+  
+  let currentY = padding;
+  canvases.forEach(c => {
+    const offsetX = Math.floor((mergedCanvas.width - c.width) / 2);
+    ctx.drawImage(c, offsetX, currentY);
+    currentY += c.height + padding;
+  });
+
+  const blob = await new Promise(r => mergedCanvas.toBlob(r, 'image/png'));
+  const file = new File([blob], 'RCC_All_Reports.png', {type: 'image/png'});
+  const caption = `📊 BUCKET WISE PERFORMANCE\n📋 BKT-1 RESOLUTION PERFORMANCE\n📋 BKT-2 RESOLUTION PERFORMANCE\n🧾 TEAM WISE RECEIPT CUT IN BKT 1 TO 6 WITH DAILY DRR & TODAY COLLECT PAYMENT AND TRAILS COUNT`;
+
+  // Direct Share via Native Share API
+  if (navigator.share && navigator.canShare && navigator.canShare({files: [file]})) {
+    try {
+      await navigator.share({files: [file], title: 'RCC Reports', text: caption});
+      showToast('✅ Shared!');
+    } catch(err) {
+      if (err && err.name === 'AbortError') {
+        showToast('Share cancelled');
+      } else {
+        const url = URL.createObjectURL(file);
+        const a = document.createElement('a'); a.href = url; a.download = file.name;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        showToast('📥 Downloaded report image');
+      }
+    }
+  } else {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a'); a.href = url; a.download = file.name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    showToast('📥 Downloaded report image');
+  }
 }
 
 async function _generateResImage(data, bucket) {
