@@ -6,7 +6,13 @@ Run: python api.py
 
 import math
 import os
+import sys
 from pathlib import Path
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Request
@@ -459,7 +465,7 @@ async def daily_winners(date: str = ""):
         if not rc_by_team_36.empty:
             lines.append("*DAILY (BKT 3-6) RECEIPTS*")
             for team, count in rc_by_team_36.sort_values(ascending=False).items():
-                incentive = count * 150
+                incentive = count * 100
                 lines.append(f"{team} - {count} 💵 {incentive}")
             lines.append("")
     
@@ -1526,7 +1532,7 @@ async def monthly_incentive(month: int = 0, year: int = 0):
             if bkt12_count >= 2:
                 incentive += bkt12_count * 150
             # BKT 3-6: ₹100/receipt
-            incentive += bkt36_count * 150
+            incentive += bkt36_count * 100
             # Sunday special: ₹200/receipt (all buckets)
             if is_sunday:
                 incentive += count * 200
@@ -1690,7 +1696,7 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
             # BKT 3-6 incentive (₹100/receipt)
             bkt36_incentive = 0
             if bkt36_count > 0:
-                bkt36_incentive = bkt36_count * 150
+                bkt36_incentive = bkt36_count * 100
                 incentive += bkt36_incentive
             
             # Sunday special (₹200/receipt all buckets)
@@ -1991,10 +1997,11 @@ async def root(request: Request):
 
 if __name__ == "__main__":
     # Pre-load data at startup so first request is instant
-    print("⏳ Pre-loading Excel data...")
+    print("Pre-loading Excel data...")
     load_data()
     port = int(os.environ.get("PORT", 8000))
-    print(f"\n🚀 RCC Mobile PWA running!")
-    print(f"📱 Open on phone: http://<your-pc-ip>:{port}")
-    print(f"💻 Local: http://localhost:{port}\n")
+    print(f"\nRCC Mobile PWA running!")
+    print(f"Open on phone: http://<your-pc-ip>:{port}")
+    print(f"Local: http://localhost:{port}\n")
     uvicorn.run(app, host="0.0.0.0", port=port)
+
