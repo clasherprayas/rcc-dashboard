@@ -413,15 +413,15 @@ async def daily_winners(date: str = ""):
     lines = ["⭐ *TODAY'S WINNERS* 🏅\n"]
     
     # BKT 1-2 Receipt Cut (2+ receipts = ₹150 per receipt)
-    bkt12 = today_paid[today_paid["BUCKET"].isin([1, 2])]
+    bkt12 = today_paid[pd.to_numeric(today_paid["BUCKET"], errors='coerce').isin([1, 2])]
     if not bkt12.empty:
         rc_by_team = bkt12.groupby("TEAM").size()
-        rc_winners = rc_by_team[rc_by_team >= 2]
-        if not rc_winners.empty:
+        if not rc_by_team.empty:
             lines.append("*DAILY (BKT 1-2) RECEIPTS*")
-            for team, count in rc_winners.sort_values(ascending=False).items():
-                incentive = count * 150
-                lines.append(f"{team} - {count} 💵 {incentive}")
+            for team, count in rc_by_team.sort_values(ascending=False).items():
+                incentive = count * 150 if count >= 2 else 0
+                inc_text = f"💸{incentive}" if incentive > 0 else "(1/2 receipts)"
+                lines.append(f"{team} - {count} 💵 {inc_text}")
             lines.append("")
     
     # BKT 1 — ₹50K+ POS (₹100 for 50K-1.99L, ₹200 for 2L-2.99L, ₹300 for 3L+ etc.)
@@ -1506,7 +1506,7 @@ async def monthly_incentive(month: int = 0, year: int = 0):
     for team in teams:
         results[team] = {"total_receipts": 0, "total_incentive": 0, "daily": {}}
     
-    for day in range(1, last_day):  # Exclude last day of month (no incentive)
+    for day in range(1, last_day + 1):  # Include all days of month (1 to last_day)
         day_data = month_paid[month_paid["_day"] == day]
         if day_data.empty:
             continue
@@ -1524,8 +1524,9 @@ async def monthly_incentive(month: int = 0, year: int = 0):
                 continue
             
             count = len(team_day)
-            bkt12_count = len(team_day[team_day["BUCKET"].isin([1, 2])])
-            bkt36_count = len(team_day[team_day["BUCKET"].isin([3, 4, 5, 6])])
+            team_buckets = pd.to_numeric(team_day["BUCKET"], errors='coerce')
+            bkt12_count = len(team_day[team_buckets.isin([1, 2])])
+            bkt36_count = len(team_day[team_buckets.isin([3, 4, 5, 6])])
             
             incentive = 0
             # BKT 1-2: ₹150/receipt if 2+ receipts
@@ -1640,8 +1641,8 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
     # Header
     ws.append(["DATE", "WINNER", "BKT 1-2", "REMARK", "BKT 1 50K", "BKT 2 50K", "BKT 3-6", "INCENTIVE"])
     
-    # Process day by day (exclude last day — no incentive)
-    for day in range(1, last_day):
+    # Process day by day (include all days of month)
+    for day in range(1, last_day + 1):
         day_data = month_paid[month_paid["_day"] == day]
         if day_data.empty:
             continue
@@ -1660,10 +1661,11 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
                 continue
             
             count = len(grp)
-            bkt12_count = len(grp[grp["BUCKET"].isin([1, 2])])
-            bkt36_count = len(grp[grp["BUCKET"].isin([3, 4, 5, 6])])
-            bkt1_pos = float(grp[grp["BUCKET"] == 1]["POS"].sum())
-            bkt2_pos = float(grp[grp["BUCKET"] == 2]["POS"].sum())
+            grp_buckets = pd.to_numeric(grp["BUCKET"], errors='coerce')
+            bkt12_count = len(grp[grp_buckets.isin([1, 2])])
+            bkt36_count = len(grp[grp_buckets.isin([3, 4, 5, 6])])
+            bkt1_pos = float(grp[grp_buckets == 1]["POS"].sum())
+            bkt2_pos = float(grp[grp_buckets == 2]["POS"].sum())
             
             incentive = 0
             remark_parts = []
@@ -1703,12 +1705,12 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
             if is_sunday:
                 incentive += count * 200
             
-            if incentive > 0:
-                remark = f"{team} - {bkt12_count}" if bkt12_count >= 2 else ""
+            if incentive > 0 or bkt12_count > 0 or bkt36_count > 0:
+                remark = f"{team} - {bkt12_count}" if bkt12_count > 0 else ""
                 ws.append([
                     date_str,
                     team,
-                    bkt12_count if bkt12_count >= 2 else "",
+                    bkt12_count if bkt12_count > 0 else "",
                     remark,
                     bkt1_bonus if bkt1_bonus > 0 else "",
                     bkt2_bonus if bkt2_bonus > 0 else "",
