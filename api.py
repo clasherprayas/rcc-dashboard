@@ -1565,14 +1565,17 @@ async def monthly_incentive(month: int = 0, year: int = 0):
             
             count = len(team_day)
             team_buckets = pd.to_numeric(team_day["BUCKET"], errors='coerce')
-            bkt12_count = len(team_day[team_buckets.isin([1, 2])])
-            bkt36_count = len(team_day[team_buckets.isin([3, 4, 5, 6])])
             
             # POT NPA count (only 1-5 tarikh)
             pot_npa_count = 0
             if "POT NPA" in team_day.columns and day <= 5:
                 pot_npa_count = int(team_day["POT NPA"].notna().sum())
             non_pot_count = count - pot_npa_count
+            
+            # Exclude POT NPA cases from bucket counts
+            non_pot_mask = team_day["POT NPA"].isna() if "POT NPA" in team_day.columns and day <= 5 else pd.Series(True, index=team_day.index)
+            bkt12_count = len(team_day[team_buckets.isin([1, 2]) & non_pot_mask])
+            bkt36_count = len(team_day[team_buckets.isin([3, 4, 5, 6]) & non_pot_mask])
             
             incentive = 0
             
@@ -1712,8 +1715,6 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
             
             count = len(grp)
             grp_buckets = pd.to_numeric(grp["BUCKET"], errors='coerce')
-            bkt12_count = len(grp[grp_buckets.isin([1, 2])])
-            bkt36_count = len(grp[grp_buckets.isin([3, 4, 5, 6])])
             bkt1_pos = float(grp[grp_buckets == 1]["POS"].sum())
             bkt2_pos = float(grp[grp_buckets == 2]["POS"].sum())
             
@@ -1723,6 +1724,11 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
                 pot_npa_count = int(grp["POT NPA"].notna().sum())
             
             non_pot_count = count - pot_npa_count
+            
+            # Exclude POT NPA from bucket counts
+            non_pot_mask = grp["POT NPA"].isna() if "POT NPA" in grp.columns and day <= 5 else pd.Series(True, index=grp.index)
+            bkt12_count = len(grp[grp_buckets.isin([1, 2]) & non_pot_mask])
+            bkt36_count = len(grp[grp_buckets.isin([3, 4, 5, 6]) & non_pot_mask])
             
             incentive = 0
             remark_parts = []
@@ -1798,9 +1804,8 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
                 # Calculate amounts for each column
                 bkt12_amt = 0
                 if phase == 1:
-                    # Phase 1: non-POT NPA BKT1-2 get ₹100/receipt
-                    non_pot_bkt12 = bkt12_count - (pot_npa_count if pot_npa_count > 0 else 0)
-                    bkt12_amt = non_pot_bkt12 * 100 if non_pot_bkt12 > 0 else 0
+                    # Phase 1: non-POT NPA BKT1-2 get ₹100/receipt (already excluded from bkt12_count)
+                    bkt12_amt = bkt12_count * 100 if bkt12_count > 0 else 0
                 elif phase == 2:
                     bkt12_amt = bkt12_count * 100 if bkt12_count >= 2 else 0
                 else:
