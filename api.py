@@ -1681,7 +1681,7 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
     ws.title = f"Incentive {month}-{year}"
     
     # Header
-    ws.append(["DATE", "WINNER", "BKT 1-2", "REMARK", "BKT 1 50K", "BKT 2 50K", "BKT 3-6", "POT NPA", "INCENTIVE"])
+    ws.append(["DATE", "WINNER", "BKT 1-2", "BKT 1 50K", "BKT 2 50K", "BKT 3-6", "POT NPA", "INCENTIVE"])
     
     # Process day by day
     for day in range(1, last_day + 1):
@@ -1818,15 +1818,14 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
                     date_str,
                     team,
                     bkt12_amt if bkt12_amt > 0 else "",
-                    remark,
                     bkt1_bonus if bkt1_bonus > 0 else "",
                     bkt2_bonus if bkt2_bonus > 0 else "",
                     bkt36_amt if bkt36_amt > 0 else "",
                     pot_npa_amt if pot_npa_amt > 0 else "",
                     None  # placeholder for formula
                 ])
-                # Add SUM formula for INCENTIVE column (col I = C+E+F+G+H)
-                ws.cell(row=row_num, column=9, value=f"=C{row_num}+E{row_num}+F{row_num}+G{row_num}+H{row_num}")
+                # Add SUM formula for INCENTIVE column (col H = C+D+E+F+G)
+                ws.cell(row=row_num, column=8, value=f"=C{row_num}+D{row_num}+E{row_num}+F{row_num}+G{row_num}")
     
     # Save
     from io import BytesIO
