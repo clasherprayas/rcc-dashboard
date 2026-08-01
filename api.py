@@ -431,13 +431,35 @@ async def daily_winners(date: str = ""):
     lines = ["⭐ *TODAY'S WINNERS* 🏅\n"]
     
     # ── PHASE 1 (2-10): ₹100 per receipt — all buckets, no minimum ──
+    # POT NPA (1-5 tarikh): separate incentive — ₹200 for 1 receipt, ₹250/receipt for 2+
     if phase == 1:
-        rc_by_team = today_paid.groupby("TEAM").size()
-        if not rc_by_team.empty:
-            lines.append("*DAILY RECEIPTS (₹100/receipt)*")
-            for team, count in rc_by_team.sort_values(ascending=False).items():
-                incentive = count * 100
-                lines.append(f"{team} - {count} 💵 ₹{incentive}")
+        # Split POT NPA vs non-POT NPA
+        is_pot_npa = today_paid["POT NPA"].notna() if "POT NPA" in today_paid.columns else pd.Series(False, index=today_paid.index)
+        pot_npa_paid = today_paid[is_pot_npa]
+        non_pot_paid = today_paid[~is_pot_npa]
+        
+        # POT NPA incentive (only relevant 1-5 tarikh)
+        if day_of_month <= 5 and not pot_npa_paid.empty:
+            pot_by_team = pot_npa_paid.groupby("TEAM").size()
+            if not pot_by_team.empty:
+                lines.append("*🔥 POT NPA RECEIPTS*")
+                for team, count in pot_by_team.sort_values(ascending=False).items():
+                    if count >= 2:
+                        incentive = count * 250
+                    else:
+                        incentive = 200
+                    lines.append(f"{team} - {count} 💵 ₹{incentive}")
+                lines.append("")
+        
+        # Non-POT NPA: ₹100 per receipt
+        if not non_pot_paid.empty:
+            rc_by_team = non_pot_paid.groupby("TEAM").size()
+            if not rc_by_team.empty:
+                lines.append("*DAILY RECEIPTS (₹100/receipt)*")
+                for team, count in rc_by_team.sort_values(ascending=False).items():
+                    incentive = count * 100
+                    lines.append(f"{team} - {count} 💵 ₹{incentive}")
+                lines.append("")
             lines.append("")
     
     # ── PHASE 2 & 3 (11-20, 21-30) ──
@@ -912,7 +934,7 @@ def load_data():
                    "Paid Amount", "EMI", "TOTAL EMI DUE", "STAB AMOUNTWITH DPIC", 
                    "RB AMOUNTWITH DPIC", "BUCKET", "POS STATUS", "RECEIPT CUT", 
                    "TEAM", "POS", "DPIC CHARGES", "DRA CASE%", "AGENCY CASE%", 
-                   "AREA", "MOBILE", "DPD", "TRAILS PENDING", "PROJECTION", "CURRENT CODE", "Allocated"]
+                   "AREA", "MOBILE", "DPD", "TRAILS PENDING", "PROJECTION", "CURRENT CODE", "Allocated", "POT NPA"]
     try:
         df = pd.read_excel(DATA_FILE, sheet_name=SHEET_NAME, engine="openpyxl", usecols=lambda c: str(c).strip() in needed_cols)
     except Exception:
