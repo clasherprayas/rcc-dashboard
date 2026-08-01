@@ -393,7 +393,7 @@ async def tilltime_report(date: str = ""):
 # ── DAILY WINNERS API ──
 @app.get("/api/report/winners")
 async def daily_winners(date: str = ""):
-    """Generate daily winners text for WhatsApp."""
+    """Generate daily winners text for WhatsApp — July 2026 incentive plan."""
     df = load_data()
     if df is None:
         return {"text": "❌ Data not found"}
@@ -402,6 +402,24 @@ async def daily_winners(date: str = ""):
         today = date.strip()
     else:
         today = _dt.now().strftime("%d.%m.%y") if not CLOUD_MODE else (_dt.utcnow() + _IST_OFFSET).strftime("%d.%m.%y")
+    
+    # Parse day of month for phase detection
+    try:
+        day_parts = today.split(".")
+        day_of_month = int(day_parts[0])
+        check_date = _dt(2000 + int(day_parts[2]), int(day_parts[1]), int(day_parts[0]))
+        is_sunday = check_date.weekday() == 6
+    except Exception:
+        day_of_month = 15
+        is_sunday = False
+    
+    # Determine phase
+    if day_of_month <= 10:
+        phase = 1  # 2-10: ₹100 per receipt all buckets, no minimum
+    elif day_of_month <= 20:
+        phase = 2  # 11-20: BKT1+2 → 2+ receipts → ₹100/receipt + POS; BKT3-6 → ₹100/receipt
+    else:
+        phase = 3  # 21-30: BKT1+2 → 2+ receipts → ₹150/receipt + POS; BKT3-6 → ₹100/receipt
     
     # Today's paid cases
     today_paid = df[(df["Payment Date"].astype(str).str.strip() == today) & 
@@ -412,78 +430,73 @@ async def daily_winners(date: str = ""):
     
     lines = ["⭐ *TODAY'S WINNERS* 🏅\n"]
     
-    # BKT 1-2 Receipt Cut (2+ receipts = ₹150 per receipt)
-    bkt12 = today_paid[pd.to_numeric(today_paid["BUCKET"], errors='coerce').isin([1, 2])]
-    if not bkt12.empty:
-        rc_by_team = bkt12.groupby("TEAM").size()
+    # ── PHASE 1 (2-10): ₹100 per receipt — all buckets, no minimum ──
+    if phase == 1:
+        rc_by_team = today_paid.groupby("TEAM").size()
         if not rc_by_team.empty:
-            lines.append("*DAILY (BKT 1-2) RECEIPTS*")
+            lines.append("*DAILY RECEIPTS (₹100/receipt)*")
             for team, count in rc_by_team.sort_values(ascending=False).items():
-                incentive = count * 150 if count >= 2 else 0
-                inc_text = f"💸{incentive}" if incentive > 0 else "(1/2 receipts)"
-                lines.append(f"{team} - {count} 💵 {inc_text}")
-            lines.append("")
-    
-    # BKT 1 — ₹50K+ POS (₹100 for 50K-1.99L, ₹200 for 2L-2.99L, ₹300 for 3L+ etc.)
-    bkt1_paid = today_paid[today_paid["BUCKET"] == 1]
-    if not bkt1_paid.empty:
-        pos_by_team_b1 = bkt1_paid.groupby("TEAM")["POS"].sum()
-        pos_winners_b1 = pos_by_team_b1[pos_by_team_b1 >= 50000]
-        if not pos_winners_b1.empty:
-            lines.append("*BUCKET 1 | ₹50K+ POS* 💰")
-            for team, pos in pos_winners_b1.sort_values(ascending=False).items():
-                if pos >= 200000:
-                    incentive = int(pos // 100000) * 100
-                    label = f">{int(pos/100000)}L"
-                else:
-                    incentive = 100
-                    label = ">50k"
-                lines.append(f"{team} {label} 💸{incentive}")
-            lines.append("")
-    
-    # BKT 2 — ₹50K+ POS (same logic)
-    bkt2_paid = today_paid[today_paid["BUCKET"] == 2]
-    if not bkt2_paid.empty:
-        pos_by_team_b2 = bkt2_paid.groupby("TEAM")["POS"].sum()
-        pos_winners_b2 = pos_by_team_b2[pos_by_team_b2 >= 50000]
-        if not pos_winners_b2.empty:
-            lines.append("*BUCKET 2 | ₹50K+ POS* 💰")
-            for team, pos in pos_winners_b2.sort_values(ascending=False).items():
-                if pos >= 200000:
-                    incentive = int(pos // 100000) * 100
-                    label = f">{int(pos/100000)}L"
-                else:
-                    incentive = 100
-                    label = ">50k"
-                lines.append(f"{team} {label} 💸{incentive}")
-            lines.append("")
-    
-    # BKT 3-6 Receipt Cut (₹100 per receipt, no minimum)
-    bkt36 = today_paid[today_paid["BUCKET"].isin([3, 4, 5, 6])]
-    if not bkt36.empty:
-        rc_by_team_36 = bkt36.groupby("TEAM").size()
-        if not rc_by_team_36.empty:
-            lines.append("*DAILY (BKT 3-6) RECEIPTS*")
-            for team, count in rc_by_team_36.sort_values(ascending=False).items():
                 incentive = count * 100
-                lines.append(f"{team} - {count} 💵 {incentive}")
+                lines.append(f"{team} - {count} 💵 ₹{incentive}")
             lines.append("")
+    
+    # ── PHASE 2 & 3 (11-20, 21-30) ──
+    else:
+        bkt12_rate = 100 if phase == 2 else 150  # ₹100 or ₹150 per receipt
+        
+        # BKT 1+2 combined — minimum 2 receipts required
+        bkt12 = today_paid[today_paid["BUCKET"].isin([1, 2])]
+        if not bkt12.empty:
+            rc_by_team_12 = bkt12.groupby("TEAM").size()
+            if not rc_by_team_12.empty:
+                lines.append(f"*BKT 1-2 RECEIPTS (₹{bkt12_rate}/receipt, min 2)*")
+                for team, count in rc_by_team_12.sort_values(ascending=False).items():
+                    if count >= 2:
+                        incentive = count * bkt12_rate
+                        lines.append(f"{team} - {count} 💵 ₹{incentive}")
+                    else:
+                        lines.append(f"{team} - {count} (min 2 needed)")
+                lines.append("")
+        
+        # BKT 1+2 POS incentive (₹50K+ POS: ₹100, 2L+: ₹200, 3L+: ₹300...)
+        for bkt_num in [1, 2]:
+            bkt_paid = today_paid[today_paid["BUCKET"] == bkt_num]
+            if not bkt_paid.empty:
+                # Only for teams with 2+ receipts in BKT 1+2 combined
+                eligible_teams = set(rc_by_team_12[rc_by_team_12 >= 2].index) if not bkt12.empty else set()
+                pos_by_team = bkt_paid[bkt_paid["TEAM"].isin(eligible_teams)].groupby("TEAM")["POS"].sum()
+                pos_winners = pos_by_team[pos_by_team >= 50000]
+                if not pos_winners.empty:
+                    lines.append(f"*BKT-{bkt_num} | POS INCENTIVE* 💰")
+                    for team, pos in pos_winners.sort_values(ascending=False).items():
+                        if pos >= 200000:
+                            incentive = int(pos // 100000) * 100
+                            label = f">{int(pos/100000)}L"
+                        else:
+                            incentive = 100
+                            label = ">50K"
+                        lines.append(f"{team} {label} 💸₹{incentive}")
+                    lines.append("")
+        
+        # BKT 3-6: ₹100 per receipt, no minimum
+        bkt36 = today_paid[today_paid["BUCKET"].isin([3, 4, 5, 6])]
+        if not bkt36.empty:
+            rc_by_team_36 = bkt36.groupby("TEAM").size()
+            if not rc_by_team_36.empty:
+                lines.append("*BKT 3-6 RECEIPTS (₹100/receipt)*")
+                for team, count in rc_by_team_36.sort_values(ascending=False).items():
+                    incentive = count * 100
+                    lines.append(f"{team} - {count} 💵 ₹{incentive}")
+                lines.append("")
     
     # SUNDAY SPECIAL — ₹200 per receipt (any bucket)
-    try:
-        day_parts = today.split(".")
-        check_date = _dt(2000 + int(day_parts[2]), int(day_parts[1]), int(day_parts[0]))
-        is_sunday = check_date.weekday() == 6  # 6 = Sunday
-    except Exception:
-        is_sunday = False
-    
     if is_sunday and not today_paid.empty:
         sunday_by_team = today_paid.groupby("TEAM").size()
         if not sunday_by_team.empty:
             lines.append("*🔴 SUNDAY SPECIAL (₹200/receipt)*")
             for team, count in sunday_by_team.sort_values(ascending=False).items():
                 incentive = count * 200
-                lines.append(f"{team} - {count} 💵 {incentive}")
+                lines.append(f"{team} - {count} 💵 ₹{incentive}")
             lines.append("")
     
     return {"text": "\n".join(lines)}
