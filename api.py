@@ -1841,29 +1841,40 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
     header_font = Font(bold=True, size=11)
     header_fill = PatternFill(start_color="1F4E79", end_color="1F4E79", fill_type="solid")
     header_font_white = Font(bold=True, size=11, color="FFFFFF")
+    center_align = Alignment(horizontal='center', vertical='center')
     
     last_row = ws.max_row
     last_col = 8  # H
+    
+    # Add TOTAL row at bottom (SUM of each amount column)
+    total_row_num = last_row + 1
+    ws.cell(row=total_row_num, column=1, value="")
+    ws.cell(row=total_row_num, column=2, value="")
+    for col in range(3, last_col + 1):  # C to H
+        col_letter = chr(64 + col)  # C=67-64=3 → chr(67)='C'
+        ws.cell(row=total_row_num, column=col, value=f"=SUM({col_letter}2:{col_letter}{last_row})")
+        ws.cell(row=total_row_num, column=col).font = Font(bold=True, size=11)
+    
+    last_row = total_row_num  # include total row in formatting
     
     # Format header row
     for col in range(1, last_col + 1):
         cell = ws.cell(row=1, column=col)
         cell.font = header_font_white
         cell.fill = header_fill
-        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.alignment = center_align
         cell.border = thin_border
     
-    # Format data rows
+    # Format data rows + total row
     for row in range(2, last_row + 1):
         for col in range(1, last_col + 1):
             cell = ws.cell(row=row, column=col)
             cell.border = thin_border
-            if col >= 3:  # Amount columns — right align
-                cell.alignment = Alignment(horizontal='right')
+            cell.alignment = center_align
     
-    # Auto-fit column widths (approximate)
+    # Auto-fit column widths
     ws.column_dimensions['A'].width = 12
-    ws.column_dimensions['B'].width = 22
+    ws.column_dimensions['B'].width = 24
     ws.column_dimensions['C'].width = 12
     ws.column_dimensions['D'].width = 12
     ws.column_dimensions['E'].width = 12
@@ -1897,15 +1908,14 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
         cell = ws2.cell(row=1, column=col)
         cell.font = header_font_white
         cell.fill = header_fill
-        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.alignment = center_align
         cell.border = thin_border
     
     for row in range(2, total_row + 1):
         for col in range(1, 3):
             cell = ws2.cell(row=row, column=col)
             cell.border = thin_border
-            if col == 2:
-                cell.alignment = Alignment(horizontal='right')
+            cell.alignment = center_align
     
     # Grand total bold
     ws2.cell(row=total_row, column=1).font = Font(bold=True, size=11)
