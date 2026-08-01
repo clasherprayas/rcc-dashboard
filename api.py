@@ -480,13 +480,11 @@ async def daily_winners(date: str = ""):
                         lines.append(f"{team} - {count} (min 2 needed)")
                 lines.append("")
         
-        # BKT 1+2 POS incentive (₹50K+ POS: ₹100, 2L+: ₹200, 3L+: ₹300...)
+        # BKT 1+2 POS incentive (₹50K+ POS: ₹100, 2L+: ₹200, 3L+: ₹300...) — independent, no min 2
         for bkt_num in [1, 2]:
             bkt_paid = today_paid[today_paid["BUCKET"] == bkt_num]
             if not bkt_paid.empty:
-                # Only for teams with 2+ receipts in BKT 1+2 combined
-                eligible_teams = set(rc_by_team_12[rc_by_team_12 >= 2].index) if not bkt12.empty else set()
-                pos_by_team = bkt_paid[bkt_paid["TEAM"].isin(eligible_teams)].groupby("TEAM")["POS"].sum()
+                pos_by_team = bkt_paid.groupby("TEAM")["POS"].sum()
                 pos_winners = pos_by_team[pos_by_team >= 50000]
                 if not pos_winners.empty:
                     lines.append(f"*BKT-{bkt_num} | POS INCENTIVE* 💰")
@@ -1594,34 +1592,34 @@ async def monthly_incentive(month: int = 0, year: int = 0):
             elif phase == 2:
                 if bkt12_count >= 2:
                     incentive += bkt12_count * 100
-                    # POS bonus
-                    bkt1_pos = float(team_day[team_buckets == 1]["POS"].sum())
-                    bkt2_pos = float(team_day[team_buckets == 2]["POS"].sum())
-                    if bkt1_pos >= 200000:
-                        incentive += int(bkt1_pos // 100000) * 100
-                    elif bkt1_pos >= 50000:
-                        incentive += 100
-                    if bkt2_pos >= 200000:
-                        incentive += int(bkt2_pos // 100000) * 100
-                    elif bkt2_pos >= 50000:
-                        incentive += 100
+                # POS bonus (independent — no min 2 needed)
+                bkt1_pos = float(team_day[team_buckets == 1]["POS"].sum())
+                bkt2_pos = float(team_day[team_buckets == 2]["POS"].sum())
+                if bkt1_pos >= 200000:
+                    incentive += int(bkt1_pos // 100000) * 100
+                elif bkt1_pos >= 50000:
+                    incentive += 100
+                if bkt2_pos >= 200000:
+                    incentive += int(bkt2_pos // 100000) * 100
+                elif bkt2_pos >= 50000:
+                    incentive += 100
                 incentive += bkt36_count * 100
             
             # ── PHASE 3 (21-30): BKT1+2 min 2 → ₹150 + POS; BKT3-6 ₹100 ──
             else:
                 if bkt12_count >= 2:
                     incentive += bkt12_count * 150
-                    # POS bonus
-                    bkt1_pos = float(team_day[team_buckets == 1]["POS"].sum())
-                    bkt2_pos = float(team_day[team_buckets == 2]["POS"].sum())
-                    if bkt1_pos >= 200000:
-                        incentive += int(bkt1_pos // 100000) * 100
-                    elif bkt1_pos >= 50000:
-                        incentive += 100
-                    if bkt2_pos >= 200000:
-                        incentive += int(bkt2_pos // 100000) * 100
-                    elif bkt2_pos >= 50000:
-                        incentive += 100
+                # POS bonus (independent)
+                bkt1_pos = float(team_day[team_buckets == 1]["POS"].sum())
+                bkt2_pos = float(team_day[team_buckets == 2]["POS"].sum())
+                if bkt1_pos >= 200000:
+                    incentive += int(bkt1_pos // 100000) * 100
+                elif bkt1_pos >= 50000:
+                    incentive += 100
+                if bkt2_pos >= 200000:
+                    incentive += int(bkt2_pos // 100000) * 100
+                elif bkt2_pos >= 50000:
+                    incentive += 100
                 incentive += bkt36_count * 100
             
             # Sunday special: ₹200/receipt (all buckets)
@@ -1754,18 +1752,17 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
                 if bkt12_count >= 2:
                     incentive += bkt12_count * 100
                     remark_parts.append(f"{team} - {bkt12_count}")
-                    # POS bonus BKT-1
-                    if bkt1_pos >= 200000:
-                        bkt1_bonus = int(bkt1_pos // 100000) * 100
-                    elif bkt1_pos >= 50000:
-                        bkt1_bonus = 100
-                    incentive += bkt1_bonus
-                    # POS bonus BKT-2
-                    if bkt2_pos >= 200000:
-                        bkt2_bonus = int(bkt2_pos // 100000) * 100
-                    elif bkt2_pos >= 50000:
-                        bkt2_bonus = 100
-                    incentive += bkt2_bonus
+                # POS bonus (independent — no min 2 needed)
+                if bkt1_pos >= 200000:
+                    bkt1_bonus = int(bkt1_pos // 100000) * 100
+                elif bkt1_pos >= 50000:
+                    bkt1_bonus = 100
+                incentive += bkt1_bonus
+                if bkt2_pos >= 200000:
+                    bkt2_bonus = int(bkt2_pos // 100000) * 100
+                elif bkt2_pos >= 50000:
+                    bkt2_bonus = 100
+                incentive += bkt2_bonus
                 
                 # BKT 3-6: ₹100/receipt
                 if bkt36_count > 0:
@@ -1776,18 +1773,17 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
                 if bkt12_count >= 2:
                     incentive += bkt12_count * 150
                     remark_parts.append(f"{team} - {bkt12_count}")
-                    # POS bonus BKT-1
-                    if bkt1_pos >= 200000:
-                        bkt1_bonus = int(bkt1_pos // 100000) * 100
-                    elif bkt1_pos >= 50000:
-                        bkt1_bonus = 100
-                    incentive += bkt1_bonus
-                    # POS bonus BKT-2
-                    if bkt2_pos >= 200000:
-                        bkt2_bonus = int(bkt2_pos // 100000) * 100
-                    elif bkt2_pos >= 50000:
-                        bkt2_bonus = 100
-                    incentive += bkt2_bonus
+                # POS bonus (independent)
+                if bkt1_pos >= 200000:
+                    bkt1_bonus = int(bkt1_pos // 100000) * 100
+                elif bkt1_pos >= 50000:
+                    bkt1_bonus = 100
+                incentive += bkt1_bonus
+                if bkt2_pos >= 200000:
+                    bkt2_bonus = int(bkt2_pos // 100000) * 100
+                elif bkt2_pos >= 50000:
+                    bkt2_bonus = 100
+                incentive += bkt2_bonus
                 
                 # BKT 3-6: ₹100/receipt
                 if bkt36_count > 0:
