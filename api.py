@@ -1832,6 +1832,28 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
                 # Add SUM formula for INCENTIVE column (col H = C+D+E+F+G)
                 ws.cell(row=row_num, column=8, value=f"=C{row_num}+D{row_num}+E{row_num}+F{row_num}+G{row_num}")
     
+    # ── SUMMARY SHEET — executive-wise total (SUMIF from detail sheet) ──
+    last_row = ws.max_row
+    detail_sheet_name = ws.title
+    ws2 = wb.create_sheet("Summary")
+    ws2.append(["EXECUTIVE", "TOTAL INCENTIVE"])
+    
+    # Get unique teams from detail sheet column B
+    teams_in_detail = sorted(set(
+        str(ws.cell(row=r, column=2).value) for r in range(2, last_row + 1)
+        if ws.cell(row=r, column=2).value
+    ))
+    
+    for idx, team_name in enumerate(teams_in_detail, start=2):
+        ws2.cell(row=idx, column=1, value=team_name)
+        # SUMIF formula — sum INCENTIVE (col H) where WINNER (col B) matches
+        ws2.cell(row=idx, column=2, value=f"=SUMIF('{detail_sheet_name}'!B:B,A{idx},'{detail_sheet_name}'!H:H)")
+    
+    # Grand total row
+    total_row = len(teams_in_detail) + 2
+    ws2.cell(row=total_row, column=1, value="GRAND TOTAL")
+    ws2.cell(row=total_row, column=2, value=f"=SUM(B2:B{total_row - 1})")
+    
     # Save
     from io import BytesIO
     output = BytesIO()
