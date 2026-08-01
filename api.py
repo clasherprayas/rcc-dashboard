@@ -1795,17 +1795,38 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
             
             if incentive > 0 or bkt12_count > 0 or bkt36_count > 0 or pot_npa_count > 0:
                 remark = remark_parts[0] if remark_parts else ""
+                # Calculate amounts for each column
+                bkt12_amt = 0
+                if phase == 1:
+                    # Phase 1: non-POT NPA BKT1-2 get ₹100/receipt
+                    non_pot_bkt12 = bkt12_count - (pot_npa_count if pot_npa_count > 0 else 0)
+                    bkt12_amt = non_pot_bkt12 * 100 if non_pot_bkt12 > 0 else 0
+                elif phase == 2:
+                    bkt12_amt = bkt12_count * 100 if bkt12_count >= 2 else 0
+                else:
+                    bkt12_amt = bkt12_count * 150 if bkt12_count >= 2 else 0
+                
+                bkt36_amt = bkt36_count * 100 if bkt36_count > 0 else 0
+                
+                # POT NPA amount
+                pot_npa_amt = 0
+                if pot_npa_count > 0:
+                    pot_npa_amt = pot_npa_count * 250 if pot_npa_count >= 2 else 200
+                
+                row_num = ws.max_row + 1
                 ws.append([
                     date_str,
                     team,
-                    bkt12_count if bkt12_count > 0 else "",
+                    bkt12_amt if bkt12_amt > 0 else "",
                     remark,
                     bkt1_bonus if bkt1_bonus > 0 else "",
                     bkt2_bonus if bkt2_bonus > 0 else "",
-                    bkt36_count if bkt36_count > 0 else "",
-                    pot_npa_count if pot_npa_count > 0 else "",
-                    incentive
+                    bkt36_amt if bkt36_amt > 0 else "",
+                    pot_npa_amt if pot_npa_amt > 0 else "",
+                    None  # placeholder for formula
                 ])
+                # Add SUM formula for INCENTIVE column (col I = C+E+F+G+H)
+                ws.cell(row=row_num, column=9, value=f"=C{row_num}+E{row_num}+F{row_num}+G{row_num}+H{row_num}")
     
     # Save
     from io import BytesIO
