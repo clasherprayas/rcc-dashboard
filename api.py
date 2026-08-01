@@ -1499,7 +1499,7 @@ async def bucket_summary_report():
 # ── MONTHLY INCENTIVE REPORT API ──
 @app.get("/api/report/monthly-incentive")
 async def monthly_incentive(month: int = 0, year: int = 0):
-    """Generate monthly incentive report — executive wise daily breakdown."""
+    """Generate monthly incentive report — July 2026 plan with phases + POT NPA."""
     df = load_data()
     if df is None:
         return {"error": "Data not found"}
@@ -1541,15 +1541,22 @@ async def monthly_incentive(month: int = 0, year: int = 0):
     for team in teams:
         results[team] = {"total_receipts": 0, "total_incentive": 0, "daily": {}}
     
-    for day in range(1, last_day + 1):  # Include all days of month (1 to last_day)
+    for day in range(1, last_day + 1):
         day_data = month_paid[month_paid["_day"] == day]
         if day_data.empty:
             continue
         
+        # Determine phase
+        if day <= 10:
+            phase = 1
+        elif day <= 20:
+            phase = 2
+        else:
+            phase = 3
+        
         # Check if Sunday
         try:
-            check_date = _dt(year, month, day)
-            is_sunday = check_date.weekday() == 6
+            is_sunday = _dt(year, month, day).weekday() == 6
         except Exception:
             is_sunday = False
         
@@ -1563,40 +1570,63 @@ async def monthly_incentive(month: int = 0, year: int = 0):
             bkt12_count = len(team_day[team_buckets.isin([1, 2])])
             bkt36_count = len(team_day[team_buckets.isin([3, 4, 5, 6])])
             
+            # POT NPA count (only 1-5 tarikh)
+            pot_npa_count = 0
+            if "POT NPA" in team_day.columns and day <= 5:
+                pot_npa_count = int(team_day["POT NPA"].notna().sum())
+            non_pot_count = count - pot_npa_count
+            
             incentive = 0
-            # BKT 1-2: ₹150/receipt if 2+ receipts
-            if bkt12_count >= 2:
-                incentive += bkt12_count * 150
-            # BKT 3-6: ₹100/receipt
-            incentive += bkt36_count * 100
+            
+            # ── PHASE 1 (1-10): ₹100/receipt, no POS, no minimum ──
+            if phase == 1:
+                # POT NPA (1-5 only)
+                if pot_npa_count > 0:
+                    if pot_npa_count >= 2:
+                        incentive += pot_npa_count * 250
+                    else:
+                        incentive += 200
+                # Non-POT NPA: ₹100/receipt
+                if non_pot_count > 0:
+                    incentive += non_pot_count * 100
+            
+            # ── PHASE 2 (11-20): BKT1+2 min 2 → ₹100 + POS; BKT3-6 ₹100 ──
+            elif phase == 2:
+                if bkt12_count >= 2:
+                    incentive += bkt12_count * 100
+                    # POS bonus
+                    bkt1_pos = float(team_day[team_buckets == 1]["POS"].sum())
+                    bkt2_pos = float(team_day[team_buckets == 2]["POS"].sum())
+                    if bkt1_pos >= 200000:
+                        incentive += int(bkt1_pos // 100000) * 100
+                    elif bkt1_pos >= 50000:
+                        incentive += 100
+                    if bkt2_pos >= 200000:
+                        incentive += int(bkt2_pos // 100000) * 100
+                    elif bkt2_pos >= 50000:
+                        incentive += 100
+                incentive += bkt36_count * 100
+            
+            # ── PHASE 3 (21-30): BKT1+2 min 2 → ₹150 + POS; BKT3-6 ₹100 ──
+            else:
+                if bkt12_count >= 2:
+                    incentive += bkt12_count * 150
+                    # POS bonus
+                    bkt1_pos = float(team_day[team_buckets == 1]["POS"].sum())
+                    bkt2_pos = float(team_day[team_buckets == 2]["POS"].sum())
+                    if bkt1_pos >= 200000:
+                        incentive += int(bkt1_pos // 100000) * 100
+                    elif bkt1_pos >= 50000:
+                        incentive += 100
+                    if bkt2_pos >= 200000:
+                        incentive += int(bkt2_pos // 100000) * 100
+                    elif bkt2_pos >= 50000:
+                        incentive += 100
+                incentive += bkt36_count * 100
+            
             # Sunday special: ₹200/receipt (all buckets)
             if is_sunday:
                 incentive += count * 200
-            
-            # POS bonus BKT-1 (only if resolution >= 89%)
-            bkt1_pos = float(team_day[team_day["BUCKET"] == 1]["POS"].sum())
-            if bkt1_pos >= 50000:
-                # Check team's BKT-1 resolution
-                t_b1 = df[(df["TEAM"] == team) & (df["BUCKET"] == 1)]
-                t_b1_total = float(t_b1["POS"].sum())
-                t_b1_res = float((t_b1[t_b1["POS STATUS"].isin(["STABLE","RB"])]["POS"].sum()) / t_b1_total * 100) if t_b1_total else 0
-                if t_b1_res >= 89:
-                    if bkt1_pos >= 200000:
-                        incentive += int(bkt1_pos // 100000) * 100
-                    else:
-                        incentive += 100
-            
-            # POS bonus BKT-2 (only if resolution >= 65%)
-            bkt2_pos = float(team_day[team_day["BUCKET"] == 2]["POS"].sum())
-            if bkt2_pos >= 50000:
-                t_b2 = df[(df["TEAM"] == team) & (df["BUCKET"] == 2)]
-                t_b2_total = float(t_b2["POS"].sum())
-                t_b2_res = float((t_b2[t_b2["POS STATUS"].isin(["STABLE","RB"])]["POS"].sum()) / t_b2_total * 100) if t_b2_total else 0
-                if t_b2_res >= 65:
-                    if bkt2_pos >= 200000:
-                        incentive += int(bkt2_pos // 100000) * 100
-                    else:
-                        incentive += 100
             
             results[team]["total_receipts"] += count
             results[team]["total_incentive"] += incentive
@@ -1612,7 +1642,7 @@ async def monthly_incentive(month: int = 0, year: int = 0):
 
 @app.get("/api/report/monthly-incentive/download")
 async def download_monthly_incentive(month: int = 0, year: int = 0):
-    """Download monthly incentive as Excel — flat list: DATE | WINNER | BKT 1-2 | REMARK | BKT1 50K | BKT2 50K | BKT 3-6 | INCENTIVE."""
+    """Download monthly incentive as Excel — July 2026 plan with POT NPA."""
     from openpyxl import Workbook
     from fastapi.responses import Response
     
@@ -1652,37 +1682,24 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
     ws = wb.active
     ws.title = f"Incentive {month}-{year}"
     
-    # Calculate team-wise resolution for POS bonus eligibility
-    team_bkt1_resl = {}
-    team_bkt2_resl = {}
-    for team_name, team_grp in df.groupby("TEAM"):
-        if not team_name or str(team_name).lower() == "nan":
-            continue
-        # BKT-1 resolution
-        b1 = team_grp[team_grp["BUCKET"] == 1]
-        if len(b1) > 0:
-            b1_total = float(b1["POS"].sum())
-            b1_stable = float(b1[b1["POS STATUS"] == "STABLE"]["POS"].sum())
-            b1_rb = float(b1[b1["POS STATUS"] == "RB"]["POS"].sum())
-            team_bkt1_resl[team_name] = round((b1_stable + b1_rb) / b1_total * 100, 2) if b1_total else 0
-        # BKT-2 resolution
-        b2 = team_grp[team_grp["BUCKET"] == 2]
-        if len(b2) > 0:
-            b2_total = float(b2["POS"].sum())
-            b2_stable = float(b2[b2["POS STATUS"] == "STABLE"]["POS"].sum())
-            b2_rb = float(b2[b2["POS STATUS"] == "RB"]["POS"].sum())
-            team_bkt2_resl[team_name] = round((b2_stable + b2_rb) / b2_total * 100, 2) if b2_total else 0
-    
     # Header
-    ws.append(["DATE", "WINNER", "BKT 1-2", "REMARK", "BKT 1 50K", "BKT 2 50K", "BKT 3-6", "INCENTIVE"])
+    ws.append(["DATE", "WINNER", "BKT 1-2", "REMARK", "BKT 1 50K", "BKT 2 50K", "BKT 3-6", "POT NPA", "INCENTIVE"])
     
-    # Process day by day (include all days of month)
+    # Process day by day
     for day in range(1, last_day + 1):
         day_data = month_paid[month_paid["_day"] == day]
         if day_data.empty:
             continue
         
         date_str = f"{day:02d}.{month:02d}.{yr_short}"
+        
+        # Determine phase
+        if day <= 10:
+            phase = 1
+        elif day <= 20:
+            phase = 2
+        else:
+            phase = 3
         
         # Check Sunday
         try:
@@ -1702,46 +1719,86 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
             bkt1_pos = float(grp[grp_buckets == 1]["POS"].sum())
             bkt2_pos = float(grp[grp_buckets == 2]["POS"].sum())
             
+            # POT NPA count (only 1-5 tarikh)
+            pot_npa_count = 0
+            if "POT NPA" in grp.columns and day <= 5:
+                pot_npa_count = int(grp["POT NPA"].notna().sum())
+            
+            non_pot_count = count - pot_npa_count
+            
             incentive = 0
             remark_parts = []
-            
-            # BKT 1-2 incentive (2+ receipts = ₹150/receipt)
-            bkt12_incentive = 0
-            if bkt12_count >= 2:
-                bkt12_incentive = bkt12_count * 150
-                incentive += bkt12_incentive
-                remark_parts.append(f"{team} - {bkt12_count}")
-            
-            # BKT 1 50K POS bonus (only if team BKT-1 resolution >= 89%)
             bkt1_bonus = 0
-            if team_bkt1_resl.get(team, 0) >= 89:
-                if bkt1_pos >= 200000:
-                    bkt1_bonus = int(bkt1_pos // 100000) * 100
-                elif bkt1_pos >= 50000:
-                    bkt1_bonus = 100
-            incentive += bkt1_bonus
-            
-            # BKT 2 50K POS bonus (only if team BKT-2 resolution >= 65%)
             bkt2_bonus = 0
-            if team_bkt2_resl.get(team, 0) >= 65:
-                if bkt2_pos >= 200000:
-                    bkt2_bonus = int(bkt2_pos // 100000) * 100
-                elif bkt2_pos >= 50000:
-                    bkt2_bonus = 100
-            incentive += bkt2_bonus
+            pot_npa_incentive = 0
             
-            # BKT 3-6 incentive (₹100/receipt)
-            bkt36_incentive = 0
-            if bkt36_count > 0:
-                bkt36_incentive = bkt36_count * 100
-                incentive += bkt36_incentive
+            # ── PHASE 1 (1-10): ₹100/receipt, no POS bonus, no minimum ──
+            if phase == 1:
+                # POT NPA incentive (1-5 only)
+                if pot_npa_count > 0:
+                    if pot_npa_count >= 2:
+                        pot_npa_incentive = pot_npa_count * 250
+                    else:
+                        pot_npa_incentive = 200
+                    incentive += pot_npa_incentive
+                
+                # Non-POT NPA: ₹100/receipt (all buckets)
+                if non_pot_count > 0:
+                    incentive += non_pot_count * 100
+                
+                if bkt12_count > 0:
+                    remark_parts.append(f"{team} - {bkt12_count}")
+            
+            # ── PHASE 2 (11-20): BKT1+2 min 2 → ₹100/receipt + POS; BKT3-6 ₹100 ──
+            elif phase == 2:
+                if bkt12_count >= 2:
+                    incentive += bkt12_count * 100
+                    remark_parts.append(f"{team} - {bkt12_count}")
+                    # POS bonus BKT-1
+                    if bkt1_pos >= 200000:
+                        bkt1_bonus = int(bkt1_pos // 100000) * 100
+                    elif bkt1_pos >= 50000:
+                        bkt1_bonus = 100
+                    incentive += bkt1_bonus
+                    # POS bonus BKT-2
+                    if bkt2_pos >= 200000:
+                        bkt2_bonus = int(bkt2_pos // 100000) * 100
+                    elif bkt2_pos >= 50000:
+                        bkt2_bonus = 100
+                    incentive += bkt2_bonus
+                
+                # BKT 3-6: ₹100/receipt
+                if bkt36_count > 0:
+                    incentive += bkt36_count * 100
+            
+            # ── PHASE 3 (21-30): BKT1+2 min 2 → ₹150/receipt + POS; BKT3-6 ₹100 ──
+            else:
+                if bkt12_count >= 2:
+                    incentive += bkt12_count * 150
+                    remark_parts.append(f"{team} - {bkt12_count}")
+                    # POS bonus BKT-1
+                    if bkt1_pos >= 200000:
+                        bkt1_bonus = int(bkt1_pos // 100000) * 100
+                    elif bkt1_pos >= 50000:
+                        bkt1_bonus = 100
+                    incentive += bkt1_bonus
+                    # POS bonus BKT-2
+                    if bkt2_pos >= 200000:
+                        bkt2_bonus = int(bkt2_pos // 100000) * 100
+                    elif bkt2_pos >= 50000:
+                        bkt2_bonus = 100
+                    incentive += bkt2_bonus
+                
+                # BKT 3-6: ₹100/receipt
+                if bkt36_count > 0:
+                    incentive += bkt36_count * 100
             
             # Sunday special (₹200/receipt all buckets)
             if is_sunday:
                 incentive += count * 200
             
-            if incentive > 0 or bkt12_count > 0 or bkt36_count > 0:
-                remark = f"{team} - {bkt12_count}" if bkt12_count > 0 else ""
+            if incentive > 0 or bkt12_count > 0 or bkt36_count > 0 or pot_npa_count > 0:
+                remark = remark_parts[0] if remark_parts else ""
                 ws.append([
                     date_str,
                     team,
@@ -1750,6 +1807,7 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
                     bkt1_bonus if bkt1_bonus > 0 else "",
                     bkt2_bonus if bkt2_bonus > 0 else "",
                     bkt36_count if bkt36_count > 0 else "",
+                    pot_npa_count if pot_npa_count > 0 else "",
                     incentive
                 ])
     
