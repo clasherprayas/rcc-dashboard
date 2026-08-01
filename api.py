@@ -1832,8 +1832,46 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
                 # Add SUM formula for INCENTIVE column (col H = C+D+E+F+G)
                 ws.cell(row=row_num, column=8, value=f"=C{row_num}+D{row_num}+E{row_num}+F{row_num}+G{row_num}")
     
-    # ── SUMMARY SHEET — executive-wise total (SUMIF from detail sheet) ──
+    # ── FORMAT DETAIL SHEET AS TABLE ──
+    from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
+    header_font = Font(bold=True, size=11)
+    header_fill = PatternFill(start_color="1F4E79", end_color="1F4E79", fill_type="solid")
+    header_font_white = Font(bold=True, size=11, color="FFFFFF")
+    
     last_row = ws.max_row
+    last_col = 8  # H
+    
+    # Format header row
+    for col in range(1, last_col + 1):
+        cell = ws.cell(row=1, column=col)
+        cell.font = header_font_white
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = thin_border
+    
+    # Format data rows
+    for row in range(2, last_row + 1):
+        for col in range(1, last_col + 1):
+            cell = ws.cell(row=row, column=col)
+            cell.border = thin_border
+            if col >= 3:  # Amount columns — right align
+                cell.alignment = Alignment(horizontal='right')
+    
+    # Auto-fit column widths (approximate)
+    ws.column_dimensions['A'].width = 12
+    ws.column_dimensions['B'].width = 22
+    ws.column_dimensions['C'].width = 12
+    ws.column_dimensions['D'].width = 12
+    ws.column_dimensions['E'].width = 12
+    ws.column_dimensions['F'].width = 12
+    ws.column_dimensions['G'].width = 12
+    ws.column_dimensions['H'].width = 14
+    
+    # ── SUMMARY SHEET — executive-wise total (SUMIF from detail sheet) ──
     detail_sheet_name = ws.title
     ws2 = wb.create_sheet("Summary")
     ws2.append(["EXECUTIVE", "TOTAL INCENTIVE"])
@@ -1853,6 +1891,28 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
     total_row = len(teams_in_detail) + 2
     ws2.cell(row=total_row, column=1, value="GRAND TOTAL")
     ws2.cell(row=total_row, column=2, value=f"=SUM(B2:B{total_row - 1})")
+    
+    # Format Summary sheet
+    for col in range(1, 3):
+        cell = ws2.cell(row=1, column=col)
+        cell.font = header_font_white
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = thin_border
+    
+    for row in range(2, total_row + 1):
+        for col in range(1, 3):
+            cell = ws2.cell(row=row, column=col)
+            cell.border = thin_border
+            if col == 2:
+                cell.alignment = Alignment(horizontal='right')
+    
+    # Grand total bold
+    ws2.cell(row=total_row, column=1).font = Font(bold=True, size=11)
+    ws2.cell(row=total_row, column=2).font = Font(bold=True, size=11)
+    
+    ws2.column_dimensions['A'].width = 24
+    ws2.column_dimensions['B'].width = 18
     
     # Save
     from io import BytesIO
