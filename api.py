@@ -1882,6 +1882,9 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
     ws.column_dimensions['G'].width = 12
     ws.column_dimensions['H'].width = 14
     
+    # Freeze header row
+    ws.freeze_panes = "A2"
+    
     # ── SUMMARY SHEET — executive-wise total (SUMIF from detail sheet) ──
     detail_sheet_name = ws.title
     ws2 = wb.create_sheet("Summary")
@@ -1923,6 +1926,9 @@ async def download_monthly_incentive(month: int = 0, year: int = 0):
     
     ws2.column_dimensions['A'].width = 24
     ws2.column_dimensions['B'].width = 18
+    
+    # Freeze header row
+    ws2.freeze_panes = "A2"
     
     # Save
     from io import BytesIO
