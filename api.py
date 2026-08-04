@@ -548,7 +548,7 @@ async def daily_winners(date: str = ""):
                         pos_lines.append(f"{team} {label} ₹{bonus}")
         if pos_lines:
             lines.append("")
-            lines.append("💰 *POS BONUS*")
+            lines.append("💰 *BKT 1-2 | POS*")
             lines.extend(pos_lines)
     
     # ── BKT 3-6 RECEIPTS ──
