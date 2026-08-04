@@ -233,7 +233,7 @@ _public_access = {"enabled": True, "password_required": False, "password": "rcc1
 _search_access = {"enabled": False, "password": "rcc@admin"}
 
 # ── INCENTIVE RULES (file-based, admin-editable) ──
-_INCENTIVE_RULES_FILE = Path(os.environ.get("INCENTIVE_RULES_PATH", "/tmp/incentive_rules.json" if CLOUD_MODE else str(APP_DIR / "incentive_rules.json")))
+_INCENTIVE_RULES_FILE = APP_DIR / "incentive_rules.json"
 
 _DEFAULT_INCENTIVE_RULES = {
     "phases": [

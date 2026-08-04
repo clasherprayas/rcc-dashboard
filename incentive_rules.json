@@ -1,0 +1,13 @@
+{
+  "phases": [
+    {"start": 1, "end": 10, "bkt12_rate": 100, "bkt12_min": 0, "bkt36_rate": 100, "pos_enabled": false},
+    {"start": 11, "end": 20, "bkt12_rate": 100, "bkt12_min": 2, "bkt36_rate": 100, "pos_enabled": true},
+    {"start": 21, "end": 31, "bkt12_rate": 150, "bkt12_min": 2, "bkt36_rate": 100, "pos_enabled": true}
+  ],
+  "pos_slabs": [
+    {"min": 50000, "max": 199999, "bonus": 100},
+    {"min": 200000, "max": 999999999, "per_lakh": 100}
+  ],
+  "pot_npa": {"enabled": true, "start_day": 1, "end_day": 5, "rate_single": 200, "rate_multi": 250},
+  "sunday": {"enabled": true, "rate": 200}
+}
