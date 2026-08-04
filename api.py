@@ -488,7 +488,9 @@ async def daily_winners(date: str = ""):
     if today_paid.empty:
         return {"text": "⭐ *TODAY'S WINNERS* 🏅\n\nNo payments yet today."}
     
-    lines = ["⭐ *TODAY'S WINNERS* 🏅\n"]
+    lines = ["⭐ *TODAY'S WINNERS* 🏅"]
+    lines.append(f"📅 {today}")
+    lines.append("━━━━━━━━━━━━━━━━━━")
     
     # ── POT NPA (if enabled and within day range) ──
     if pot_npa_rules.get("enabled") and pot_npa_rules.get("start_day", 1) <= day_of_month <= pot_npa_rules.get("end_day", 5):
@@ -501,11 +503,11 @@ async def daily_winners(date: str = ""):
             rate_single = pot_npa_rules.get("rate_single", 200)
             rate_multi = pot_npa_rules.get("rate_multi", 250)
             if not pot_by_team.empty:
-                lines.append(f"*🔥 POT NPA RECEIPTS*")
+                lines.append("")
+                lines.append("🔥 *POT NPA*")
                 for team, count in pot_by_team.sort_values(ascending=False).items():
                     incentive = count * rate_multi if count >= 2 else rate_single
-                    lines.append(f"{team} - {count} 💵 ₹{incentive}")
-                lines.append("")
+                    lines.append(f"  ▸ {team} — {count} ×  ₹{incentive}")
     else:
         non_pot_paid = today_paid
     
@@ -516,19 +518,18 @@ async def daily_winners(date: str = ""):
     
     if not bkt12.empty:
         rc_by_team_12 = bkt12.groupby("TEAM").size()
-        if not rc_by_team_12.empty:
-            if bkt12_min > 0:
-                lines.append(f"*BKT 1-2 RECEIPTS (₹{bkt12_rate}/receipt, min {bkt12_min})*")
-            else:
-                lines.append(f"*BKT 1-2 RECEIPTS (₹{bkt12_rate}/receipt)*")
-            for team, count in rc_by_team_12.sort_values(ascending=False).items():
-                if bkt12_min == 0 or count >= bkt12_min:
-                    incentive = count * bkt12_rate
-                    lines.append(f"{team} - {count} 💵 ₹{incentive}")
+        eligible = rc_by_team_12[rc_by_team_12 >= bkt12_min] if bkt12_min > 0 else rc_by_team_12
+        if not eligible.empty:
             lines.append("")
+            min_text = f" (min {bkt12_min})" if bkt12_min > 0 else ""
+            lines.append(f"🏦 *BKT 1-2 — ₹{bkt12_rate}/receipt{min_text}*")
+            for team, count in eligible.sort_values(ascending=False).items():
+                incentive = count * bkt12_rate
+                lines.append(f"  ▸ {team} — {count} ×  ₹{incentive}")
     
     # ── POS INCENTIVE (if enabled for this phase) ──
     if phase_config.get("pos_enabled"):
+        pos_lines = []
         for bkt_num in [1, 2]:
             bkt_paid = today_paid[today_paid["BUCKET"] == bkt_num]
             if not bkt_paid.empty:
@@ -536,7 +537,6 @@ async def daily_winners(date: str = ""):
                 min_pos = pos_slabs[0]["min"] if pos_slabs else 50000
                 pos_winners = pos_by_team[pos_by_team >= min_pos]
                 if not pos_winners.empty:
-                    lines.append(f"*BKT-{bkt_num} | POS INCENTIVE* 💰")
                     for team, pos in pos_winners.sort_values(ascending=False).items():
                         bonus = 0
                         for slab in pos_slabs:
@@ -546,8 +546,11 @@ async def daily_winners(date: str = ""):
                                 else:
                                     bonus = slab.get("bonus", 100)
                         label = f">{int(pos/100000)}L" if pos >= 200000 else ">50K"
-                        lines.append(f"{team} {label} 💸₹{bonus}")
-                    lines.append("")
+                        pos_lines.append(f"  ▸ {team} (B{bkt_num}) {label}  💰₹{bonus}")
+        if pos_lines:
+            lines.append("")
+            lines.append("💰 *POS INCENTIVE*")
+            lines.extend(pos_lines)
     
     # ── BKT 3-6 RECEIPTS ──
     bkt36_rate = phase_config.get("bkt36_rate", 100)
@@ -555,22 +558,26 @@ async def daily_winners(date: str = ""):
     if not bkt36.empty:
         rc_by_team_36 = bkt36.groupby("TEAM").size()
         if not rc_by_team_36.empty:
-            lines.append(f"*BKT 3-6 RECEIPTS (₹{bkt36_rate}/receipt)*")
+            lines.append("")
+            lines.append(f"📋 *BKT 3-6 — ₹{bkt36_rate}/receipt*")
             for team, count in rc_by_team_36.sort_values(ascending=False).items():
                 incentive = count * bkt36_rate
-                lines.append(f"{team} - {count} 💵 ₹{incentive}")
-            lines.append("")
+                lines.append(f"  ▸ {team} — {count} ×  ₹{incentive}")
     
     # ── SUNDAY SPECIAL ──
     if sunday_rules.get("enabled") and is_sunday and not today_paid.empty:
         sunday_rate = sunday_rules.get("rate", 200)
         sunday_by_team = today_paid.groupby("TEAM").size()
         if not sunday_by_team.empty:
-            lines.append(f"*🔴 SUNDAY SPECIAL (₹{sunday_rate}/receipt)*")
+            lines.append("")
+            lines.append(f"🔴 *SUNDAY SPECIAL — ₹{sunday_rate}/receipt*")
             for team, count in sunday_by_team.sort_values(ascending=False).items():
                 incentive = count * sunday_rate
-                lines.append(f"{team} - {count} 💵 ₹{incentive}")
-            lines.append("")
+                lines.append(f"  ▸ {team} — {count} ×  ₹{incentive}")
+    
+    lines.append("")
+    lines.append("━━━━━━━━━━━━━━━━━━")
+    lines.append("_RCC Dashboard_")
     
     return {"text": "\n".join(lines)}
 
