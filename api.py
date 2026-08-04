@@ -305,7 +305,7 @@ async def set_incentive_rules(request: Request):
 def _load_trails_data(day_of_month):
     """Load TRAILS sheet and return dict of team → trail count for given day."""
     try:
-        trails_df = pd.read_excel(DATA_FILE, sheet_name="TRAILS", engine="openpyxl")
+        trails_df = pd.read_excel(DATA_FILE, sheet_name="TRAILS", engine="openpyxl", header=2)
         trails_df.columns = [str(c).strip() for c in trails_df.columns]
         # Find the day column (could be "04", "4", etc.)
         day_str = f"{day_of_month:02d}"
@@ -318,7 +318,7 @@ def _load_trails_data(day_of_month):
             return {}
         # Build team → count dict
         result = {}
-        team_col = trails_df.columns[0]  # First column is TEAM
+        team_col = "TEAM" if "TEAM" in trails_df.columns else trails_df.columns[0]
         for _, row in trails_df.iterrows():
             team = str(row[team_col]).strip().upper()
             if not team or team.lower() == "nan" or "grand total" in team.lower():
