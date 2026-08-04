@@ -525,8 +525,6 @@ async def daily_winners(date: str = ""):
                 if bkt12_min == 0 or count >= bkt12_min:
                     incentive = count * bkt12_rate
                     lines.append(f"{team} - {count} 💵 ₹{incentive}")
-                else:
-                    lines.append(f"{team} - {count} (min {bkt12_min} needed)")
             lines.append("")
     
     # ── POS INCENTIVE (if enabled for this phase) ──
