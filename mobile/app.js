@@ -2595,8 +2595,13 @@ async function showIncentiveRules() {
   
   el.innerHTML = `
     <div style="padding:4px 0">
-      <div style="font-size:16px;font-weight:900;color:var(--ink);margin-bottom:4px">⚙️ Incentive Rules</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Changes apply instantly to Winners & Excel reports</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div style="font-size:16px;font-weight:900;color:var(--ink)">⚙️ Incentive Rules</div>
+          <div style="font-size:11px;color:var(--muted)">Changes apply instantly to Winners & Excel reports</div>
+        </div>
+        <button onclick="saveIncentiveRules(${rules.phases.length})" style="padding:10px 18px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer">💾 Save</button>
+      </div>
       
       <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:8px">📅 PHASES</div>
       ${phasesHtml}
@@ -2619,7 +2624,7 @@ async function showIncentiveRules() {
         </div>
       </div>
       
-      <button onclick="saveIncentiveRules(${rules.phases.length})" style="width:100%;padding:14px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:15px;cursor:pointer;margin-bottom:20px">💾 Save Rules</button>
+      <button onclick="saveIncentiveRules(${rules.phases.length})" style="width:100%;padding:14px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:15px;cursor:pointer;margin-bottom:40px">💾 Save Rules</button>
     </div>
   `;
 }
