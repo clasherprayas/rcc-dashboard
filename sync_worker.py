@@ -37,8 +37,12 @@ def get_source_file():
         
         # Try multiple naming patterns
         patterns = [
-            (f"{month_name} {yr_full}", f"TW ALLOCATION {month_name} {yr_full}.xlsx"),   # AUGUST 2026
-            (f"{month_name} {yr_short}", f"TW ALLOCATION {month_name} {yr_short}.xlsx"), # AUGUST 26
+            (f"{month_name} {yr_full}", f"TW ALLOCATION {month_name} {yr_full}.xlsx"),       # AUGUST 2026
+            (f"{month_name} {yr_short}", f"TW ALLOCATION {month_name} {yr_short}.xlsx"),     # AUGUST 26
+            (f"{month_name[:3]} {yr_full}", f"TW ALLOCATION {month_name[:3]} {yr_short}..xlsx"),  # AUG 2026 folder + AUG 26..xlsx
+            (f"{month_name[:3]} {yr_full}", f"TW ALLOCATION {month_name[:3]} {yr_full}.xlsx"),    # AUG 2026 folder + AUG 2026.xlsx
+            (f"{month_name[:3]} {yr_full}", f"TW ALLOCATION {month_name[:3]} {yr_short}.xlsx"),   # AUG 2026 folder + AUG 26.xlsx
+            (f"{month_name[:3]} {yr_short}", f"TW ALLOCATION {month_name[:3]} {yr_short}.xlsx"),  # AUG 26 folder
         ]
         
         for folder_name, file_name in patterns:
