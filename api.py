@@ -534,7 +534,7 @@ async def daily_winners(date: str = ""):
         return {"text": "⭐ *TODAY'S WINNERS* 🏅\n\nNo payments yet today."}
     
     lines = ["⭐ *TODAY'S WINNERS* 🏅"]
-    lines.append(f"📅 {today}")
+    lines.append(f"🗓️ {today}")
     lines.append("━━━━━━━━━━━━━━")
     
     # ── POT NPA (if enabled and within day range) ──
