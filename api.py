@@ -567,7 +567,7 @@ async def daily_winners(date: str = ""):
         eligible = rc_by_team_12[rc_by_team_12 >= bkt12_min] if bkt12_min > 0 else rc_by_team_12
         if not eligible.empty:
             lines.append("")
-            lines.append(f"🏦 *BKT 1-2 💵{bkt12_rate}*")
+            lines.append(f"🏦 *BKT 1-2 💵{bkt12_rate}{' ('+str(bkt12_min)+'+ Rcpt)' if bkt12_min > 0 else ''}*")
             lines.append("")
             for team, count in eligible.sort_values(ascending=False).items():
                 incentive = count * bkt12_rate
