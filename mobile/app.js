@@ -974,6 +974,7 @@ async function fetchReceiptCut() {
       <td style="text-align:center;padding:8px 6px;font-size:11px;color:#64748b;border:1px solid #e2e8f0">${t.drr||''}</td>
       <td style="text-align:center;padding:8px 6px;font-size:12px;font-weight:900;color:${c};background:${rBg(t.pct_achi)};border:1px solid #e2e8f0">${t.pct_achi.toFixed(1)}%</td>
       <td style="text-align:center;padding:8px 6px;font-size:12px;font-weight:700;color:#2563eb;border:1px solid #e2e8f0">${t.payment || ''}</td>
+      <td style="text-align:center;padding:8px 6px;font-size:12px;font-weight:700;color:#8b5cf6;border:1px solid #e2e8f0">${t.today_trails || ''}</td>
       <td style="text-align:center;padding:8px 6px;font-size:12px;font-weight:700;color:${t.pending_trails>0?'#f97316':'#059669'};border:1px solid #e2e8f0">${t.pending_trails || ''}</td>
     </tr>`;
   });
@@ -988,11 +989,12 @@ async function fetchReceiptCut() {
     <td style="text-align:center;padding:10px 6px;color:#64748b;font-size:11px;font-weight:700;border:1px solid #e2e8f0">${g.drr||''}</td>
     <td style="text-align:center;padding:10px 6px;font-weight:900;color:#059669;font-size:14px;border:1px solid #e2e8f0">${g.pct_achi.toFixed(1)}%</td>
     <td style="text-align:center;padding:10px 6px;font-weight:900;color:#2563eb;font-size:13px;border:1px solid #e2e8f0">${g.payment||''}</td>
+    <td style="text-align:center;padding:10px 6px;font-weight:900;color:#8b5cf6;font-size:13px;border:1px solid #e2e8f0">${g.today_trails||''}</td>
     <td style="text-align:center;padding:10px 6px;font-weight:900;color:#f97316;font-size:13px;border:1px solid #e2e8f0">${g.pending_trails||''}</td>
   </tr>`;
 
   const reportHtml = `
-    <div id="rcReportCard" style="width:720px;background:#ffffff;border-radius:14px;padding:24px 20px;font-family:'Inter',-apple-system,sans-serif;color:#0f172a;box-shadow:0 4px 20px rgba(0,0,0,.08);border:1px solid #e2e8f0">
+    <div id="rcReportCard" style="width:780px;background:#ffffff;border-radius:14px;padding:24px 20px;font-family:'Inter',-apple-system,sans-serif;color:#0f172a;box-shadow:0 4px 20px rgba(0,0,0,.08);border:1px solid #e2e8f0">
       <div style="text-align:center;margin-bottom:18px">
         <div style="font-size:20px;font-weight:900;color:#0f172a;letter-spacing:-.01em">RECEIPT CUT REPORT</div>
         <div style="display:inline-flex;align-items:center;gap:24px;margin-top:12px;padding:12px 28px;border:1.5px solid #e2e8f0;border-radius:12px;background:#f8fafc">
@@ -1012,6 +1014,7 @@ async function fetchReceiptCut() {
           <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#94a3b8;border:1px solid #334155">DRR</th>
           <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#fbbf24;border:1px solid #334155">%ACHI</th>
           <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#60a5fa;border:1px solid #334155">TODAY'S<br>PAYMENTS</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#c4b5fd;border:1px solid #334155">TODAY'S<br>TRAILS</th>
           <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#fb923c;border:1px solid #334155">PENDING<br>TRAILS</th>
         </tr></thead>
         <tbody>${rows}</tbody>
@@ -1036,7 +1039,7 @@ async function fetchReceiptCut() {
     <div id="rcReportContainer" style="overflow:auto;padding:10px">${reportHtml}</div>
   `;
   // Auto-fit zoom for Receipt Cut
-  rcZoom = Math.min(1, (window.innerWidth - 40) / 700);
+  rcZoom = Math.min(1, (window.innerWidth - 40) / 780);
   setTimeout(() => {
     const card = document.getElementById('rcReportCard');
     if (card) { card.style.transform = 'scale(' + rcZoom + ')'; card.style.transformOrigin = 'top left'; }

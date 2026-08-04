@@ -766,6 +766,9 @@ async def receiptcut_report():
     today_pos = float(today_paid["POS"].sum())
     movement = round(today_pos / total_pos * 100, 2) if total_pos else 0
     
+    # Load today's trails from TRAILS sheet
+    trail_data = _load_trails_data(day)
+    
     # Team wise stats
     teams = []
     for team, grp in df.groupby("TEAM"):
@@ -780,8 +783,8 @@ async def receiptcut_report():
         pct_achi = round(paid / total * 100, 2) if total else 0
         # Today's payment count for this team
         today_payment = int(today_paid[today_paid["TEAM"] == team].shape[0]) if not today_paid.empty else 0
-        # Today's trails
-        today_trails = 0  # Would need CSV data — skip for now
+        # Today's trails from TRAILS sheet
+        today_trails = trail_data.get(str(team).strip().upper(), 0)
         # Pending trails
         pending_trails = int((grp["TRAILS PENDING"] == 0).sum())
         
@@ -811,11 +814,13 @@ async def receiptcut_report():
     g_pct = round(g_paid / g_total * 100, 2) if g_total else 0
     g_payment = sum(t["payment"] for t in teams)
     g_pending = sum(t["pending_trails"] for t in teams)
+    g_trails = sum(t["today_trails"] for t in teams)
     
     grand = {
         "paid": g_paid, "unpaid": g_unpaid, "total": g_total,
         "target": g_target, "shortfall": g_shortfall, "drr": g_drr,
         "pct_achi": g_pct, "payment": g_payment, "pending_trails": g_pending,
+        "today_trails": g_trails,
     }
     
     return {
