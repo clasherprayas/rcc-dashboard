@@ -1365,8 +1365,41 @@ async function fetchWinners() {
   const parts = dateInput.split('-');
   const dateStr = parts[2] + '.' + parts[1] + '.' + parts[0].slice(-2);
   
-  showToast('🏅 Generating...');
+  // Show loading progress animation
+  const el = document.getElementById('flowContent');
+  el.innerHTML = `
+    <div style="text-align:center;padding:60px 20px">
+      <div style="font-size:40px;margin-bottom:16px;animation:pulse 1s infinite">🏅</div>
+      <div style="font-size:16px;font-weight:800;color:var(--ink);margin-bottom:12px">Generating Report...</div>
+      <div style="width:200px;height:8px;background:var(--border);border-radius:99px;margin:0 auto;overflow:hidden;position:relative">
+        <div id="loadBar" style="height:100%;width:0%;background:linear-gradient(90deg,#3b82f6,#10b981);border-radius:99px;transition:width .3s"></div>
+      </div>
+      <div id="loadPct" style="font-size:13px;font-weight:700;color:var(--muted);margin-top:8px">0%</div>
+    </div>
+  `;
+  
+  // Animate progress (fake but smooth)
+  let pct = 0;
+  const loadInterval = setInterval(() => {
+    pct += Math.random() * 15 + 5;
+    if (pct > 90) pct = 90;
+    const bar = document.getElementById('loadBar');
+    const label = document.getElementById('loadPct');
+    if (bar) bar.style.width = pct + '%';
+    if (label) label.textContent = Math.round(pct) + '%';
+  }, 200);
+  
   const data = await apiCall(`/api/report/winners?date=${encodeURIComponent(dateStr)}`);
+  
+  clearInterval(loadInterval);
+  // Complete to 100%
+  const bar = document.getElementById('loadBar');
+  const label = document.getElementById('loadPct');
+  if (bar) bar.style.width = '100%';
+  if (label) label.textContent = '100%';
+  
+  await new Promise(r => setTimeout(r, 300)); // brief pause at 100%
+  
   if (!data || !data.text) {
     showToast('❌ Failed to generate');
     return;
