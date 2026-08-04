@@ -32,23 +32,28 @@ def get_source_file():
             d += 12
             y -= 1
         month_name = calendar.month_name[d].upper()
-        yr = str(y)[2:]  # "26" from 2026
+        yr_short = str(y)[2:]  # "26" from 2026
+        yr_full = str(y)       # "2026"
         
-        folder_name = f"{month_name} {yr}"
-        file_name = f"TW ALLOCATION {month_name} {yr}.xlsx"
-        full_path = BASE_TW_PATH / folder_name / file_name
+        # Try multiple naming patterns
+        patterns = [
+            (f"{month_name} {yr_full}", f"TW ALLOCATION {month_name} {yr_full}.xlsx"),   # AUGUST 2026
+            (f"{month_name} {yr_short}", f"TW ALLOCATION {month_name} {yr_short}.xlsx"), # AUGUST 26
+        ]
         
-        try:
-            if full_path.exists():
-                return full_path
-        except OSError:
-            continue
+        for folder_name, file_name in patterns:
+            full_path = BASE_TW_PATH / folder_name / file_name
+            try:
+                if full_path.exists():
+                    return full_path
+            except OSError:
+                continue
     
-    # Fallback — return current month path even if not found yet
+    # Fallback — return current month path (full year format)
     month_name = calendar.month_name[now.month].upper()
-    yr = str(now.year)[2:]
-    folder_name = f"{month_name} {yr}"
-    file_name = f"TW ALLOCATION {month_name} {yr}.xlsx"
+    yr_full = str(now.year)
+    folder_name = f"{month_name} {yr_full}"
+    file_name = f"TW ALLOCATION {month_name} {yr_full}.xlsx"
     return BASE_TW_PATH / folder_name / file_name
 
 SOURCE_FILE = get_source_file()
