@@ -528,7 +528,6 @@ async def daily_winners(date: str = ""):
     
     # ── POS INCENTIVE (if enabled for this phase) ──
     if phase_config.get("pos_enabled"):
-        pos_lines = []
         for bkt_num in [1, 2]:
             bkt_paid = today_paid[today_paid["BUCKET"] == bkt_num]
             if not bkt_paid.empty:
@@ -536,6 +535,8 @@ async def daily_winners(date: str = ""):
                 min_pos = pos_slabs[0]["min"] if pos_slabs else 50000
                 pos_winners = pos_by_team[pos_by_team >= min_pos]
                 if not pos_winners.empty:
+                    lines.append("")
+                    lines.append(f"💰 *BKT-{bkt_num} | POS*")
                     for team, pos in pos_winners.sort_values(ascending=False).items():
                         bonus = 0
                         for slab in pos_slabs:
@@ -545,11 +546,7 @@ async def daily_winners(date: str = ""):
                                 else:
                                     bonus = slab.get("bonus", 100)
                         label = f">{int(pos/100000)}L" if pos >= 200000 else ">50K"
-                        pos_lines.append(f"{team} {label} ₹{bonus}")
-        if pos_lines:
-            lines.append("")
-            lines.append("💰 *BKT 1-2 | POS*")
-            lines.extend(pos_lines)
+                        lines.append(f"{team} {label} ₹{bonus}")
     
     # ── BKT 3-6 RECEIPTS ──
     bkt36_rate = phase_config.get("bkt36_rate", 100)
