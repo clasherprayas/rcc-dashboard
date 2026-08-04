@@ -233,7 +233,9 @@ _public_access = {"enabled": True, "password_required": False, "password": "rcc1
 _search_access = {"enabled": False, "password": "rcc@admin"}
 
 # ── INCENTIVE RULES (file-based, admin-editable) ──
-_INCENTIVE_RULES_FILE = APP_DIR / "incentive_rules.json"
+# On Render: saves to /tmp (writable) but reads from git file as fallback
+_INCENTIVE_RULES_RUNTIME = Path("/tmp/incentive_rules.json") if CLOUD_MODE else (APP_DIR / "incentive_rules.json")
+_INCENTIVE_RULES_DEFAULT = APP_DIR / "incentive_rules.json"
 
 _DEFAULT_INCENTIVE_RULES = {
     "phases": [
@@ -251,8 +253,13 @@ _DEFAULT_INCENTIVE_RULES = {
 
 def _load_incentive_rules():
     try:
-        if _INCENTIVE_RULES_FILE.exists():
-            with open(_INCENTIVE_RULES_FILE, "r", encoding="utf-8") as f:
+        # First try runtime file (admin-saved changes)
+        if _INCENTIVE_RULES_RUNTIME.exists():
+            with open(_INCENTIVE_RULES_RUNTIME, "r", encoding="utf-8") as f:
+                return _json.load(f)
+        # Fallback to git-tracked default
+        if _INCENTIVE_RULES_DEFAULT.exists():
+            with open(_INCENTIVE_RULES_DEFAULT, "r", encoding="utf-8") as f:
                 return _json.load(f)
     except Exception:
         pass
@@ -260,8 +267,13 @@ def _load_incentive_rules():
 
 def _save_incentive_rules(rules):
     try:
-        with open(_INCENTIVE_RULES_FILE, "w", encoding="utf-8") as f:
+        # Save to runtime file
+        with open(_INCENTIVE_RULES_RUNTIME, "w", encoding="utf-8") as f:
             _json.dump(rules, f, ensure_ascii=False, indent=2)
+        # Also update git-tracked file (for local dev)
+        if not CLOUD_MODE:
+            with open(_INCENTIVE_RULES_DEFAULT, "w", encoding="utf-8") as f:
+                _json.dump(rules, f, ensure_ascii=False, indent=2)
     except Exception as e:
         print(f"⚠️ Incentive rules save failed: {e}")
 
