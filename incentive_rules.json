@@ -9,5 +9,6 @@
     {"min": 200000, "max": 999999999, "per_lakh": 100}
   ],
   "pot_npa": {"enabled": true, "start_day": 1, "end_day": 5, "rate_single": 200, "rate_multi": 250},
-  "sunday": {"enabled": true, "rate": 200}
+  "sunday": {"enabled": true, "rate": 200},
+  "trails": {"enabled": true, "min_trails": 6, "rate": 100, "start_day": 1, "end_day": 10}
 }

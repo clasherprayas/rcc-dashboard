@@ -2592,6 +2592,7 @@ async function showIncentiveRules() {
   
   const pot = rules.pot_npa || {};
   const sun = rules.sunday || {};
+  const trails = rules.trails || {enabled: true, min_trails: 6, rate: 100, start_day: 1, end_day: 10};
   
   el.innerHTML = `
     <div style="padding:4px 0">
@@ -2621,6 +2622,16 @@ async function showIncentiveRules() {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div><label style="font-size:10px;color:var(--muted);font-weight:700">Enabled</label><select id="sun_enabled" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"><option value="true" ${sun.enabled?'selected':''}>Yes</option><option value="false" ${!sun.enabled?'selected':''}>No</option></select></div>
           <div><label style="font-size:10px;color:var(--muted);font-weight:700">Rate/Receipt</label><input type="number" id="sun_rate" value="${sun.rate||200}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"></div>
+        </div>
+      </div>
+      
+      <div style="font-size:13px;font-weight:800;color:var(--ink);margin:16px 0 8px">📌 TRAIL INCENTIVE</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">Enabled</label><select id="trail_enabled" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"><option value="true" ${trails.enabled?'selected':''}>Yes</option><option value="false" ${!trails.enabled?'selected':''}>No</option></select></div>
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">Min Trails</label><input type="number" id="trail_min" value="${trails.min_trails||6}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"></div>
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">Rate ₹</label><input type="number" id="trail_rate" value="${trails.rate||100}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"></div>
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">Days (start-end)</label><div style="display:flex;gap:4px"><input type="number" id="trail_start" value="${trails.start_day||1}" style="width:50%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:var(--bg);color:var(--ink)"><input type="number" id="trail_end" value="${trails.end_day||10}" style="width:50%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:var(--bg);color:var(--ink)"></div></div>
         </div>
       </div>
       
@@ -2654,6 +2665,13 @@ async function saveIncentiveRules(phaseCount) {
     sunday: {
       enabled: document.getElementById('sun_enabled').value === 'true',
       rate: parseInt(document.getElementById('sun_rate').value)
+    },
+    trails: {
+      enabled: document.getElementById('trail_enabled').value === 'true',
+      min_trails: parseInt(document.getElementById('trail_min').value),
+      rate: parseInt(document.getElementById('trail_rate').value),
+      start_day: parseInt(document.getElementById('trail_start').value),
+      end_day: parseInt(document.getElementById('trail_end').value)
     }
   };
   

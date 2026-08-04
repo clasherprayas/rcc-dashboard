@@ -248,7 +248,8 @@ _DEFAULT_INCENTIVE_RULES = {
         {"min": 200000, "max": 999999999, "per_lakh": 100}
     ],
     "pot_npa": {"enabled": True, "start_day": 1, "end_day": 5, "rate_single": 200, "rate_multi": 250},
-    "sunday": {"enabled": True, "rate": 200}
+    "sunday": {"enabled": True, "rate": 200},
+    "trails": {"enabled": True, "min_trails": 6, "rate": 100, "start_day": 1, "end_day": 10}
 }
 
 def _load_incentive_rules():
@@ -295,8 +296,40 @@ async def set_incentive_rules(request: Request):
         rules["pot_npa"] = body["pot_npa"]
     if "sunday" in body:
         rules["sunday"] = body["sunday"]
+    if "trails" in body:
+        rules["trails"] = body["trails"]
     _save_incentive_rules(rules)
     return rules
+
+
+def _load_trails_data(day_of_month):
+    """Load TRAILS sheet and return dict of team → trail count for given day."""
+    try:
+        trails_df = pd.read_excel(DATA_FILE, sheet_name="TRAILS", engine="openpyxl")
+        trails_df.columns = [str(c).strip() for c in trails_df.columns]
+        # Find the day column (could be "04", "4", etc.)
+        day_str = f"{day_of_month:02d}"
+        day_col = None
+        for col in trails_df.columns:
+            if str(col).strip() == day_str or str(col).strip() == str(day_of_month):
+                day_col = col
+                break
+        if not day_col:
+            return {}
+        # Build team → count dict
+        result = {}
+        team_col = trails_df.columns[0]  # First column is TEAM
+        for _, row in trails_df.iterrows():
+            team = str(row[team_col]).strip().upper()
+            if not team or team.lower() == "nan" or "grand total" in team.lower():
+                continue
+            count = pd.to_numeric(row.get(day_col, 0), errors="coerce")
+            if pd.notna(count) and count > 0:
+                result[team] = int(count)
+        return result
+    except Exception as e:
+        print(f"⚠️ Trails sheet load error: {e}")
+        return {}
 
 @app.get("/api/public-access")
 async def get_public_access():
@@ -571,6 +604,19 @@ async def daily_winners(date: str = ""):
             for team, count in rc_by_team_36.sort_values(ascending=False).items():
                 incentive = count * bkt36_rate
                 lines.append(f"{team}-{count} ₹{incentive}")
+    
+    # ── TRAIL INCENTIVE ──
+    trails_rules = rules.get("trails", {"enabled": False})
+    if trails_rules.get("enabled") and trails_rules.get("start_day", 1) <= day_of_month <= trails_rules.get("end_day", 10):
+        min_trails = trails_rules.get("min_trails", 6)
+        trail_rate = trails_rules.get("rate", 100)
+        trail_data = _load_trails_data(day_of_month)
+        trail_winners = {t: c for t, c in trail_data.items() if c >= min_trails}
+        if trail_winners:
+            lines.append("")
+            lines.append(f"📌 *TRAILS ({min_trails}+ = ₹{trail_rate})*")
+            for team, count in sorted(trail_winners.items(), key=lambda x: x[1], reverse=True):
+                lines.append(f"{team}-{count} ₹{trail_rate}")
     
     # ── SUNDAY SPECIAL ──
     if sunday_rules.get("enabled") and is_sunday and not today_paid.empty:
