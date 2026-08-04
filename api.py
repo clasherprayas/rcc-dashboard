@@ -232,6 +232,60 @@ async def get_visitor_logs():
 _public_access = {"enabled": True, "password_required": False, "password": "rcc123", "show_projection": True}
 _search_access = {"enabled": False, "password": "rcc@admin"}
 
+# ── INCENTIVE RULES (file-based, admin-editable) ──
+_INCENTIVE_RULES_FILE = Path(os.environ.get("INCENTIVE_RULES_PATH", "/tmp/incentive_rules.json" if CLOUD_MODE else str(APP_DIR / "incentive_rules.json")))
+
+_DEFAULT_INCENTIVE_RULES = {
+    "phases": [
+        {"start": 1, "end": 10, "bkt12_rate": 100, "bkt12_min": 0, "bkt36_rate": 100, "pos_enabled": False},
+        {"start": 11, "end": 20, "bkt12_rate": 100, "bkt12_min": 2, "bkt36_rate": 100, "pos_enabled": True},
+        {"start": 21, "end": 31, "bkt12_rate": 150, "bkt12_min": 2, "bkt36_rate": 100, "pos_enabled": True}
+    ],
+    "pos_slabs": [
+        {"min": 50000, "max": 199999, "bonus": 100},
+        {"min": 200000, "max": 999999999, "per_lakh": 100}
+    ],
+    "pot_npa": {"enabled": True, "start_day": 1, "end_day": 5, "rate_single": 200, "rate_multi": 250},
+    "sunday": {"enabled": True, "rate": 200}
+}
+
+def _load_incentive_rules():
+    try:
+        if _INCENTIVE_RULES_FILE.exists():
+            with open(_INCENTIVE_RULES_FILE, "r", encoding="utf-8") as f:
+                return _json.load(f)
+    except Exception:
+        pass
+    return _DEFAULT_INCENTIVE_RULES.copy()
+
+def _save_incentive_rules(rules):
+    try:
+        with open(_INCENTIVE_RULES_FILE, "w", encoding="utf-8") as f:
+            _json.dump(rules, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"⚠️ Incentive rules save failed: {e}")
+
+@app.get("/api/incentive-rules")
+async def get_incentive_rules():
+    """Get current incentive rules."""
+    return _load_incentive_rules()
+
+@app.post("/api/incentive-rules")
+async def set_incentive_rules(request: Request):
+    """Admin: update incentive rules."""
+    body = await request.json()
+    rules = _load_incentive_rules()
+    if "phases" in body:
+        rules["phases"] = body["phases"]
+    if "pos_slabs" in body:
+        rules["pos_slabs"] = body["pos_slabs"]
+    if "pot_npa" in body:
+        rules["pot_npa"] = body["pot_npa"]
+    if "sunday" in body:
+        rules["sunday"] = body["sunday"]
+    _save_incentive_rules(rules)
+    return rules
+
 @app.get("/api/public-access")
 async def get_public_access():
     return {
@@ -414,12 +468,18 @@ async def daily_winners(date: str = ""):
         is_sunday = False
     
     # Determine phase
-    if day_of_month <= 10:
-        phase = 1  # 2-10: ₹100 per receipt all buckets, no minimum
-    elif day_of_month <= 20:
-        phase = 2  # 11-20: BKT1+2 → 2+ receipts → ₹100/receipt + POS; BKT3-6 → ₹100/receipt
-    else:
-        phase = 3  # 21-30: BKT1+2 → 2+ receipts → ₹150/receipt + POS; BKT3-6 → ₹100/receipt
+    rules = _load_incentive_rules()
+    phase_config = None
+    for p in rules["phases"]:
+        if p["start"] <= day_of_month <= p["end"]:
+            phase_config = p
+            break
+    if not phase_config:
+        phase_config = rules["phases"][-1]  # fallback to last phase
+    
+    pot_npa_rules = rules.get("pot_npa", {"enabled": False})
+    sunday_rules = rules.get("sunday", {"enabled": False})
+    pos_slabs = rules.get("pos_slabs", [])
     
     # Today's paid cases
     today_paid = df[(df["Payment Date"].astype(str).str.strip() == today) & 
@@ -430,92 +490,87 @@ async def daily_winners(date: str = ""):
     
     lines = ["⭐ *TODAY'S WINNERS* 🏅\n"]
     
-    # ── PHASE 1 (2-10): ₹100 per receipt — all buckets, no minimum ──
-    # POT NPA (1-5 tarikh): separate incentive — ₹200 for 1 receipt, ₹250/receipt for 2+
-    if phase == 1:
-        # Split POT NPA vs non-POT NPA
+    # ── POT NPA (if enabled and within day range) ──
+    if pot_npa_rules.get("enabled") and pot_npa_rules.get("start_day", 1) <= day_of_month <= pot_npa_rules.get("end_day", 5):
         is_pot_npa = today_paid["POT NPA"].notna() if "POT NPA" in today_paid.columns else pd.Series(False, index=today_paid.index)
         pot_npa_paid = today_paid[is_pot_npa]
         non_pot_paid = today_paid[~is_pot_npa]
         
-        # POT NPA incentive (only relevant 1-5 tarikh)
-        if day_of_month <= 5 and not pot_npa_paid.empty:
+        if not pot_npa_paid.empty:
             pot_by_team = pot_npa_paid.groupby("TEAM").size()
+            rate_single = pot_npa_rules.get("rate_single", 200)
+            rate_multi = pot_npa_rules.get("rate_multi", 250)
             if not pot_by_team.empty:
-                lines.append("*🔥 POT NPA RECEIPTS*")
+                lines.append(f"*🔥 POT NPA RECEIPTS*")
                 for team, count in pot_by_team.sort_values(ascending=False).items():
-                    if count >= 2:
-                        incentive = count * 250
-                    else:
-                        incentive = 200
+                    incentive = count * rate_multi if count >= 2 else rate_single
                     lines.append(f"{team} - {count} 💵 ₹{incentive}")
                 lines.append("")
-        
-        # Non-POT NPA: ₹100 per receipt
-        if not non_pot_paid.empty:
-            rc_by_team = non_pot_paid.groupby("TEAM").size()
-            if not rc_by_team.empty:
-                lines.append("*DAILY RECEIPTS (₹100/receipt)*")
-                for team, count in rc_by_team.sort_values(ascending=False).items():
-                    incentive = count * 100
+    else:
+        non_pot_paid = today_paid
+    
+    # ── BKT 1-2 RECEIPTS ──
+    bkt12_rate = phase_config.get("bkt12_rate", 100)
+    bkt12_min = phase_config.get("bkt12_min", 0)
+    bkt12 = non_pot_paid[non_pot_paid["BUCKET"].isin([1, 2])] if 'non_pot_paid' in dir() else today_paid[today_paid["BUCKET"].isin([1, 2])]
+    
+    if not bkt12.empty:
+        rc_by_team_12 = bkt12.groupby("TEAM").size()
+        if not rc_by_team_12.empty:
+            if bkt12_min > 0:
+                lines.append(f"*BKT 1-2 RECEIPTS (₹{bkt12_rate}/receipt, min {bkt12_min})*")
+            else:
+                lines.append(f"*BKT 1-2 RECEIPTS (₹{bkt12_rate}/receipt)*")
+            for team, count in rc_by_team_12.sort_values(ascending=False).items():
+                if bkt12_min == 0 or count >= bkt12_min:
+                    incentive = count * bkt12_rate
                     lines.append(f"{team} - {count} 💵 ₹{incentive}")
-                lines.append("")
+                else:
+                    lines.append(f"{team} - {count} (min {bkt12_min} needed)")
             lines.append("")
     
-    # ── PHASE 2 & 3 (11-20, 21-30) ──
-    else:
-        bkt12_rate = 100 if phase == 2 else 150  # ₹100 or ₹150 per receipt
-        
-        # BKT 1+2 combined — minimum 2 receipts required
-        bkt12 = today_paid[today_paid["BUCKET"].isin([1, 2])]
-        if not bkt12.empty:
-            rc_by_team_12 = bkt12.groupby("TEAM").size()
-            if not rc_by_team_12.empty:
-                lines.append(f"*BKT 1-2 RECEIPTS (₹{bkt12_rate}/receipt, min 2)*")
-                for team, count in rc_by_team_12.sort_values(ascending=False).items():
-                    if count >= 2:
-                        incentive = count * bkt12_rate
-                        lines.append(f"{team} - {count} 💵 ₹{incentive}")
-                    else:
-                        lines.append(f"{team} - {count} (min 2 needed)")
-                lines.append("")
-        
-        # BKT 1+2 POS incentive (₹50K+ POS: ₹100, 2L+: ₹200, 3L+: ₹300...) — independent, no min 2
+    # ── POS INCENTIVE (if enabled for this phase) ──
+    if phase_config.get("pos_enabled"):
         for bkt_num in [1, 2]:
             bkt_paid = today_paid[today_paid["BUCKET"] == bkt_num]
             if not bkt_paid.empty:
                 pos_by_team = bkt_paid.groupby("TEAM")["POS"].sum()
-                pos_winners = pos_by_team[pos_by_team >= 50000]
+                min_pos = pos_slabs[0]["min"] if pos_slabs else 50000
+                pos_winners = pos_by_team[pos_by_team >= min_pos]
                 if not pos_winners.empty:
                     lines.append(f"*BKT-{bkt_num} | POS INCENTIVE* 💰")
                     for team, pos in pos_winners.sort_values(ascending=False).items():
-                        if pos >= 200000:
-                            incentive = int(pos // 100000) * 100
-                            label = f">{int(pos/100000)}L"
-                        else:
-                            incentive = 100
-                            label = ">50K"
-                        lines.append(f"{team} {label} 💸₹{incentive}")
+                        bonus = 0
+                        for slab in pos_slabs:
+                            if pos >= slab.get("min", 0):
+                                if "per_lakh" in slab:
+                                    bonus = int(pos // 100000) * slab["per_lakh"]
+                                else:
+                                    bonus = slab.get("bonus", 100)
+                        label = f">{int(pos/100000)}L" if pos >= 200000 else ">50K"
+                        lines.append(f"{team} {label} 💸₹{bonus}")
                     lines.append("")
-        
-        # BKT 3-6: ₹100 per receipt, no minimum
-        bkt36 = today_paid[today_paid["BUCKET"].isin([3, 4, 5, 6])]
-        if not bkt36.empty:
-            rc_by_team_36 = bkt36.groupby("TEAM").size()
-            if not rc_by_team_36.empty:
-                lines.append("*BKT 3-6 RECEIPTS (₹100/receipt)*")
-                for team, count in rc_by_team_36.sort_values(ascending=False).items():
-                    incentive = count * 100
-                    lines.append(f"{team} - {count} 💵 ₹{incentive}")
-                lines.append("")
     
-    # SUNDAY SPECIAL — ₹200 per receipt (any bucket)
-    if is_sunday and not today_paid.empty:
+    # ── BKT 3-6 RECEIPTS ──
+    bkt36_rate = phase_config.get("bkt36_rate", 100)
+    bkt36 = non_pot_paid[non_pot_paid["BUCKET"].isin([3, 4, 5, 6])] if 'non_pot_paid' in dir() else today_paid[today_paid["BUCKET"].isin([3, 4, 5, 6])]
+    if not bkt36.empty:
+        rc_by_team_36 = bkt36.groupby("TEAM").size()
+        if not rc_by_team_36.empty:
+            lines.append(f"*BKT 3-6 RECEIPTS (₹{bkt36_rate}/receipt)*")
+            for team, count in rc_by_team_36.sort_values(ascending=False).items():
+                incentive = count * bkt36_rate
+                lines.append(f"{team} - {count} 💵 ₹{incentive}")
+            lines.append("")
+    
+    # ── SUNDAY SPECIAL ──
+    if sunday_rules.get("enabled") and is_sunday and not today_paid.empty:
+        sunday_rate = sunday_rules.get("rate", 200)
         sunday_by_team = today_paid.groupby("TEAM").size()
         if not sunday_by_team.empty:
-            lines.append("*🔴 SUNDAY SPECIAL (₹200/receipt)*")
+            lines.append(f"*🔴 SUNDAY SPECIAL (₹{sunday_rate}/receipt)*")
             for team, count in sunday_by_team.sort_values(ascending=False).items():
-                incentive = count * 200
+                incentive = count * sunday_rate
                 lines.append(f"{team} - {count} 💵 ₹{incentive}")
             lines.append("")
     

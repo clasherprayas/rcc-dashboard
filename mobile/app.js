@@ -2558,6 +2558,108 @@ function doDownloadIncentive() {
   window.open(`${API}/api/report/monthly-incentive/download?month=${month}&year=${year}`, '_blank');
 }
 
+// ── INCENTIVE RULES ADMIN ──
+async function showIncentiveRules() {
+  toggleMenu();
+  hideExecFilter();
+  const pages = document.querySelectorAll('.page');
+  const navItems = document.querySelectorAll('.nav-item');
+  pages.forEach(p => p.classList.remove('active'));
+  navItems.forEach(n => n.classList.remove('active'));
+  document.getElementById('pageFlow').classList.add('active');
+  
+  const el = document.getElementById('flowContent');
+  el.innerHTML = '<div style="text-align:center;padding:40px"><div class="spinner"></div><div style="margin-top:10px;font-size:12px;color:var(--muted)">Loading rules...</div></div>';
+  
+  const rules = await apiCall('/api/incentive-rules');
+  if (!rules) { el.innerHTML = '<div class="empty-state"><div class="emoji">❌</div><div class="msg">Failed to load rules</div></div>'; return; }
+  
+  let phasesHtml = '';
+  rules.phases.forEach((p, i) => {
+    phasesHtml += `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px">
+        <div style="font-weight:800;font-size:13px;color:var(--ink);margin-bottom:10px">📅 Phase ${i+1} (Day ${p.start} - ${p.end})</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">BKT 1-2 Rate</label><input type="number" id="p${i}_bkt12_rate" value="${p.bkt12_rate}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"></div>
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">BKT 1-2 Min Receipts</label><input type="number" id="p${i}_bkt12_min" value="${p.bkt12_min}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"></div>
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">BKT 3-6 Rate</label><input type="number" id="p${i}_bkt36_rate" value="${p.bkt36_rate}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"></div>
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">POS Enabled</label><select id="p${i}_pos" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"><option value="true" ${p.pos_enabled?'selected':''}>Yes</option><option value="false" ${!p.pos_enabled?'selected':''}>No</option></select></div>
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">Start Day</label><input type="number" id="p${i}_start" value="${p.start}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"></div>
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">End Day</label><input type="number" id="p${i}_end" value="${p.end}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"></div>
+        </div>
+      </div>`;
+  });
+  
+  const pot = rules.pot_npa || {};
+  const sun = rules.sunday || {};
+  
+  el.innerHTML = `
+    <div style="padding:4px 0">
+      <div style="font-size:16px;font-weight:900;color:var(--ink);margin-bottom:4px">⚙️ Incentive Rules</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">Changes apply instantly to Winners & Excel reports</div>
+      
+      <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:8px">📅 PHASES</div>
+      ${phasesHtml}
+      
+      <div style="font-size:13px;font-weight:800;color:var(--ink);margin:16px 0 8px">🔥 POT NPA</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">Enabled</label><select id="pot_enabled" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"><option value="true" ${pot.enabled?'selected':''}>Yes</option><option value="false" ${!pot.enabled?'selected':''}>No</option></select></div>
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">Days (start-end)</label><div style="display:flex;gap:4px"><input type="number" id="pot_start" value="${pot.start_day||1}" style="width:50%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:var(--bg);color:var(--ink)"><input type="number" id="pot_end" value="${pot.end_day||5}" style="width:50%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;background:var(--bg);color:var(--ink)"></div></div>
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">1 Receipt Rate</label><input type="number" id="pot_single" value="${pot.rate_single||200}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"></div>
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">2+ Receipt Rate</label><input type="number" id="pot_multi" value="${pot.rate_multi||250}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"></div>
+        </div>
+      </div>
+      
+      <div style="font-size:13px;font-weight:800;color:var(--ink);margin:16px 0 8px">🔴 SUNDAY SPECIAL</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">Enabled</label><select id="sun_enabled" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"><option value="true" ${sun.enabled?'selected':''}>Yes</option><option value="false" ${!sun.enabled?'selected':''}>No</option></select></div>
+          <div><label style="font-size:10px;color:var(--muted);font-weight:700">Rate/Receipt</label><input type="number" id="sun_rate" value="${sun.rate||200}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:700;background:var(--bg);color:var(--ink)"></div>
+        </div>
+      </div>
+      
+      <button onclick="saveIncentiveRules(${rules.phases.length})" style="width:100%;padding:14px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:15px;cursor:pointer;margin-bottom:20px">💾 Save Rules</button>
+    </div>
+  `;
+}
+
+async function saveIncentiveRules(phaseCount) {
+  const phases = [];
+  for (let i = 0; i < phaseCount; i++) {
+    phases.push({
+      start: parseInt(document.getElementById(`p${i}_start`).value),
+      end: parseInt(document.getElementById(`p${i}_end`).value),
+      bkt12_rate: parseInt(document.getElementById(`p${i}_bkt12_rate`).value),
+      bkt12_min: parseInt(document.getElementById(`p${i}_bkt12_min`).value),
+      bkt36_rate: parseInt(document.getElementById(`p${i}_bkt36_rate`).value),
+      pos_enabled: document.getElementById(`p${i}_pos`).value === 'true'
+    });
+  }
+  
+  const rules = {
+    phases,
+    pot_npa: {
+      enabled: document.getElementById('pot_enabled').value === 'true',
+      start_day: parseInt(document.getElementById('pot_start').value),
+      end_day: parseInt(document.getElementById('pot_end').value),
+      rate_single: parseInt(document.getElementById('pot_single').value),
+      rate_multi: parseInt(document.getElementById('pot_multi').value)
+    },
+    sunday: {
+      enabled: document.getElementById('sun_enabled').value === 'true',
+      rate: parseInt(document.getElementById('sun_rate').value)
+    }
+  };
+  
+  const res = await apiCall('/api/incentive-rules', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(rules)});
+  if (res) {
+    showToast('✅ Rules saved!');
+  } else {
+    showToast('❌ Failed to save');
+  }
+}
+
 async function shareProjection() {
   showToast('📤 Generating...');
   if (typeof html2canvas === 'undefined') {
