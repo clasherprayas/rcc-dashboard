@@ -550,6 +550,7 @@ async def daily_winners(date: str = ""):
             if not pot_by_team.empty:
                 lines.append("")
                 lines.append("🔥 *POT NPA*")
+                lines.append("")
                 for team, count in pot_by_team.sort_values(ascending=False).items():
                     incentive = count * rate_multi if count >= 2 else rate_single
                     lines.append(f"{team}-{count} 💵{incentive}")
@@ -567,6 +568,7 @@ async def daily_winners(date: str = ""):
         if not eligible.empty:
             lines.append("")
             lines.append(f"🏦 *BKT 1-2 💵{bkt12_rate}*")
+            lines.append("")
             for team, count in eligible.sort_values(ascending=False).items():
                 incentive = count * bkt12_rate
                 lines.append(f"{team}-{count} 💵{incentive}")
@@ -582,6 +584,7 @@ async def daily_winners(date: str = ""):
                 if not pos_winners.empty:
                     lines.append("")
                     lines.append(f"💰 *BKT-{bkt_num} | POS*")
+                    lines.append("")
                     for team, pos in pos_winners.sort_values(ascending=False).items():
                         bonus = 0
                         for slab in pos_slabs:
@@ -601,6 +604,7 @@ async def daily_winners(date: str = ""):
         if not rc_by_team_36.empty:
             lines.append("")
             lines.append(f"📋 *BKT 3-6 💵{bkt36_rate}*")
+            lines.append("")
             for team, count in rc_by_team_36.sort_values(ascending=False).items():
                 incentive = count * bkt36_rate
                 lines.append(f"{team}-{count} 💵{incentive}")
@@ -615,6 +619,7 @@ async def daily_winners(date: str = ""):
         if trail_winners:
             lines.append("")
             lines.append(f"📌 *TRAILS ({min_trails}+ = 💵{trail_rate})*")
+            lines.append("")
             for team, count in sorted(trail_winners.items(), key=lambda x: x[1], reverse=True):
                 lines.append(f"{team}-{count} 💵{trail_rate}")
     
@@ -625,6 +630,7 @@ async def daily_winners(date: str = ""):
         if not sunday_by_team.empty:
             lines.append("")
             lines.append(f"🔴 *SUNDAY 💵{sunday_rate}*")
+            lines.append("")
             for team, count in sunday_by_team.sort_values(ascending=False).items():
                 incentive = count * sunday_rate
                 lines.append(f"{team}-{count} 💵{incentive}")
