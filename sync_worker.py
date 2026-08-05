@@ -70,7 +70,7 @@ def get_source_file():
 
 SOURCE_FILE = get_source_file()
 LOCAL_COPY = Path(r"C:\Users\BAJAJ1\Desktop\RCC\RCC_DATA.xlsx")
-ONEDRIVE_COPY = Path(r"C:\Users\BAJAJ1\OneDrive\appdata\sys_data.bin")
+ONEDRIVE_COPY = Path(r"C:\Users\BAJAJ1\OneDrive\RCC\RCC_DATA.xlsx")
 LOG_FILE = Path(r"C:\Users\BAJAJ1\Desktop\RCC\sync_log.txt")
 
 POLL_INTERVAL = 30  # seconds
@@ -178,28 +178,16 @@ def sync():
         if source_mtime > onedrive_mtime:
             # Copy to local
             shutil.copy2(SOURCE_FILE, LOCAL_COPY)
-            # Encrypt and copy to OneDrive
+            # Copy to OneDrive
             if ONEDRIVE_COPY.parent.exists():
-                data = LOCAL_COPY.read_bytes()
-                encrypted = _cipher.encrypt(data)
-                ONEDRIVE_COPY.write_bytes(encrypted)
+                shutil.copy2(LOCAL_COPY, ONEDRIVE_COPY)
             else:
                 log("ERROR", f"OneDrive folder missing: {ONEDRIVE_COPY.parent}")
                 return
             log("SUCCESS", f"Synced | Source: {fmt_time(source_mtime)}")
             
-            # Git push — but throttled (max once per 10 min to avoid Render deploy limit)
-            import time as _t
-            last_push_file = Path(r"C:\Users\BAJAJ1\Desktop\RCC\.last_push")
-            should_push = True
-            if last_push_file.exists():
-                last_push_time = last_push_file.stat().st_mtime
-                if _t.time() - last_push_time < 600:  # 10 min cooldown
-                    should_push = False
-                    log("INFO", "Git push skipped (cooldown)")
-            if should_push:
-                _git_push()
-                last_push_file.write_text(str(_t.time()))
+            # Git push disabled — Render reads from OneDrive
+            # _git_push()
         else:
             log("INFO", "No changes detected")
     except PermissionError:
@@ -334,10 +322,8 @@ def process_gsheet_payments():
         if rcc_synced > 0 and ONEDRIVE_COPY.parent.exists():
             try:
                 import shutil
-                data = LOCAL_COPY.read_bytes()
-                encrypted = _cipher.encrypt(data)
-                ONEDRIVE_COPY.write_bytes(encrypted)
-                log("INFO", "Updated OneDrive copy (encrypted)")
+                shutil.copy2(LOCAL_COPY, ONEDRIVE_COPY)
+                log("INFO", "Updated OneDrive copy")
             except Exception:
                 pass
 
