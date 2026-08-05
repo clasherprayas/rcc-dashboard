@@ -319,9 +319,10 @@ def _load_trails_data(day_of_month):
         # Build team → count dict
         result = {}
         team_col = "TEAM" if "TEAM" in trails_df.columns else trails_df.columns[0]
+        skip_names = {"TEAM", "BUCKET", "CLM", "POT NPA", "NAN", "", "GRAND TOTAL", "VALUES"}
         for _, row in trails_df.iterrows():
             team = str(row[team_col]).strip().upper()
-            if not team or team.lower() == "nan" or "grand total" in team.lower():
+            if not team or team in skip_names or "grand total" in team.lower():
                 continue
             count = pd.to_numeric(row.get(day_col, 0), errors="coerce")
             if pd.notna(count) and count > 0:
