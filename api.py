@@ -30,7 +30,7 @@ CLOUD_MODE = os.environ.get("RCC_CLOUD", "0") == "1"
 ONEDRIVE_SHARE_URL = os.environ.get("ONEDRIVE_SHARE_URL", "")
 
 def _sync_from_onedrive():
-    """Download RCC_DATA.xlsx from OneDrive share link (cloud mode)."""
+    """Download compressed RCC_DATA from OneDrive and decompress."""
     import requests
     if not ONEDRIVE_SHARE_URL:
         return False
@@ -44,14 +44,23 @@ def _sync_from_onedrive():
         print(f"☁️ Attempting OneDrive download...")
         resp = requests.get(download_url, timeout=60, allow_redirects=True)
         
-        # Verify it's actual Excel content (not HTML error page)
+        # Verify it's actual content (not HTML error page)
         if resp.status_code == 200 and len(resp.content) > 1000:
             if b'<!DOCTYPE' in resp.content[:200] or b'<html' in resp.content[:200]:
-                print(f"⚠️ Got HTML instead of Excel. Download failed.")
+                print(f"⚠️ Got HTML instead of data. Download failed.")
                 return False
             
-            DATA_FILE.write_bytes(resp.content)
-            print(f"☁️ Fresh data downloaded from OneDrive ({len(resp.content)} bytes)")
+            # Try to decompress (zlib compressed)
+            import zlib
+            try:
+                decompressed = zlib.decompress(resp.content)
+                DATA_FILE.write_bytes(decompressed)
+                print(f"☁️ Decompressed data downloaded ({len(decompressed)} bytes)")
+            except zlib.error:
+                # Fallback: maybe it's plain Excel (not compressed)
+                DATA_FILE.write_bytes(resp.content)
+                print(f"☁️ Plain data downloaded ({len(resp.content)} bytes)")
+            
             return True
         else:
             print(f"⚠️ OneDrive download failed (HTTP {resp.status_code})")

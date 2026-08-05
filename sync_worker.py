@@ -178,9 +178,12 @@ def sync():
         if source_mtime > onedrive_mtime:
             # Copy to local
             shutil.copy2(SOURCE_FILE, LOCAL_COPY)
-            # Copy to OneDrive
+            # Compress and copy to OneDrive (not openable in Excel)
+            import zlib
             if ONEDRIVE_COPY.parent.exists():
-                shutil.copy2(LOCAL_COPY, ONEDRIVE_COPY)
+                data = LOCAL_COPY.read_bytes()
+                compressed = zlib.compress(data, 9)
+                ONEDRIVE_COPY.write_bytes(compressed)
             else:
                 log("ERROR", f"OneDrive folder missing: {ONEDRIVE_COPY.parent}")
                 return
@@ -321,9 +324,11 @@ def process_gsheet_payments():
         # Copy updated RCC to OneDrive
         if rcc_synced > 0 and ONEDRIVE_COPY.parent.exists():
             try:
-                import shutil
-                shutil.copy2(LOCAL_COPY, ONEDRIVE_COPY)
-                log("INFO", "Updated OneDrive copy")
+                import shutil, zlib
+                data = LOCAL_COPY.read_bytes()
+                compressed = zlib.compress(data, 9)
+                ONEDRIVE_COPY.write_bytes(compressed)
+                log("INFO", "Updated OneDrive copy (compressed)")
             except Exception:
                 pass
 
