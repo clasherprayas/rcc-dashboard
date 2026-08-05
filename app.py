@@ -800,12 +800,8 @@ def _sync_from_onedrive():
 
 
 def _sync_to_onedrive():
-    """Copy RCC_DATA.xlsx to OneDrive folder for cloud sync."""
-    try:
-        if LOCAL_DATA_COPY.exists() and ONEDRIVE_DATA_COPY.parent.exists():
-            shutil.copy2(LOCAL_DATA_COPY, ONEDRIVE_DATA_COPY)
-    except Exception:
-        pass  # OneDrive sync is best-effort, don't break app
+    """Disabled — sync_worker handles encrypted OneDrive sync now."""
+    pass  # Encryption handled by sync_worker.py
 
 @st.cache_data(show_spinner=False)
 def workbook_sheets(data_file):
