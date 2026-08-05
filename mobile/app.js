@@ -2228,7 +2228,9 @@ async function shareTrailsList() {
     const blob = await new Promise(r => canvas.toBlob(r));
     const file = new File([blob], 'Pending_Trails.png', {type: 'image/png'});
     if (navigator.share && navigator.canShare({files: [file]})) {
-      await navigator.share({files: [file], title: 'Pending Trails', text: '📌 Pending Trails'});
+      const trailEmojis = ['👣', '📋', '🔔', '⏳', '🎯', '📍', '🗂️', '⚡'];
+      const randomEmoji = trailEmojis[Math.floor(Math.random() * trailEmojis.length)];
+      await navigator.share({files: [file], title: 'Pending Trails', text: `${randomEmoji} Pending Trails`});
     } else {
       const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=file.name; a.click();
       showToast('📥 Downloaded');
