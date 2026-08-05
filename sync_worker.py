@@ -188,8 +188,18 @@ def sync():
                 return
             log("SUCCESS", f"Synced | Source: {fmt_time(source_mtime)}")
             
-            # Git push — Render reads from git (OneDrive link unreliable)
-            _git_push()
+            # Git push — but throttled (max once per 10 min to avoid Render deploy limit)
+            import time as _t
+            last_push_file = Path(r"C:\Users\BAJAJ1\Desktop\RCC\.last_push")
+            should_push = True
+            if last_push_file.exists():
+                last_push_time = last_push_file.stat().st_mtime
+                if _t.time() - last_push_time < 600:  # 10 min cooldown
+                    should_push = False
+                    log("INFO", "Git push skipped (cooldown)")
+            if should_push:
+                _git_push()
+                last_push_file.write_text(str(_t.time()))
         else:
             log("INFO", "No changes detected")
     except PermissionError:
