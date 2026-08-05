@@ -2590,8 +2590,29 @@ function downloadMonthlyIncentive() {
 function doDownloadIncentive() {
   const month = document.getElementById('incentiveMonth').value;
   const year = document.getElementById('incentiveYear').value;
-  showToast('📊 Downloading...');
-  window.open(`${API}/api/report/monthly-incentive/download?month=${month}&year=${year}`, '_blank');
+  const months = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+  
+  // Show loading screen
+  document.getElementById('flowContent').innerHTML = `
+    <div style="text-align:center;padding:60px 20px">
+      <div style="font-size:40px;margin-bottom:16px;animation:pulse 1s infinite">📊</div>
+      <div style="font-size:16px;font-weight:800;color:var(--ink);margin-bottom:8px">Generating Excel...</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px">${months[month]} ${year}</div>
+      <div style="width:200px;height:8px;background:var(--border);border-radius:99px;margin:0 auto;overflow:hidden">
+        <div style="height:100%;width:0%;background:linear-gradient(90deg,#8b5cf6,#3b82f6);border-radius:99px;animation:loadBar 2s ease-in-out forwards"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:12px">Calculating incentives...</div>
+    </div>
+    <style>@keyframes loadBar{0%{width:0}50%{width:70%}90%{width:95%}100%{width:100%}}</style>
+  `;
+  
+  // Start download after brief animation
+  setTimeout(() => {
+    window.open(`${API}/api/report/monthly-incentive/download?month=${month}&year=${year}`, '_blank');
+    setTimeout(() => {
+      showToast('✅ Download started!');
+    }, 1000);
+  }, 800);
 }
 
 // ── INCENTIVE RULES ADMIN ──
