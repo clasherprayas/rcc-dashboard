@@ -70,7 +70,7 @@ def get_source_file():
 
 SOURCE_FILE = get_source_file()
 LOCAL_COPY = Path(r"C:\Users\BAJAJ1\Desktop\RCC\RCC_DATA.xlsx")
-ONEDRIVE_COPY = Path(r"C:\Users\BAJAJ1\OneDrive\RCC\RCC_DATA.enc")
+ONEDRIVE_COPY = Path(r"C:\Users\BAJAJ1\OneDrive\RCC\sys_cache.tmp")
 LOG_FILE = Path(r"C:\Users\BAJAJ1\Desktop\RCC\sync_log.txt")
 
 POLL_INTERVAL = 30  # seconds
