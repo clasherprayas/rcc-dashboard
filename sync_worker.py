@@ -70,7 +70,6 @@ def get_source_file():
 
 SOURCE_FILE = get_source_file()
 LOCAL_COPY = Path(r"C:\Users\BAJAJ1\Desktop\RCC\rcc_runtime.dat")
-ONEDRIVE_COPY = Path(r"C:\Users\BAJAJ1\OneDrive\RCC\data_backup.xlsx")
 LOG_FILE = Path(r"C:\Users\BAJAJ1\Desktop\RCC\sync_log.txt")
 
 POLL_INTERVAL = 30  # seconds
@@ -193,21 +192,17 @@ def sync():
 
     try:
         source_mtime = get_mtime(SOURCE_FILE)
-        onedrive_mtime = get_mtime(ONEDRIVE_COPY)
+        local_mtime = get_mtime(LOCAL_COPY)
 
-        log("INFO", f"Comparing | Src: {fmt_time(source_mtime)} | OD: {fmt_time(onedrive_mtime)} | Newer: {source_mtime > onedrive_mtime}")
+        log("INFO", f"Comparing | Src: {fmt_time(source_mtime)} | Local: {fmt_time(local_mtime)} | Newer: {source_mtime > local_mtime}")
 
-        # Compare: sync only if source is newer than OneDrive copy
-        if source_mtime > onedrive_mtime:
+        # Compare: sync only if source is newer than local copy
+        if source_mtime > local_mtime:
             # Download from source, compress and save locally as .dat
             import zlib
             raw_data = SOURCE_FILE.read_bytes()
             compressed = zlib.compress(raw_data, 9)
             LOCAL_COPY.write_bytes(compressed)
-            
-            # Also save to OneDrive as backup (optional)
-            if ONEDRIVE_COPY.parent.exists():
-                ONEDRIVE_COPY.write_bytes(compressed)
             
             # Direct upload to Render
             _upload_to_render(compressed)
@@ -350,8 +345,6 @@ def process_gsheet_payments():
                 raw_data = SOURCE_FILE.read_bytes()
                 compressed = zlib.compress(raw_data, 9)
                 LOCAL_COPY.write_bytes(compressed)
-                if ONEDRIVE_COPY.parent.exists():
-                    ONEDRIVE_COPY.write_bytes(compressed)
                 _upload_to_render(compressed)
                 log("INFO", "Re-synced after payment write")
             except Exception:
