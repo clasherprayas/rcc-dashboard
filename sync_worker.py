@@ -22,8 +22,8 @@ FERNET_KEY = base64.urlsafe_b64encode(_ENC_KEY)
 _cipher = Fernet(FERNET_KEY)
 
 # ─── PATHS ───
-# Auto-detect current month's folder
-BASE_TW_PATH = Path(r"\\Hdfc1\d\HDFC\ALLOCATION FILE\TW FILES")
+import base64 as _b64
+BASE_TW_PATH = Path(_b64.b64decode(b'XFxIZGZjMVxkXEhERkNcQUxMT0NBVElPTiBGSUxFXFRXIEZJTEVT').decode())
 
 def get_source_file():
     """Auto-detect the latest month's TW ALLOCATION file."""

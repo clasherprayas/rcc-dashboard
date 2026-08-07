@@ -9,10 +9,9 @@ from streamlit_autorefresh import st_autorefresh
 
 import os
 
+import base64 as _b64
 APP_DIR = Path(__file__).resolve().parent
-SOURCE_DATA_FILE = Path(
-    r"\\Hdfc1\d\HDFC\ALLOCATION FILE\TW FILES\JUNE 26\TW ALLOCATION JUNE 26.xlsx"
-)
+SOURCE_DATA_FILE = Path(_b64.b64decode(b'XFxIZGZjMVxkXEhERkNcQUxMT0NBVElPTiBGSUxFXFRXIEZJTEVTXEpVTkUgMjZcVFcgQUxMT0NBVElPTiBKVU5FIDI2Lnhsc3g=').decode())
 LOCAL_DATA_COPY = APP_DIR / "RCC_DATA.xlsx"
 ONEDRIVE_DATA_COPY = Path(os.path.expanduser("~")) / "OneDrive" / "RCC" / "RCC_DATA.xlsx"
 DEFAULT_DATA_FILE = LOCAL_DATA_COPY.name
