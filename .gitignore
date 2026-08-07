@@ -5,3 +5,5 @@ visitor_logs.json
 .vscode/
 rcc_runtime.dat
 .last_push
+RCC_DATA.xlsx
+payment_queue.json
