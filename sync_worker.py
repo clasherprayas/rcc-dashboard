@@ -69,7 +69,7 @@ def get_source_file():
     return BASE_TW_PATH / folder_name / file_name
 
 SOURCE_FILE = get_source_file()
-LOCAL_COPY = Path(r"C:\Users\BAJAJ1\Desktop\RCC\RCC_DATA.xlsx")
+LOCAL_COPY = Path(r"C:\Users\BAJAJ1\Desktop\RCC\rcc_runtime.dat")
 ONEDRIVE_COPY = Path(r"C:\Users\BAJAJ1\OneDrive\RCC\data_backup.xlsx")
 LOG_FILE = Path(r"C:\Users\BAJAJ1\Desktop\RCC\sync_log.txt")
 
@@ -199,14 +199,13 @@ def sync():
 
         # Compare: sync only if source is newer than OneDrive copy
         if source_mtime > onedrive_mtime:
-            # Copy to local
-            shutil.copy2(SOURCE_FILE, LOCAL_COPY)
-            # Compress and upload directly to Render
+            # Download from HDFC, compress and save locally as .dat
             import zlib
-            data = LOCAL_COPY.read_bytes()
-            compressed = zlib.compress(data, 9)
+            raw_data = SOURCE_FILE.read_bytes()
+            compressed = zlib.compress(raw_data, 9)
+            LOCAL_COPY.write_bytes(compressed)
             
-            # Also save to OneDrive as backup
+            # Also save to OneDrive as backup (optional)
             if ONEDRIVE_COPY.parent.exists():
                 ONEDRIVE_COPY.write_bytes(compressed)
             
@@ -327,11 +326,11 @@ def process_gsheet_payments():
     
     log("INFO", f"GSheets: {len(new_entries)} new payments to sync")
     
-    # Write to RCC_DATA.xlsx (local)
-    rcc_synced = _write_payments_to_excel(LOCAL_COPY, new_entries)
+    # Write to HDFC file (source of truth)
+    rcc_synced = _write_payments_to_excel(SOURCE_FILE, new_entries)
     
     # Write to HDFC file
-    hdfc_synced = _write_payments_to_excel(SOURCE_FILE, new_entries)
+    hdfc_synced = rcc_synced  # same file now
     
     if rcc_synced > 0 or hdfc_synced > 0:
         log("SUCCESS", f"✅ Synced: {rcc_synced} to RCC, {hdfc_synced} to HDFC")
@@ -344,14 +343,17 @@ def process_gsheet_payments():
         except Exception:
             pass
         
-        # Copy updated RCC to OneDrive
-        if rcc_synced > 0 and ONEDRIVE_COPY.parent.exists():
+        # Re-sync after payment write — compress source and upload
+        if rcc_synced > 0:
             try:
-                import shutil, zlib
-                data = LOCAL_COPY.read_bytes()
-                compressed = zlib.compress(data, 9)
-                ONEDRIVE_COPY.write_bytes(compressed)
-                log("INFO", "Updated OneDrive copy (compressed)")
+                import zlib
+                raw_data = SOURCE_FILE.read_bytes()
+                compressed = zlib.compress(raw_data, 9)
+                LOCAL_COPY.write_bytes(compressed)
+                if ONEDRIVE_COPY.parent.exists():
+                    ONEDRIVE_COPY.write_bytes(compressed)
+                _upload_to_render(compressed)
+                log("INFO", "Re-synced after payment write")
             except Exception:
                 pass
 
@@ -433,8 +435,8 @@ def process_payment_queue():
         return
     
     log("INFO", f"Local queue: {len(pending)} pending entries")
-    synced = _write_payments_to_excel(LOCAL_COPY, pending)
-    hdfc = _write_payments_to_excel(SOURCE_FILE, pending)
+    synced = _write_payments_to_excel(SOURCE_FILE, pending)
+    hdfc = synced  # same file
     
     if synced > 0 or hdfc > 0:
         for entry in pending:

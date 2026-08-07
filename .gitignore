@@ -3,3 +3,5 @@ __pycache__/
 sync_log.txt
 visitor_logs.json
 .vscode/
+rcc_runtime.dat
+.last_push
