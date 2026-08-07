@@ -325,10 +325,10 @@ def process_gsheet_payments():
     rcc_synced = _write_payments_to_excel(SOURCE_FILE, new_entries)
     
     # Write to source file
-    hdfc_synced = rcc_synced  # same file now
+    src_synced = rcc_synced  # same file now
     
-    if rcc_synced > 0 or hdfc_synced > 0:
-        log("SUCCESS", f"✅ Synced: {rcc_synced} to RCC, {hdfc_synced} to source")
+    if rcc_synced > 0 or src_synced > 0:
+        log("SUCCESS", f"✅ Synced: {rcc_synced} to RCC, {src_synced} to source")
         # Track synced loans locally
         for e in new_entries:
             synced_loans.add(e.get("loan_no"))
@@ -429,14 +429,14 @@ def process_payment_queue():
     
     log("INFO", f"Local queue: {len(pending)} pending entries")
     synced = _write_payments_to_excel(SOURCE_FILE, pending)
-    hdfc = synced  # same file
+    src = synced  # same file
     
     if synced > 0 or hdfc > 0:
         for entry in pending:
             entry["synced"] = True
         with open(PAYMENT_QUEUE_FILE, "w", encoding="utf-8") as f:
             _json.dump(queue, f, ensure_ascii=False)
-        log("SUCCESS", f"Local queue: {synced} to RCC, {hdfc} to source")
+        log("SUCCESS", f"Local queue: {synced} to RCC, {src} to source")
 
 if __name__ == "__main__":
     main()

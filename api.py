@@ -2278,7 +2278,7 @@ async def payment_update(request: Request):
 
 @app.get("/api/payment-queue")
 async def get_payment_queue():
-    """Get pending payment queue (not yet synced to HDFC) — with customer names."""
+    """Get pending payment queue (not yet synced to source) — with customer names."""
     queue = _load_payment_queue()
     pending = [q for q in queue if not q.get("synced")]
     
@@ -2296,7 +2296,7 @@ async def get_payment_queue():
 
 @app.post("/api/payment-queue/clear")
 async def clear_synced_payments():
-    """Clear synced entries from queue (called by sync_worker after successful HDFC write)."""
+    """Clear synced entries from queue (called by sync_worker after successful source write)."""
     queue = _load_payment_queue()
     pending = [q for q in queue if not q.get("synced")]
     _save_payment_queue(pending)
