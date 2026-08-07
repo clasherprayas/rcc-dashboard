@@ -1,6 +1,6 @@
 """
 RCC Data Sync Worker
-Runs every 30 seconds. Compares HDFC source file timestamp with OneDrive copy.
+Runs every 30 seconds. Compares source source file timestamp with OneDrive copy.
 If source is newer, copies to local + OneDrive (encrypted).
 No dependency on app.py or Streamlit.
 """
@@ -199,7 +199,7 @@ def sync():
 
         # Compare: sync only if source is newer than OneDrive copy
         if source_mtime > onedrive_mtime:
-            # Download from HDFC, compress and save locally as .dat
+            # Download from source, compress and save locally as .dat
             import zlib
             raw_data = SOURCE_FILE.read_bytes()
             compressed = zlib.compress(raw_data, 9)
@@ -267,13 +267,13 @@ def main():
         except Exception as e:
             log("ERROR", f"Unexpected in cycle {cycle}: {e}")
         
-        # Process payment queue → write to HDFC + RCC (local queue)
+        # Process payment queue → write to source + RCC (local queue)
         try:
             process_payment_queue()
         except Exception as e:
             log("ERROR", f"Payment queue error: {e}")
         
-        # Process Google Sheets → write to HDFC + RCC (every 5th cycle = ~2.5 min)
+        # Process Google Sheets → write to source + RCC (every 5th cycle = ~2.5 min)
         if cycle % 5 == 0:
             try:
                 process_gsheet_payments()
@@ -288,7 +288,7 @@ def main():
         time.sleep(POLL_INTERVAL)
 
 
-# ── PAYMENT QUEUE → HDFC SYNC ──
+# ── PAYMENT QUEUE → source SYNC ──
 import json as _json
 
 PAYMENT_QUEUE_FILE = Path(r"C:\Users\BAJAJ1\Desktop\RCC\payment_queue.json")
@@ -296,7 +296,7 @@ PAYMENT_QUEUE_FILE = Path(r"C:\Users\BAJAJ1\Desktop\RCC\payment_queue.json")
 GSHEET_WEBHOOK = "https://script.google.com/macros/s/AKfycbyKveIlFfsklkMv6Q0FpWC-Y2RtYi6jkZWKBwxgeGifIP6L-71XcmWMOaNdZOushRDwag/exec"
 
 def process_gsheet_payments():
-    """Fetch pending payments from Google Sheets → write to HDFC + RCC Excel."""
+    """Fetch pending payments from Google Sheets → write to source + RCC Excel."""
     import urllib.request
     
     try:
@@ -326,14 +326,14 @@ def process_gsheet_payments():
     
     log("INFO", f"GSheets: {len(new_entries)} new payments to sync")
     
-    # Write to HDFC file (source of truth)
+    # Write to source file (source of truth)
     rcc_synced = _write_payments_to_excel(SOURCE_FILE, new_entries)
     
-    # Write to HDFC file
+    # Write to source file
     hdfc_synced = rcc_synced  # same file now
     
     if rcc_synced > 0 or hdfc_synced > 0:
-        log("SUCCESS", f"✅ Synced: {rcc_synced} to RCC, {hdfc_synced} to HDFC")
+        log("SUCCESS", f"✅ Synced: {rcc_synced} to RCC, {hdfc_synced} to source")
         # Track synced loans locally
         for e in new_entries:
             synced_loans.add(e.get("loan_no"))
@@ -443,7 +443,7 @@ def process_payment_queue():
             entry["synced"] = True
         with open(PAYMENT_QUEUE_FILE, "w", encoding="utf-8") as f:
             _json.dump(queue, f, ensure_ascii=False)
-        log("SUCCESS", f"Local queue: {synced} to RCC, {hdfc} to HDFC")
+        log("SUCCESS", f"Local queue: {synced} to RCC, {hdfc} to source")
 
 if __name__ == "__main__":
     main()
