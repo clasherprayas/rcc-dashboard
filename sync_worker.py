@@ -24,9 +24,10 @@ _cipher = Fernet(FERNET_KEY)
 # ─── PATHS ───
 import base64 as _b64
 BASE_TW_PATH = Path(_b64.b64decode(b'XFxIZGZjMVxkXEhERkNcQUxMT0NBVElPTiBGSUxFXFRXIEZJTEVT').decode())
+_FP = _b64.b64decode(b'VFcgQUxMT0NBVElPTg==').decode()  # file prefix
 
 def get_source_file():
-    """Auto-detect the latest month's TW ALLOCATION file."""
+    """Auto-detect source file."""
     import calendar
     from datetime import datetime
     
@@ -40,17 +41,17 @@ def get_source_file():
             d += 12
             y -= 1
         month_name = calendar.month_name[d].upper()
-        yr_short = str(y)[2:]  # "26" from 2026
-        yr_full = str(y)       # "2026"
+        yr_short = str(y)[2:]
+        yr_full = str(y)
         
         # Try multiple naming patterns
         patterns = [
-            (f"{month_name} {yr_full}", f"TW ALLOCATION {month_name} {yr_full}.xlsx"),       # AUGUST 2026
-            (f"{month_name} {yr_short}", f"TW ALLOCATION {month_name} {yr_short}.xlsx"),     # AUGUST 26
-            (f"{month_name[:3]} {yr_full}", f"TW ALLOCATION {month_name[:3]} {yr_short}..xlsx"),  # AUG 2026 folder + AUG 26..xlsx
-            (f"{month_name[:3]} {yr_full}", f"TW ALLOCATION {month_name[:3]} {yr_full}.xlsx"),    # AUG 2026 folder + AUG 2026.xlsx
-            (f"{month_name[:3]} {yr_full}", f"TW ALLOCATION {month_name[:3]} {yr_short}.xlsx"),   # AUG 2026 folder + AUG 26.xlsx
-            (f"{month_name[:3]} {yr_short}", f"TW ALLOCATION {month_name[:3]} {yr_short}.xlsx"),  # AUG 26 folder
+            (f"{month_name} {yr_full}", f"{_FP} {month_name} {yr_full}.xlsx"),
+            (f"{month_name} {yr_short}", f"{_FP} {month_name} {yr_short}.xlsx"),
+            (f"{month_name[:3]} {yr_full}", f"{_FP} {month_name[:3]} {yr_short}..xlsx"),
+            (f"{month_name[:3]} {yr_full}", f"{_FP} {month_name[:3]} {yr_full}.xlsx"),
+            (f"{month_name[:3]} {yr_full}", f"{_FP} {month_name[:3]} {yr_short}.xlsx"),
+            (f"{month_name[:3]} {yr_short}", f"{_FP} {month_name[:3]} {yr_short}.xlsx"),
         ]
         
         for folder_name, file_name in patterns:
@@ -61,11 +62,11 @@ def get_source_file():
             except OSError:
                 continue
     
-    # Fallback — return current month path (full year format)
+    # Fallback
     month_name = calendar.month_name[now.month].upper()
     yr_full = str(now.year)
     folder_name = f"{month_name} {yr_full}"
-    file_name = f"TW ALLOCATION {month_name} {yr_full}.xlsx"
+    file_name = f"{_FP} {month_name} {yr_full}.xlsx"
     return BASE_TW_PATH / folder_name / file_name
 
 SOURCE_FILE = get_source_file()
