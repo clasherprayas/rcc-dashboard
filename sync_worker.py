@@ -239,13 +239,26 @@ RENDER_URL = "https://app.rccapp.xyz/"
 PING_INTERVAL = 10  # Ping every 10 cycles (10 × 30s = 5 minutes)
 
 def ping_render():
-    """Ping Render server to prevent cold start/sleep."""
+    """Ping Render server and re-upload data if needed (after cold start)."""
     try:
-        import urllib.request
-        urllib.request.urlopen(RENDER_URL, timeout=10)
-        log("INFO", "Ping OK → Render awake")
+        import urllib.request, json
+        resp = urllib.request.urlopen(RENDER_URL + "api/executives", timeout=15)
+        data = json.loads(resp.read().decode())
+        if not data.get("executives"):
+            # No data on Render — re-upload
+            log("WARN", "Render has no data — re-uploading...")
+            if LOCAL_COPY.exists():
+                compressed = LOCAL_COPY.read_bytes()
+                _upload_to_render(compressed)
+            else:
+                import zlib
+                raw = SOURCE_FILE.read_bytes()
+                compressed = zlib.compress(raw, 9)
+                _upload_to_render(compressed)
+        else:
+            log("INFO", "Ping OK → Render awake")
     except Exception:
-        pass  # Silent fail — not critical
+        pass
 
 
 def main():
