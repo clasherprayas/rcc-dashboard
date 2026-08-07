@@ -179,7 +179,7 @@ def sync():
     """Check source vs destination timestamps and sync if needed."""
     global SOURCE_FILE
     SOURCE_FILE = get_source_file()  # Re-detect each cycle (handles month change)
-    log("INFO", f"Cycle start | Source: {SOURCE_FILE.name}")
+    log("INFO", f"Cycle start | Source: ready")
 
     # Check source reachable with timeout
     source_exists = check_source_exists_with_timeout()
