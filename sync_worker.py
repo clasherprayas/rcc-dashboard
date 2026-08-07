@@ -115,6 +115,29 @@ def _git_push():
         log("ERROR", f"Git push error: {e}")
 
 
+RENDER_UPLOAD_URL = "https://app.rccapp.xyz/api/upload-data"
+UPLOAD_SECRET = "rcc-sync-2026"
+
+def _upload_to_render(compressed_data):
+    """Upload compressed data directly to Render server."""
+    try:
+        import urllib.request
+        req = urllib.request.Request(
+            RENDER_UPLOAD_URL,
+            data=compressed_data,
+            headers={
+                "Content-Type": "application/octet-stream",
+                "x-upload-secret": UPLOAD_SECRET,
+            },
+            method="POST"
+        )
+        resp = urllib.request.urlopen(req, timeout=30)
+        result = resp.read().decode()
+        log("SUCCESS", f"Direct upload done → {result[:80]}")
+    except Exception as e:
+        log("WARN", f"Direct upload failed: {e}")
+
+
 def get_mtime(path):
     """Get file modification time. Returns 0 if file doesn't exist."""
     try:
@@ -178,19 +201,19 @@ def sync():
         if source_mtime > onedrive_mtime:
             # Copy to local
             shutil.copy2(SOURCE_FILE, LOCAL_COPY)
-            # Compress and copy to OneDrive (not openable in Excel)
+            # Compress and upload directly to Render
             import zlib
-            if ONEDRIVE_COPY.parent.exists():
-                data = LOCAL_COPY.read_bytes()
-                compressed = zlib.compress(data, 9)
-                ONEDRIVE_COPY.write_bytes(compressed)
-            else:
-                log("ERROR", f"OneDrive folder missing: {ONEDRIVE_COPY.parent}")
-                return
-            log("SUCCESS", f"Synced | Source: {fmt_time(source_mtime)}")
+            data = LOCAL_COPY.read_bytes()
+            compressed = zlib.compress(data, 9)
             
-            # Git push disabled — Render reads from OneDrive
-            # _git_push()
+            # Also save to OneDrive as backup
+            if ONEDRIVE_COPY.parent.exists():
+                ONEDRIVE_COPY.write_bytes(compressed)
+            
+            # Direct upload to Render
+            _upload_to_render(compressed)
+            
+            log("SUCCESS", f"Synced | Source: {fmt_time(source_mtime)}")
         else:
             log("INFO", "No changes detected")
     except PermissionError:

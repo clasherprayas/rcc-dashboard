@@ -430,6 +430,40 @@ async def force_sync():
         return {"status": "ok", "message": "Data reloaded from file"}
 
 
+# ── DIRECT UPLOAD API (sync worker uploads compressed data directly) ──
+UPLOAD_SECRET = os.environ.get("UPLOAD_SECRET", "rcc-sync-2026")
+
+@app.post("/api/upload-data")
+async def upload_data(request: Request):
+    """Receive compressed data from sync worker and save."""
+    import zlib
+    # Verify auth
+    auth = request.headers.get("x-upload-secret", "")
+    if auth != UPLOAD_SECRET:
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    
+    body = await request.body()
+    if len(body) < 1000:
+        return {"status": "error", "message": "Data too small"}
+    
+    try:
+        # Decompress
+        decompressed = zlib.decompress(body)
+        DATA_FILE.write_bytes(decompressed)
+        # Force reload
+        _cache["df"] = None
+        _cache["mtime"] = 0
+        load_data()
+        return {"status": "ok", "message": f"Data received ({len(decompressed)} bytes)", "rows": len(_cache["df"]) if _cache["df"] is not None else 0}
+    except zlib.error:
+        # Maybe plain Excel
+        DATA_FILE.write_bytes(body)
+        _cache["df"] = None
+        _cache["mtime"] = 0
+        load_data()
+        return {"status": "ok", "message": f"Plain data received ({len(body)} bytes)"}
+
+
 # ── TILL TIME REPORT API ──
 @app.get("/api/report/tilltime")
 async def tilltime_report(date: str = ""):
