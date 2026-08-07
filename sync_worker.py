@@ -236,7 +236,7 @@ def wait_for_network(max_wait=120, check_interval=5):
 
 # ─── KEEP-ALIVE PING ───
 RENDER_URL = "https://app.rccapp.xyz/"
-PING_INTERVAL = 10  # Ping every 10 cycles (10 × 30s = 5 minutes)
+PING_INTERVAL = 2  # Ping every 2 cycles (2 × 30s = 1 minute)
 
 def ping_render():
     """Ping Render server and re-upload data if needed (after cold start)."""
