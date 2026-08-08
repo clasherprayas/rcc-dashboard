@@ -23,6 +23,7 @@ import uvicorn
 
 APP_DIR = Path(__file__).resolve().parent
 DATA_FILE = APP_DIR / "RCC_DATA.xlsx"
+_BUNDLED_DATA = APP_DIR / "_data.bin"
 SHEET_NAME = "MAIN"
 
 # ── CLOUD MODE — download from OneDrive if ONEDRIVE_SHARE_URL is set ──
@@ -137,6 +138,11 @@ app = FastAPI(title="RCC Mobile API")
 @app.on_event("startup")
 async def startup_preload():
     """Pre-load Excel data when server starts (for Render/cloud)."""
+    # Load bundled data if main file doesn't exist (first deploy / after restart)
+    if not DATA_FILE.exists() and _BUNDLED_DATA.exists():
+        import shutil
+        shutil.copy2(_BUNDLED_DATA, DATA_FILE)
+        print(f"📦 Loaded bundled data from _data.bin")
     if CLOUD_MODE and ONEDRIVE_SHARE_URL:
         print("☁️ Cloud mode — downloading from OneDrive...")
         _sync_from_onedrive()
