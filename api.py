@@ -792,7 +792,7 @@ async def receiptcut_report():
     ist_now = _dt.now() if not CLOUD_MODE else _dt.utcnow() + _IST_OFFSET
     day = ist_now.day
     if day <= 10:
-        target_pct = 25
+        target_pct = 30
     elif day <= 20:
         target_pct = 45
     else:
@@ -894,7 +894,7 @@ async def receipt_cut_report():
     today_dt = _dt.now() if not CLOUD_MODE else _dt.utcnow() + _IST_OFFSET
     day = today_dt.day
     if day <= 10:
-        target_pct = 25
+        target_pct = 30
         remaining_days = 10 - day + 1
     elif day <= 20:
         target_pct = 45
