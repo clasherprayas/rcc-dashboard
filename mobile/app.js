@@ -997,10 +997,10 @@ async function fetchReceiptCut() {
     <div id="rcReportCard" style="width:780px;background:#ffffff;border-radius:14px;padding:24px 20px;font-family:'Inter',-apple-system,sans-serif;color:#0f172a;box-shadow:0 4px 20px rgba(0,0,0,.08);border:1px solid #e2e8f0">
       <div style="text-align:center;margin-bottom:18px">
         <div style="font-size:20px;font-weight:900;color:#0f172a;letter-spacing:-.01em">RECEIPT CUT REPORT</div>
-        <div style="display:inline-flex;align-items:center;gap:16px;margin-top:12px;padding:14px 24px;background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:12px">
-          <div style="text-align:center;padding:0 12px;border-right:1px solid #334155"><div style="font-size:8px;color:#94a3b8;font-weight:800;letter-spacing:.08em">TODAY'S MOVEMENT</div><div style="font-size:24px;font-weight:900;color:#4ade80;line-height:1.2">${data.movement}%</div></div>
-          <div style="text-align:center;padding:0 12px;border-right:1px solid #334155"><div style="font-size:8px;color:#94a3b8;font-weight:800;letter-spacing:.08em">TARGET</div><div style="font-size:24px;font-weight:900;color:#60a5fa;line-height:1.2">${data.target_pct}%</div></div>
-          <div style="text-align:center;padding:0 12px"><div style="font-size:8px;color:#94a3b8;font-weight:800;letter-spacing:.08em">DAYS LEFT</div><div style="font-size:24px;font-weight:900;color:#fbbf24;line-height:1.2">${data.days_remaining}</div></div>
+        <div style="display:inline-flex;align-items:center;gap:16px;margin-top:12px;padding:14px 24px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px">
+          <div style="text-align:center;padding:0 12px;border-right:1px solid #e2e8f0"><div style="font-size:8px;color:#64748b;font-weight:800;letter-spacing:.08em">TODAY'S MOVEMENT</div><div style="font-size:24px;font-weight:900;color:#059669;line-height:1.2">${data.movement}%</div></div>
+          <div style="text-align:center;padding:0 12px;border-right:1px solid #e2e8f0"><div style="font-size:8px;color:#64748b;font-weight:800;letter-spacing:.08em">TARGET</div><div style="font-size:24px;font-weight:900;color:#2563eb;line-height:1.2">${data.target_pct}%</div></div>
+          <div style="text-align:center;padding:0 12px"><div style="font-size:8px;color:#64748b;font-weight:800;letter-spacing:.08em">DAYS LEFT</div><div style="font-size:24px;font-weight:900;color:#d97706;line-height:1.2">${data.days_remaining}</div></div>
         </div>
       </div>
       <table style="width:100%;border-collapse:collapse">
