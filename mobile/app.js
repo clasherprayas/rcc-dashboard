@@ -1004,18 +1004,18 @@ async function fetchReceiptCut() {
         </div>
       </div>
       <table style="width:100%;border-collapse:collapse">
-        <thead><tr style="background:#1e293b">
-          <th style="text-align:left;padding:10px 10px;font-size:10px;font-weight:800;color:#e2e8f0;border:1px solid #334155">👥 TEAM</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#4ade80;border:1px solid #334155">✅ PAID</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#f87171;border:1px solid #334155">❌ UNPAID</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#e2e8f0;border:1px solid #334155">TOTAL</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#94a3b8;border:1px solid #334155">${data.target_pct}%<br><span style="font-size:8px;color:#64748b">TARGET</span></th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#f87171;border:1px solid #334155">SHORT<br>FALL</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#94a3b8;border:1px solid #334155">DRR FOR<br>${data.target_pct}%<br>${data.days_remaining}D</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#fbbf24;border:1px solid #334155">%ACHI</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#60a5fa;border:1px solid #334155">TODAY'S<br>PAYMENTS</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#c4b5fd;border:1px solid #334155">TODAY'S<br>TRAILS</th>
-          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#fb923c;border:1px solid #334155">PENDING<br>TRAILS</th>
+        <thead><tr style="background:#f1f5f9">
+          <th style="text-align:left;padding:10px 10px;font-size:10px;font-weight:800;color:#1e293b;border:1px solid #e2e8f0">👥 TEAM</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#059669;border:1px solid #e2e8f0">✅ PAID</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#dc2626;border:1px solid #e2e8f0">❌ UNPAID</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#1e293b;border:1px solid #e2e8f0">TOTAL</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#475569;border:1px solid #e2e8f0">${data.target_pct}%<br><span style="font-size:8px;color:#64748b">TARGET</span></th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#dc2626;border:1px solid #e2e8f0">SHORT<br>FALL</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#475569;border:1px solid #e2e8f0">DRR FOR<br>${data.target_pct}%<br>${data.days_remaining}D</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#d97706;border:1px solid #e2e8f0">%ACHI</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#2563eb;border:1px solid #e2e8f0">TODAY'S<br>PAYMENTS</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#7c3aed;border:1px solid #e2e8f0">TODAY'S<br>TRAILS</th>
+          <th style="text-align:center;padding:10px 6px;font-size:10px;font-weight:800;color:#ea580c;border:1px solid #e2e8f0">PENDING<br>TRAILS</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
